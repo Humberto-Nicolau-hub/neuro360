@@ -6,11 +6,54 @@ export default function App() {
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
   const [recomendacao, setRecomendacao] = useState("");
+  const [usuario, setUsuario] = useState(null);
+
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+
+  // 🔐 LOGIN
+  async function login() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    if (error) {
+      alert("Erro no login");
+    } else {
+      setUsuario(data.user);
+    }
+  }
+
+  // 🆕 CADASTRO
+  async function cadastro() {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: senha
+    });
+
+    if (error) {
+      alert("Erro ao cadastrar");
+    } else {
+      alert("Cadastro realizado!");
+    }
+  }
+
+  // 🚪 LOGOUT
+  async function logout() {
+    await supabase.auth.signOut();
+    setUsuario(null);
+  }
 
   async function salvarDados() {
+    if (!usuario) {
+      alert("Faça login primeiro");
+      return;
+    }
+
     await supabase.from("feedbacks").insert([
       {
-        usuario: "Humberto",
+        usuario: usuario.email,
         trilha: "Ansiedade",
         eficaz: true,
         comentario: "Teste funcionando"
@@ -24,7 +67,6 @@ export default function App() {
     const { data } = await supabase.from("feedbacks").select("*");
     setDados(data);
 
-    // Agrupar dados para gráfico
     const agrupado = {};
     data.forEach(item => {
       if (!agrupado[item.trilha]) {
@@ -40,7 +82,7 @@ export default function App() {
 
     setGrafico(formatado);
 
-    // 🔥 RECOMENDAÇÃO INTELIGENTE
+    // 🧠 Recomendação
     let maisUsada = "";
     let maior = 0;
 
@@ -55,18 +97,52 @@ export default function App() {
   }
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUsuario(data.user);
+    });
+
     buscarDados();
   }, []);
 
+  // 🔐 TELA DE LOGIN
+  if (!usuario) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h1>🔐 Login NeuroMapa360</h1>
+
+        <input
+          placeholder="Email"
+          onChange={e => setEmail(e.target.value)}
+        />
+        <br /><br />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          onChange={e => setSenha(e.target.value)}
+        />
+        <br /><br />
+
+        <button onClick={login}>Entrar</button>
+        <button onClick={cadastro}>Cadastrar</button>
+      </div>
+    );
+  }
+
+  // 🚀 APP PRINCIPAL
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>🚀 NeuroMapa360</h1>
+
+      <p>Logado como: {usuario.email}</p>
+      <button onClick={logout}>Sair</button>
+
+      <br /><br />
 
       <button onClick={salvarDados}>
         Salvar novo feedback
       </button>
 
-      {/* 🧠 RECOMENDAÇÃO */}
       <h2>🧠 Recomendação Inteligente</h2>
       <p>
         Trilha mais recomendada: <strong>{recomendacao}</strong>

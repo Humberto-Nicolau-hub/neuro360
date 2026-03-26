@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 export default function App() {
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
+  const [recomendacao, setRecomendacao] = useState("");
 
   async function salvarDados() {
     await supabase.from("feedbacks").insert([
@@ -38,6 +39,19 @@ export default function App() {
     }));
 
     setGrafico(formatado);
+
+    // 🔥 RECOMENDAÇÃO INTELIGENTE
+    let maisUsada = "";
+    let maior = 0;
+
+    Object.keys(agrupado).forEach(trilha => {
+      if (agrupado[trilha] > maior) {
+        maior = agrupado[trilha];
+        maisUsada = trilha;
+      }
+    });
+
+    setRecomendacao(maisUsada);
   }
 
   useEffect(() => {
@@ -51,6 +65,12 @@ export default function App() {
       <button onClick={salvarDados}>
         Salvar novo feedback
       </button>
+
+      {/* 🧠 RECOMENDAÇÃO */}
+      <h2>🧠 Recomendação Inteligente</h2>
+      <p>
+        Trilha mais recomendada: <strong>{recomendacao}</strong>
+      </p>
 
       <h2>📊 Gráfico de Trilhas</h2>
 

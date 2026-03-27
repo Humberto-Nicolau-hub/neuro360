@@ -45,6 +45,7 @@ export default function App() {
     setUsuario(null);
   }
 
+  // 💾 SALVAR DADOS
   async function salvarDados() {
     if (!usuario) {
       alert("Faça login primeiro");
@@ -63,15 +64,19 @@ export default function App() {
     buscarDados();
   }
 
+  // 🔍 BUSCAR DADOS (AGORA POR USUÁRIO)
   async function buscarDados() {
+    if (!usuario) return;
+
     const { data } = await supabase
-  .from("feedbacks")
-  .select("*")
-  .eq("usuario", usuario.email);
-    setDados(data);
+      .from("feedbacks")
+      .select("*")
+      .eq("usuario", usuario.email);
+
+    setDados(data || []);
 
     const agrupado = {};
-    data.forEach(item => {
+    (data || []).forEach(item => {
       if (!agrupado[item.trilha]) {
         agrupado[item.trilha] = 0;
       }
@@ -85,7 +90,7 @@ export default function App() {
 
     setGrafico(formatado);
 
-    // 🧠 Recomendação
+    // 🧠 RECOMENDAÇÃO
     let maisUsada = "";
     let maior = 0;
 
@@ -99,13 +104,19 @@ export default function App() {
     setRecomendacao(maisUsada);
   }
 
+  // 🔄 CARREGAR USUÁRIO AO ABRIR
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUsuario(data.user);
     });
-
-    buscarDados();
   }, []);
+
+  // 🔄 BUSCAR DADOS QUANDO USUÁRIO EXISTIR
+  useEffect(() => {
+    if (usuario) {
+      buscarDados();
+    }
+  }, [usuario]);
 
   // 🔐 TELA DE LOGIN
   if (!usuario) {
@@ -160,7 +171,7 @@ export default function App() {
         <Bar dataKey="total" />
       </BarChart>
 
-      <h2>📋 Feedbacks:</h2>
+      <h2>📋 Seus Feedbacks:</h2>
 
       {dados.map((item, index) => (
         <p key={index}>

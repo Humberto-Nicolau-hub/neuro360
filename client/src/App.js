@@ -64,7 +64,10 @@ export default function App() {
   }
 
   async function buscarDados() {
-    const { data } = await supabase.from("feedbacks").select("*");
+    const { data } = await supabase
+  .from("feedbacks")
+  .select("*")
+  .eq("usuario", usuario.email);
     setDados(data);
 
     const agrupado = {};

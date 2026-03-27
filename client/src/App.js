@@ -14,12 +14,8 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  // 🔐 LOGIN
   async function login() {
-    const { data } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha
-    });
+    const { data } = await supabase.auth.signInWithPassword({ email, password: senha });
     setUsuario(data.user);
   }
 
@@ -33,31 +29,27 @@ export default function App() {
     setUsuario(null);
   }
 
-  // 💰 SIMULAÇÃO DE PAGAMENTO
   function ativarPremium() {
     alert("Plano Premium ativado!");
     setPremium(true);
   }
 
-  // 🎯 TRILHAS PERSONALIZADAS
-  function gerarTrilhaPersonalizada() {
+  function gerarTrilha() {
     if (estadoEmocional === "ansioso") return "Respiração e Calma";
     if (estadoEmocional === "desmotivado") return "Motivação e Energia";
     if (estadoEmocional === "sem_foco") return "Foco e Clareza";
     return "Autoconhecimento";
   }
 
-  // 💾 SALVAR
   async function salvarDados() {
-
     if (!usuario) return;
 
     if (!premium && dados.length >= 5) {
-      alert("🔒 Limite gratuito atingido. Faça upgrade.");
+      alert("🔒 Limite gratuito atingido");
       return;
     }
 
-    const trilha = gerarTrilhaPersonalizada();
+    const trilha = gerarTrilha();
 
     await supabase.from("feedbacks").insert([
       {
@@ -71,9 +63,7 @@ export default function App() {
     buscarDados();
   }
 
-  // 🔍 BUSCAR + IA
   async function buscarDados() {
-
     if (!usuario) return;
 
     const { data } = await supabase
@@ -84,10 +74,9 @@ export default function App() {
     const lista = data || [];
     setDados(lista);
 
-    // gráfico
     const agrupado = {};
-    lista.forEach(item => {
-      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
+    lista.forEach(i => {
+      agrupado[i.trilha] = (agrupado[i.trilha] || 0) + 1;
     });
 
     setGrafico(
@@ -97,28 +86,21 @@ export default function App() {
       }))
     );
 
-    // 🧠 IA AVANÇADA
     let pontuacao = {};
 
     lista.forEach(item => {
-
       pontuacao[item.trilha] = (pontuacao[item.trilha] || 0) + 1;
-
       if (item.eficaz) pontuacao[item.trilha] += 3;
-
-      if (item.estado === estadoEmocional) {
-        pontuacao[item.trilha] += 4;
-      }
-
+      if (item.estado === estadoEmocional) pontuacao[item.trilha] += 4;
     });
 
     let melhor = "";
     let maior = 0;
 
-    Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maior) {
-        maior = pontuacao[trilha];
-        melhor = trilha;
+    Object.keys(pontuacao).forEach(t => {
+      if (pontuacao[t] > maior) {
+        maior = pontuacao[t];
+        melhor = t;
       }
     });
 
@@ -126,83 +108,140 @@ export default function App() {
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUsuario(data.user);
-    });
+    supabase.auth.getUser().then(({ data }) => setUsuario(data.user));
   }, []);
 
   useEffect(() => {
     if (usuario) buscarDados();
   }, [usuario, estadoEmocional]);
 
-  // 🔐 LOGIN
   if (!usuario) {
     return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h1>NeuroMapa360</h1>
+      <div style={styles.center}>
+        <div style={styles.card}>
+          <h1>🧠 NeuroMapa360</h1>
+          <p>Seu guia inteligente emocional</p>
 
-        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-        <br /><br />
-        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-        <br /><br />
+          <input placeholder="Email" onChange={e => setEmail(e.target.value)} style={styles.input}/>
+          <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} style={styles.input}/>
 
-        <button onClick={login}>Entrar</button>
-        <button onClick={cadastro}>Cadastrar</button>
+          <button onClick={login} style={styles.primary}>Entrar</button>
+          <button onClick={cadastro} style={styles.secondary}>Cadastrar</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ textAlign: "center", marginTop: "40px" }}>
+    <div style={styles.container}>
 
-      <h1>NeuroMapa360</h1>
+      <div style={styles.header}>
+        <h2>NeuroMapa360</h2>
+        <div>
+          <span>{usuario.email}</span>
+          <button onClick={logout} style={styles.logout}>Sair</button>
+        </div>
+      </div>
 
-      <p>{usuario.email}</p>
-      <button onClick={logout}>Sair</button>
-
-      <br /><br />
-
-      {/* 💰 UPGRADE */}
       {!premium && (
-        <button onClick={ativarPremium}>
-          🔓 Ativar Plano Premium
-        </button>
+        <div style={styles.premiumBox}>
+          <p>🔓 Desbloqueie recomendações ilimitadas</p>
+          <button onClick={ativarPremium} style={styles.primary}>
+            Ativar Premium
+          </button>
+        </div>
       )}
 
-      <br /><br />
+      <div style={styles.card}>
+        <h3>Como você está se sentindo?</h3>
 
-      {/* 🧠 ESTADO EMOCIONAL */}
-      <select onChange={(e) => setEstadoEmocional(e.target.value)}>
-        <option value="">Como você está se sentindo?</option>
-        <option value="ansioso">Ansioso</option>
-        <option value="desmotivado">Desmotivado</option>
-        <option value="sem_foco">Sem foco</option>
-      </select>
+        <select onChange={e => setEstadoEmocional(e.target.value)} style={styles.input}>
+          <option value="">Selecione</option>
+          <option value="ansioso">Ansioso</option>
+          <option value="desmotivado">Desmotivado</option>
+          <option value="sem_foco">Sem foco</option>
+        </select>
 
-      <br /><br />
+        <button onClick={salvarDados} style={styles.primary}>
+          Gerar Recomendação Inteligente
+        </button>
+      </div>
 
-      <button onClick={salvarDados}>
-        Gerar recomendação
-      </button>
+      <div style={styles.card}>
+        <h3>🧠 Sua recomendação</h3>
+        <h2>{recomendacao || "..."}</h2>
+      </div>
 
-      <h2>🧠 Recomendação:</h2>
-      <p><strong>{recomendacao}</strong></p>
-
-      <BarChart width={300} height={300} data={grafico}>
-        <XAxis dataKey="trilha" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="total" />
-      </BarChart>
-
-      <h3>Histórico:</h3>
-
-      {dados.map((item, i) => (
-        <p key={i}>
-          {item.trilha} - {item.estado}
-        </p>
-      ))}
+      <div style={styles.card}>
+        <h3>📊 Seu progresso</h3>
+        <BarChart width={300} height={250} data={grafico}>
+          <XAxis dataKey="trilha" />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="total" />
+        </BarChart>
+      </div>
 
     </div>
   );
 }
+
+const styles = {
+  container: {
+    padding: 20,
+    maxWidth: 400,
+    margin: "auto",
+    fontFamily: "Arial"
+  },
+  center: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 100
+  },
+  card: {
+    background: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
+  },
+  input: {
+    width: "100%",
+    padding: 10,
+    marginTop: 10,
+    borderRadius: 8,
+    border: "1px solid #ccc"
+  },
+  primary: {
+    width: "100%",
+    padding: 12,
+    marginTop: 10,
+    background: "#4CAF50",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8
+  },
+  secondary: {
+    width: "100%",
+    padding: 12,
+    marginTop: 10,
+    background: "#eee",
+    border: "none",
+    borderRadius: 8
+  },
+  logout: {
+    marginLeft: 10
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 20
+  },
+  premiumBox: {
+    background: "#ffe082",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    textAlign: "center"
+  }
+};

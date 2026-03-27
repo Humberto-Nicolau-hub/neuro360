@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
@@ -45,26 +46,29 @@ export default function App() {
     setUsuario(null);
   }
 
-  // 💾 SALVAR DADOS
+  // 💾 SALVAR DADOS COM TRILHA ALEATÓRIA
   async function salvarDados() {
     if (!usuario) {
       alert("Faça login primeiro");
       return;
     }
 
+    const trilhas = ["Ansiedade", "Foco", "Autoestima"];
+    const trilhaEscolhida = trilhas[Math.floor(Math.random() * trilhas.length)];
+
     await supabase.from("feedbacks").insert([
       {
         usuario: usuario.email,
-        trilha: "Ansiedade",
-        eficaz: true,
-        comentario: "Teste funcionando"
+        trilha: trilhaEscolhida,
+        eficaz: Math.random() > 0.3, // simulação de eficácia
+        comentario: "Registro automático"
       }
     ]);
 
     buscarDados();
   }
 
-  // 🔍 BUSCAR DADOS (AGORA POR USUÁRIO)
+  // 🔍 BUSCAR DADOS + IA PERSONALIZADA
   async function buscarDados() {
     if (!usuario) return;
 
@@ -73,10 +77,12 @@ export default function App() {
       .select("*")
       .eq("usuario", usuario.email);
 
-    setDados(data || []);
+    const lista = data || [];
+    setDados(lista);
 
+    // 📊 GRÁFICO
     const agrupado = {};
-    (data || []).forEach(item => {
+    lista.forEach(item => {
       if (!agrupado[item.trilha]) {
         agrupado[item.trilha] = 0;
       }
@@ -90,35 +96,49 @@ export default function App() {
 
     setGrafico(formatado);
 
-    // 🧠 RECOMENDAÇÃO
-    let maisUsada = "";
-    let maior = 0;
+    // 🧠 IA PERSONALIZADA (NOVA)
+    let pontuacao = {};
 
-    Object.keys(agrupado).forEach(trilha => {
-      if (agrupado[trilha] > maior) {
-        maior = agrupado[trilha];
-        maisUsada = trilha;
+    lista.forEach(item => {
+      if (!pontuacao[item.trilha]) {
+        pontuacao[item.trilha] = 0;
+      }
+
+      pontuacao[item.trilha] += 1;
+
+      if (item.eficaz) {
+        pontuacao[item.trilha] += 2;
       }
     });
 
-    setRecomendacao(maisUsada);
+    let melhorTrilha = "";
+    let maiorPontuacao = 0;
+
+    Object.keys(pontuacao).forEach(trilha => {
+      if (pontuacao[trilha] > maiorPontuacao) {
+        maiorPontuacao = pontuacao[trilha];
+        melhorTrilha = trilha;
+      }
+    });
+
+    setRecomendacao(melhorTrilha);
   }
 
-  // 🔄 CARREGAR USUÁRIO AO ABRIR
+  // 🔄 CARREGAR USUÁRIO
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUsuario(data.user);
     });
   }, []);
 
-  // 🔄 BUSCAR DADOS QUANDO USUÁRIO EXISTIR
+  // 🔄 BUSCAR DADOS APÓS LOGIN
   useEffect(() => {
     if (usuario) {
       buscarDados();
     }
   }, [usuario]);
 
-  // 🔐 TELA DE LOGIN
+  // 🔐 LOGIN UI
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -154,12 +174,12 @@ export default function App() {
       <br /><br />
 
       <button onClick={salvarDados}>
-        Salvar novo feedback
+        Gerar novo registro inteligente
       </button>
 
       <h2>🧠 Recomendação Inteligente</h2>
       <p>
-        Trilha mais recomendada: <strong>{recomendacao}</strong>
+        Melhor trilha para você: <strong>{recomendacao}</strong>
       </p>
 
       <h2>📊 Gráfico de Trilhas</h2>
@@ -175,7 +195,7 @@ export default function App() {
 
       {dados.map((item, index) => (
         <p key={index}>
-          {item.usuario} - {item.trilha}
+          {item.trilha} - {item.eficaz ? "Eficaz" : "Não eficaz"}
         </p>
       ))}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
@@ -8,6 +7,7 @@ export default function App() {
   const [grafico, setGrafico] = useState([]);
   const [recomendacao, setRecomendacao] = useState("");
   const [usuario, setUsuario] = useState(null);
+  const [limiteAtingido, setLimiteAtingido] = useState(false);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -46,10 +46,15 @@ export default function App() {
     setUsuario(null);
   }
 
-  // 💾 SALVAR DADOS COM TRILHA ALEATÓRIA
+  // 💾 SALVAR DADOS COM BLOQUEIO
   async function salvarDados() {
     if (!usuario) {
       alert("Faça login primeiro");
+      return;
+    }
+
+    if (dados.length >= 5) {
+      setLimiteAtingido(true);
       return;
     }
 
@@ -60,7 +65,7 @@ export default function App() {
       {
         usuario: usuario.email,
         trilha: trilhaEscolhida,
-        eficaz: Math.random() > 0.3, // simulação de eficácia
+        eficaz: Math.random() > 0.3,
         comentario: "Registro automático"
       }
     ]);
@@ -68,7 +73,7 @@ export default function App() {
     buscarDados();
   }
 
-  // 🔍 BUSCAR DADOS + IA PERSONALIZADA
+  // 🔍 BUSCAR DADOS
   async function buscarDados() {
     if (!usuario) return;
 
@@ -80,7 +85,10 @@ export default function App() {
     const lista = data || [];
     setDados(lista);
 
-    // 📊 GRÁFICO
+    if (lista.length >= 5) {
+      setLimiteAtingido(true);
+    }
+
     const agrupado = {};
     lista.forEach(item => {
       if (!agrupado[item.trilha]) {
@@ -96,7 +104,7 @@ export default function App() {
 
     setGrafico(formatado);
 
-    // 🧠 IA PERSONALIZADA (NOVA)
+    // 🧠 IA PERSONALIZADA
     let pontuacao = {};
 
     lista.forEach(item => {
@@ -124,37 +132,27 @@ export default function App() {
     setRecomendacao(melhorTrilha);
   }
 
-  // 🔄 CARREGAR USUÁRIO
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUsuario(data.user);
     });
   }, []);
 
-  // 🔄 BUSCAR DADOS APÓS LOGIN
   useEffect(() => {
     if (usuario) {
       buscarDados();
     }
   }, [usuario]);
 
-  // 🔐 LOGIN UI
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
         <h1>🔐 Login NeuroMapa360</h1>
 
-        <input
-          placeholder="Email"
-          onChange={e => setEmail(e.target.value)}
-        />
+        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
         <br /><br />
 
-        <input
-          type="password"
-          placeholder="Senha"
-          onChange={e => setSenha(e.target.value)}
-        />
+        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
         <br /><br />
 
         <button onClick={login}>Entrar</button>
@@ -163,7 +161,6 @@ export default function App() {
     );
   }
 
-  // 🚀 APP PRINCIPAL
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>🚀 NeuroMapa360</h1>
@@ -172,6 +169,12 @@ export default function App() {
       <button onClick={logout}>Sair</button>
 
       <br /><br />
+
+      {limiteAtingido && (
+        <div style={{ color: "red", marginBottom: "20px" }}>
+          🔒 Você atingiu o limite gratuito. Faça upgrade para continuar.
+        </div>
+      )}
 
       <button onClick={salvarDados}>
         Gerar novo registro inteligente

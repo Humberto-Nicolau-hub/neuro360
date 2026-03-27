@@ -3,44 +3,29 @@ import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
 export default function App() {
+
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
   const [recomendacao, setRecomendacao] = useState("");
   const [usuario, setUsuario] = useState(null);
-  const [limiteAtingido, setLimiteAtingido] = useState(false);
+  const [estadoEmocional, setEstadoEmocional] = useState("");
+  const [premium, setPremium] = useState(false);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  // 🔐 ADMIN
-  const [modoAdmin, setModoAdmin] = useState(false);
-  const [senhaAdmin, setSenhaAdmin] = useState("");
-
   // 🔐 LOGIN
   async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data } = await supabase.auth.signInWithPassword({
       email,
       password: senha
     });
-
-    if (error) {
-      alert("Erro no login");
-    } else {
-      setUsuario(data.user);
-    }
+    setUsuario(data.user);
   }
 
   async function cadastro() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha
-    });
-
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    await supabase.auth.signUp({ email, password: senha });
+    alert("Cadastro realizado!");
   }
 
   async function logout() {
@@ -48,63 +33,47 @@ export default function App() {
     setUsuario(null);
   }
 
-  // 🔐 ACESSAR ADMIN
-  function acessarAdmin() {
-    if (senhaAdmin === "123456") {
-      setModoAdmin(true);
-      buscarTodosDados();
-    } else {
-      alert("Senha incorreta");
-    }
+  // 💰 SIMULAÇÃO DE PAGAMENTO
+  function ativarPremium() {
+    alert("Plano Premium ativado!");
+    setPremium(true);
   }
 
-  // 📊 BUSCAR TODOS OS DADOS (ADMIN)
-  async function buscarTodosDados() {
-    const { data } = await supabase.from("feedbacks").select("*");
-
-    const lista = data || [];
-    setDados(lista);
-
-    const agrupado = {};
-    lista.forEach(item => {
-      if (!agrupado[item.trilha]) {
-        agrupado[item.trilha] = 0;
-      }
-      agrupado[item.trilha]++;
-    });
-
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
-
-    setGrafico(formatado);
+  // 🎯 TRILHAS PERSONALIZADAS
+  function gerarTrilhaPersonalizada() {
+    if (estadoEmocional === "ansioso") return "Respiração e Calma";
+    if (estadoEmocional === "desmotivado") return "Motivação e Energia";
+    if (estadoEmocional === "sem_foco") return "Foco e Clareza";
+    return "Autoconhecimento";
   }
 
+  // 💾 SALVAR
   async function salvarDados() {
+
     if (!usuario) return;
 
-    if (dados.length >= 5 && !modoAdmin) {
-      setLimiteAtingido(true);
+    if (!premium && dados.length >= 5) {
+      alert("🔒 Limite gratuito atingido. Faça upgrade.");
       return;
     }
 
-    const trilhas = ["Ansiedade", "Foco", "Autoestima"];
-    const trilhaEscolhida = trilhas[Math.floor(Math.random() * trilhas.length)];
+    const trilha = gerarTrilhaPersonalizada();
 
     await supabase.from("feedbacks").insert([
       {
         usuario: usuario.email,
-        trilha: trilhaEscolhida,
-        eficaz: Math.random() > 0.3,
-        comentario: "Registro automático"
+        trilha,
+        estado: estadoEmocional,
+        eficaz: Math.random() > 0.3
       }
     ]);
 
     buscarDados();
   }
 
+  // 🔍 BUSCAR + IA
   async function buscarDados() {
+
     if (!usuario) return;
 
     const { data } = await supabase
@@ -115,50 +84,45 @@ export default function App() {
     const lista = data || [];
     setDados(lista);
 
-    if (lista.length >= 5) {
-      setLimiteAtingido(true);
-    }
-
+    // gráfico
     const agrupado = {};
     lista.forEach(item => {
-      if (!agrupado[item.trilha]) {
-        agrupado[item.trilha] = 0;
-      }
-      agrupado[item.trilha]++;
+      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
     });
 
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
+    setGrafico(
+      Object.keys(agrupado).map(k => ({
+        trilha: k,
+        total: agrupado[k]
+      }))
+    );
 
-    setGrafico(formatado);
-
+    // 🧠 IA AVANÇADA
     let pontuacao = {};
 
     lista.forEach(item => {
-      if (!pontuacao[item.trilha]) {
-        pontuacao[item.trilha] = 0;
+
+      pontuacao[item.trilha] = (pontuacao[item.trilha] || 0) + 1;
+
+      if (item.eficaz) pontuacao[item.trilha] += 3;
+
+      if (item.estado === estadoEmocional) {
+        pontuacao[item.trilha] += 4;
       }
 
-      pontuacao[item.trilha] += 1;
-
-      if (item.eficaz) {
-        pontuacao[item.trilha] += 2;
-      }
     });
 
-    let melhorTrilha = "";
-    let maiorPontuacao = 0;
+    let melhor = "";
+    let maior = 0;
 
     Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maiorPontuacao) {
-        maiorPontuacao = pontuacao[trilha];
-        melhorTrilha = trilha;
+      if (pontuacao[trilha] > maior) {
+        maior = pontuacao[trilha];
+        melhor = trilha;
       }
     });
 
-    setRecomendacao(melhorTrilha);
+    setRecomendacao(melhor);
   }
 
   useEffect(() => {
@@ -168,20 +132,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (usuario && !modoAdmin) {
-      buscarDados();
-    }
-  }, [usuario]);
+    if (usuario) buscarDados();
+  }, [usuario, estadoEmocional]);
 
   // 🔐 LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h1>🔐 Login NeuroMapa360</h1>
+        <h1>NeuroMapa360</h1>
 
         <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
         <br /><br />
-
         <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
         <br /><br />
 
@@ -191,71 +152,57 @@ export default function App() {
     );
   }
 
-  // 🔐 ACESSO ADMIN
-  if (!modoAdmin) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-        <h1>🚀 NeuroMapa360</h1>
-
-        <p>Logado como: {usuario.email}</p>
-        <button onClick={logout}>Sair</button>
-
-        <br /><br />
-
-        <input
-          placeholder="Senha Admin"
-          onChange={e => setSenhaAdmin(e.target.value)}
-        />
-        <button onClick={acessarAdmin}>Entrar no Admin</button>
-
-        <br /><br />
-
-        {limiteAtingido && (
-          <div style={{ color: "red" }}>
-            🔒 Limite gratuito atingido
-          </div>
-        )}
-
-        <button onClick={salvarDados}>
-          Gerar novo registro
-        </button>
-
-        <h2>🧠 Recomendação</h2>
-        <p>{recomendacao}</p>
-
-        <BarChart width={300} height={300} data={grafico}>
-          <XAxis dataKey="trilha" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="total" />
-        </BarChart>
-      </div>
-    );
-  }
-
-  // 📊 PAINEL ADMIN
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>📊 Painel Admin NeuroMapa360</h1>
+    <div style={{ textAlign: "center", marginTop: "40px" }}>
 
-      <button onClick={() => setModoAdmin(false)}>Voltar</button>
+      <h1>NeuroMapa360</h1>
 
-      <h2>Total de Registros: {dados.length}</h2>
+      <p>{usuario.email}</p>
+      <button onClick={logout}>Sair</button>
 
-      <BarChart width={400} height={300} data={grafico}>
+      <br /><br />
+
+      {/* 💰 UPGRADE */}
+      {!premium && (
+        <button onClick={ativarPremium}>
+          🔓 Ativar Plano Premium
+        </button>
+      )}
+
+      <br /><br />
+
+      {/* 🧠 ESTADO EMOCIONAL */}
+      <select onChange={(e) => setEstadoEmocional(e.target.value)}>
+        <option value="">Como você está se sentindo?</option>
+        <option value="ansioso">Ansioso</option>
+        <option value="desmotivado">Desmotivado</option>
+        <option value="sem_foco">Sem foco</option>
+      </select>
+
+      <br /><br />
+
+      <button onClick={salvarDados}>
+        Gerar recomendação
+      </button>
+
+      <h2>🧠 Recomendação:</h2>
+      <p><strong>{recomendacao}</strong></p>
+
+      <BarChart width={300} height={300} data={grafico}>
         <XAxis dataKey="trilha" />
         <YAxis />
         <Tooltip />
         <Bar dataKey="total" />
       </BarChart>
 
-      <h2>📋 Todos os Dados:</h2>
+      <h3>Histórico:</h3>
 
-      {dados.map((item, index) => (
-        <p key={index}>
-          {item.usuario} - {item.trilha}
+      {dados.map((item, i) => (
+        <p key={i}>
+          {item.trilha} - {item.estado}
         </p>
       ))}
+
     </div>
   );
 }

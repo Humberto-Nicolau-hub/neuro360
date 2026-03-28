@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-const OPENAI_API_KEY = "SUA_CHAVE_AQUI";
+const OPENAI_API_KEY = "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";
 
 export default function App() {
   const [dados, setDados] = useState([]);

@@ -66,7 +66,7 @@ export default function App() {
   // STRIPE
   // =========================
   function ativarPremium() {
-    window.open("COLE_SEU_LINK_STRIPE_AQUI", "_blank");
+    window.open("https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00"_blank");
   }
 
   // =========================

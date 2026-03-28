@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-const OPENAI_API_KEY = "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";
+const OPENAI_API_KEY = "SUA_CHAVE_AQUI";
 
 export default function App() {
   const [dados, setDados] = useState([]);
@@ -66,7 +66,7 @@ export default function App() {
   // STRIPE
   // =========================
   function ativarPremium() {
-    window.open("https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00"_blank");
+    window.open("COLE_SEU_LINK_STRIPE_AQUI", "_blank");
   }
 
   // =========================

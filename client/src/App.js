@@ -2,26 +2,24 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-export default function App() {
+const OPENAI_API_KEY = "SUA_CHAVE_AQUI";
 
+export default function App() {
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
-  const [recomendacao, setRecomendacao] = useState("");
   const [usuario, setUsuario] = useState(null);
-  const [estadoEmocional, setEstadoEmocional] = useState("");
   const [premium, setPremium] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  // IA
+  const [mensagem, setMensagem] = useState("");
+  const [respostaIA, setRespostaIA] = useState("");
 
+  // =========================
+  // LOGIN
+  // =========================
   async function login() {
-    const { data } = await supabase.auth.signInWithPassword({ email, password: senha });
-    setUsuario(data.user);
-  }
-
-  async function cadastro() {
-    await supabase.auth.signUp({ email, password: senha });
-    alert("Cadastro realizado!");
+    const email = prompt("Digite seu email:");
+    await supabase.auth.signInWithOtp({ email });
   }
 
   async function logout() {
@@ -29,33 +27,58 @@ export default function App() {
     setUsuario(null);
   }
 
-  function ativarPremium() {
-  window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
-}
+  // =========================
+  // IA
+  // =========================
+  async function gerarRespostaIA(textoUsuario) {
+    const resposta = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Você é um especialista em PNL e desenvolvimento emocional. Ajude com clareza, acolhimento e direcionamento prático."
+          },
+          {
+            role: "user",
+            content: textoUsuario
+          }
+        ]
+      })
+    });
 
-  function gerarTrilha() {
-    if (estadoEmocional === "ansioso") return "Respiração e Calma";
-    if (estadoEmocional === "desmotivado") return "Motivação e Energia";
-    if (estadoEmocional === "sem_foco") return "Foco e Clareza";
-    return "Autoconhecimento";
+    const data = await resposta.json();
+    return data.choices[0].message.content;
   }
 
+  async function enviarParaIA() {
+    const resposta = await gerarRespostaIA(mensagem);
+    setRespostaIA(resposta);
+  }
+
+  // =========================
+  // STRIPE
+  // =========================
+  function ativarPremium() {
+    window.open("COLE_SEU_LINK_STRIPE_AQUI", "_blank");
+  }
+
+  // =========================
+  // DADOS
+  // =========================
   async function salvarDados() {
-    if (!usuario) return;
-
-    if (!premium && dados.length >= 5) {
-      alert("🔒 Limite gratuito atingido");
-      return;
-    }
-
-    const trilha = gerarTrilha();
-
     await supabase.from("feedbacks").insert([
       {
         usuario: usuario.email,
-        trilha,
-        estado: estadoEmocional,
-        eficaz: Math.random() > 0.3
+        trilha: "Ansiedade",
+        eficaz: true,
+        comentario: "Teste funcionando"
       }
     ]);
 
@@ -63,184 +86,123 @@ export default function App() {
   }
 
   async function buscarDados() {
-    if (!usuario) return;
-
     const { data } = await supabase
       .from("feedbacks")
       .select("*")
       .eq("usuario", usuario.email);
 
-    const lista = data || [];
-    setDados(lista);
+    setDados(data);
 
     const agrupado = {};
-    lista.forEach(i => {
-      agrupado[i.trilha] = (agrupado[i.trilha] || 0) + 1;
-    });
-
-    setGrafico(
-      Object.keys(agrupado).map(k => ({
-        trilha: k,
-        total: agrupado[k]
-      }))
-    );
-
-    let pontuacao = {};
-
-    lista.forEach(item => {
-      pontuacao[item.trilha] = (pontuacao[item.trilha] || 0) + 1;
-      if (item.eficaz) pontuacao[item.trilha] += 3;
-      if (item.estado === estadoEmocional) pontuacao[item.trilha] += 4;
-    });
-
-    let melhor = "";
-    let maior = 0;
-
-    Object.keys(pontuacao).forEach(t => {
-      if (pontuacao[t] > maior) {
-        maior = pontuacao[t];
-        melhor = t;
+    data.forEach((item) => {
+      if (!agrupado[item.trilha]) {
+        agrupado[item.trilha] = 0;
       }
+      agrupado[item.trilha]++;
     });
 
-    setRecomendacao(melhor);
+    const formatado = Object.keys(agrupado).map((key) => ({
+      trilha: key,
+      total: agrupado[key]
+    }));
+
+    setGrafico(formatado);
+  }
+
+  async function verificarPremium() {
+    const { data } = await supabase
+      .from("feedbacks")
+      .select("premium")
+      .eq("usuario", usuario.email);
+
+    if (data && data.some((item) => item.premium)) {
+      setPremium(true);
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUsuario(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUsuario(data.user);
+    });
   }, []);
 
   useEffect(() => {
-    if (usuario) buscarDados();
-  }, [usuario, estadoEmocional]);
+    if (usuario) {
+      buscarDados();
+      verificarPremium();
+    }
+  }, [usuario]);
 
+  // =========================
+  // TELA
+  // =========================
   if (!usuario) {
     return (
-      <div style={styles.center}>
-        <div style={styles.card}>
-          <h1>🧠 NeuroMapa360</h1>
-          <p>Seu guia inteligente emocional</p>
-
-          <input placeholder="Email" onChange={e => setEmail(e.target.value)} style={styles.input}/>
-          <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} style={styles.input}/>
-
-          <button onClick={login} style={styles.primary}>Entrar</button>
-          <button onClick={cadastro} style={styles.secondary}>Cadastrar</button>
-        </div>
+      <div style={{ textAlign: "center", marginTop: "50px" }}>
+        <h1>🚀 NeuroMapa360</h1>
+        <button onClick={login}>Entrar</button>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h1>🚀 NeuroMapa360</h1>
 
-      <div style={styles.header}>
-        <h2>NeuroMapa360</h2>
-        <div>
-          <span>{usuario.email}</span>
-          <button onClick={logout} style={styles.logout}>Sair</button>
-        </div>
-      </div>
+      <p>Logado como: {usuario.email}</p>
+
+      <button onClick={logout}>Sair</button>
 
       {!premium && (
-        <div style={styles.premiumBox}>
-          <p>🔓 Desbloqueie recomendações ilimitadas</p>
-          <button onClick={ativarPremium} style={styles.primary}>
-            Ativar Premium
-          </button>
+        <div>
+          <h2>🔒 Área Premium</h2>
+          <button onClick={ativarPremium}>Ativar Premium</button>
         </div>
       )}
 
-      <div style={styles.card}>
-        <h3>Como você está se sentindo?</h3>
+      <br />
 
-        <select onChange={e => setEstadoEmocional(e.target.value)} style={styles.input}>
-          <option value="">Selecione</option>
-          <option value="ansioso">Ansioso</option>
-          <option value="desmotivado">Desmotivado</option>
-          <option value="sem_foco">Sem foco</option>
-        </select>
+      <button onClick={salvarDados}>Salvar novo feedback</button>
 
-        <button onClick={salvarDados} style={styles.primary}>
-          Gerar Recomendação Inteligente
-        </button>
-      </div>
+      <h2>📊 Gráfico de Trilhas</h2>
 
-      <div style={styles.card}>
-        <h3>🧠 Sua recomendação</h3>
-        <h2>{recomendacao || "..."}</h2>
-      </div>
+      <BarChart width={300} height={300} data={grafico}>
+        <XAxis dataKey="trilha" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="total" />
+      </BarChart>
 
-      <div style={styles.card}>
-        <h3>📊 Seu progresso</h3>
-        <BarChart width={300} height={250} data={grafico}>
-          <XAxis dataKey="trilha" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="total" />
-        </BarChart>
-      </div>
+      <h2>📋 Feedbacks:</h2>
 
+      {dados.map((item, index) => (
+        <p key={index}>
+          {item.usuario} - {item.trilha}
+        </p>
+      ))}
+
+      {/* ================= IA ================= */}
+
+      {premium && (
+        <div style={{ marginTop: "40px" }}>
+          <h2>🧠 IA Inteligente</h2>
+
+          <input
+            placeholder="Como você está se sentindo?"
+            value={mensagem}
+            onChange={(e) => setMensagem(e.target.value)}
+          />
+
+          <br />
+          <br />
+
+          <button onClick={enviarParaIA}>
+            Gerar orientação
+          </button>
+
+          <p style={{ marginTop: "20px" }}>{respostaIA}</p>
+        </div>
+      )}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: 20,
-    maxWidth: 400,
-    margin: "auto",
-    fontFamily: "Arial"
-  },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    marginTop: 100
-  },
-  card: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc"
-  },
-  primary: {
-    width: "100%",
-    padding: 12,
-    marginTop: 10,
-    background: "#4CAF50",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8
-  },
-  secondary: {
-    width: "100%",
-    padding: 12,
-    marginTop: 10,
-    background: "#eee",
-    border: "none",
-    borderRadius: 8
-  },
-  logout: {
-    marginLeft: 10
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 20
-  },
-  premiumBox: {
-    background: "#ffe082",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    textAlign: "center"
-  }
-};

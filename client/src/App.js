@@ -30,9 +30,8 @@ export default function App() {
   }
 
   function ativarPremium() {
-    alert("Plano Premium ativado!");
-    setPremium(true);
-  }
+  window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
+}
 
   function gerarTrilha() {
     if (estadoEmocional === "ansioso") return "Respiração e Calma";

@@ -14,14 +14,31 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
+  // LOGIN
   async function login() {
-    const { data } = await supabase.auth.signInWithPassword({ email, password: senha });
-    setUsuario(data.user);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    if (error) {
+      alert("Erro no login");
+    } else {
+      setUsuario(data.user);
+    }
   }
 
   async function cadastro() {
-    await supabase.auth.signUp({ email, password: senha });
-    alert("Cadastro realizado!");
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: senha
+    });
+
+    if (error) {
+      alert("Erro ao cadastrar");
+    } else {
+      alert("Cadastro realizado!");
+    }
   }
 
   async function logout() {
@@ -29,10 +46,12 @@ export default function App() {
     setUsuario(null);
   }
 
+  // STRIPE
   function ativarPremium() {
-  window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
-}
+    window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
+  }
 
+  // TRILHAS
   function gerarTrilha() {
     if (estadoEmocional === "ansioso") return "Respiração e Calma";
     if (estadoEmocional === "desmotivado") return "Motivação e Energia";
@@ -40,6 +59,7 @@ export default function App() {
     return "Autoconhecimento";
   }
 
+  // SALVAR DADOS
   async function salvarDados() {
     if (!usuario) return;
 
@@ -62,6 +82,7 @@ export default function App() {
     buscarDados();
   }
 
+  // BUSCAR DADOS
   async function buscarDados() {
     if (!usuario) return;
 
@@ -74,17 +95,18 @@ export default function App() {
     setDados(lista);
 
     const agrupado = {};
-    lista.forEach(i => {
-      agrupado[i.trilha] = (agrupado[i.trilha] || 0) + 1;
+    lista.forEach(item => {
+      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
     });
 
-    setGrafico(
-      Object.keys(agrupado).map(k => ({
-        trilha: k,
-        total: agrupado[k]
-      }))
-    );
+    const formatado = Object.keys(agrupado).map(key => ({
+      trilha: key,
+      total: agrupado[key]
+    }));
 
+    setGrafico(formatado);
+
+    // IA interna simples (sem API)
     let pontuacao = {};
 
     lista.forEach(item => {
@@ -96,151 +118,120 @@ export default function App() {
     let melhor = "";
     let maior = 0;
 
-    Object.keys(pontuacao).forEach(t => {
-      if (pontuacao[t] > maior) {
-        maior = pontuacao[t];
-        melhor = t;
+    Object.keys(pontuacao).forEach(trilha => {
+      if (pontuacao[trilha] > maior) {
+        maior = pontuacao[trilha];
+        melhor = trilha;
       }
     });
 
     setRecomendacao(melhor);
   }
 
+  // VERIFICAR PREMIUM
+  async function verificarPremium() {
+    const { data } = await supabase
+      .from("feedbacks")
+      .select("premium")
+      .eq("usuario", usuario.email);
+
+    if (data && data.some(item => item.premium)) {
+      setPremium(true);
+    }
+  }
+
+  // INICIAR
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUsuario(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUsuario(data.user);
+    });
   }, []);
 
   useEffect(() => {
-    if (usuario) buscarDados();
+    if (usuario) {
+      buscarDados();
+      verificarPremium();
+    }
   }, [usuario, estadoEmocional]);
 
+  // TELA LOGIN
   if (!usuario) {
     return (
-      <div style={styles.center}>
-        <div style={styles.card}>
-          <h1>🧠 NeuroMapa360</h1>
-          <p>Seu guia inteligente emocional</p>
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h1>🧠 NeuroMapa360</h1>
 
-          <input placeholder="Email" onChange={e => setEmail(e.target.value)} style={styles.input}/>
-          <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} style={styles.input}/>
+        <input
+          placeholder="Email"
+          onChange={e => setEmail(e.target.value)}
+        />
+        <br /><br />
 
-          <button onClick={login} style={styles.primary}>Entrar</button>
-          <button onClick={cadastro} style={styles.secondary}>Cadastrar</button>
-        </div>
+        <input
+          type="password"
+          placeholder="Senha"
+          onChange={e => setSenha(e.target.value)}
+        />
+        <br /><br />
+
+        <button onClick={login}>Entrar</button>
+        <button onClick={cadastro}>Cadastrar</button>
       </div>
     );
   }
 
+  // APP PRINCIPAL
   return (
-    <div style={styles.container}>
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
 
-      <div style={styles.header}>
-        <h2>NeuroMapa360</h2>
-        <div>
-          <span>{usuario.email}</span>
-          <button onClick={logout} style={styles.logout}>Sair</button>
-        </div>
-      </div>
+      <h1>🚀 NeuroMapa360</h1>
+
+      <p>Logado como: {usuario.email}</p>
+      <button onClick={logout}>Sair</button>
 
       {!premium && (
-        <div style={styles.premiumBox}>
-          <p>🔓 Desbloqueie recomendações ilimitadas</p>
-          <button onClick={ativarPremium} style={styles.primary}>
+        <div style={{ marginTop: "20px" }}>
+          <h3>🔒 Área Premium</h3>
+          <button onClick={ativarPremium}>
             Ativar Premium
           </button>
         </div>
       )}
 
-      <div style={styles.card}>
-        <h3>Como você está se sentindo?</h3>
+      <br />
 
-        <select onChange={e => setEstadoEmocional(e.target.value)} style={styles.input}>
-          <option value="">Selecione</option>
-          <option value="ansioso">Ansioso</option>
-          <option value="desmotivado">Desmotivado</option>
-          <option value="sem_foco">Sem foco</option>
-        </select>
+      <select onChange={e => setEstadoEmocional(e.target.value)}>
+        <option value="">Como você está se sentindo?</option>
+        <option value="ansioso">Ansioso</option>
+        <option value="desmotivado">Desmotivado</option>
+        <option value="sem_foco">Sem foco</option>
+      </select>
 
-        <button onClick={salvarDados} style={styles.primary}>
-          Gerar Recomendação Inteligente
-        </button>
-      </div>
+      <br /><br />
 
-      <div style={styles.card}>
-        <h3>🧠 Sua recomendação</h3>
-        <h2>{recomendacao || "..."}</h2>
-      </div>
+      <button onClick={salvarDados}>
+        Gerar Recomendação Inteligente
+      </button>
 
-      <div style={styles.card}>
-        <h3>📊 Seu progresso</h3>
-        <BarChart width={300} height={250} data={grafico}>
-          <XAxis dataKey="trilha" />
-          <YAxis />
-          <Tooltip />
-          <Bar dataKey="total" />
-        </BarChart>
-      </div>
+      <h2>🧠 Recomendação:</h2>
+      <p>{recomendacao}</p>
+
+      <h2>📊 Gráfico</h2>
+
+      <BarChart width={300} height={250} data={grafico}>
+        <XAxis dataKey="trilha" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="total" />
+      </BarChart>
+
+      <h3>Histórico:</h3>
+
+      {dados.map((item, index) => (
+        <p key={index}>
+          {item.trilha} - {item.estado}
+        </p>
+      ))}
 
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: 20,
-    maxWidth: 400,
-    margin: "auto",
-    fontFamily: "Arial"
-  },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    marginTop: 100
-  },
-  card: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc"
-  },
-  primary: {
-    width: "100%",
-    padding: 12,
-    marginTop: 10,
-    background: "#4CAF50",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8
-  },
-  secondary: {
-    width: "100%",
-    padding: 12,
-    marginTop: 10,
-    background: "#eee",
-    border: "none",
-    borderRadius: 8
-  },
-  logout: {
-    marginLeft: 10
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 20
-  },
-  premiumBox: {
-    background: "#ffe082",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    textAlign: "center"
-  }
-};

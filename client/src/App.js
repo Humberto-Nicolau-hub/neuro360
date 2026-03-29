@@ -13,6 +13,8 @@ export default function App() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mensagemIA, setMensagemIA] = useState("");
+const [respostaIA, setRespostaIA] = useState("");
 
   // LOGIN
   async function login() {
@@ -139,6 +141,28 @@ export default function App() {
       setPremium(true);
     }
   }
+  function gerarRespostaSimples(texto) {
+  if (!texto) return "Me diga como você está se sentindo.";
+
+  if (texto.includes("ansioso")) {
+    return "Respire fundo. Foque no presente. Você está seguro.";
+  }
+
+  if (texto.includes("triste")) {
+    return "Tudo bem sentir isso. Permita-se sentir, mas não se prenda.";
+  }
+
+  if (texto.includes("perdido")) {
+    return "Vamos dar um passo de cada vez. Qual pequena ação você pode tomar agora?";
+  }
+
+  return "Entendo você. Continue se observando e buscando clareza.";
+}
+
+function enviarParaIA() {
+  const resposta = gerarRespostaSimples(mensagemIA.toLowerCase());
+  setRespostaIA(resposta);
+}
 
   // INICIAR
   useEffect(() => {
@@ -231,6 +255,25 @@ export default function App() {
           {item.trilha} - {item.estado}
         </p>
       ))}
+        <hr />
+
+<h2>🤖 Assistente Inteligente</h2>
+
+<input
+  placeholder="Descreva como você está se sentindo..."
+  value={mensagemIA}
+  onChange={(e) => setMensagemIA(e.target.value)}
+/>
+
+<br /><br />
+
+<button onClick={enviarParaIA}>
+  Gerar orientação
+</button>
+
+<p style={{ marginTop: "20px" }}>
+  {respostaIA}
+</p>
 
     </div>
   );

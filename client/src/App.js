@@ -14,20 +14,16 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagemIA, setMensagemIA] = useState("");
-const [respostaIA, setRespostaIA] = useState("");
+  const [respostaIA, setRespostaIA] = useState("");
 
-  // LOGIN
   async function login() {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: senha
     });
 
-    if (error) {
-      alert("Erro no login");
-    } else {
-      setUsuario(data.user);
-    }
+    if (error) alert("Erro no login");
+    else setUsuario(data.user);
   }
 
   async function cadastro() {
@@ -36,11 +32,8 @@ const [respostaIA, setRespostaIA] = useState("");
       password: senha
     });
 
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    if (error) alert("Erro ao cadastrar");
+    else alert("Cadastro realizado!");
   }
 
   async function logout() {
@@ -48,12 +41,10 @@ const [respostaIA, setRespostaIA] = useState("");
     setUsuario(null);
   }
 
-  // STRIPE
   function ativarPremium() {
     window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
   }
 
-  // TRILHAS
   function gerarTrilha() {
     if (estadoEmocional === "ansioso") return "Respiração e Calma";
     if (estadoEmocional === "desmotivado") return "Motivação e Energia";
@@ -61,7 +52,6 @@ const [respostaIA, setRespostaIA] = useState("");
     return "Autoconhecimento";
   }
 
-  // SALVAR DADOS
   async function salvarDados() {
     if (!usuario) return;
 
@@ -84,7 +74,6 @@ const [respostaIA, setRespostaIA] = useState("");
     buscarDados();
   }
 
-  // BUSCAR DADOS
   async function buscarDados() {
     if (!usuario) return;
 
@@ -101,14 +90,13 @@ const [respostaIA, setRespostaIA] = useState("");
       agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
     });
 
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
+    setGrafico(
+      Object.keys(agrupado).map(key => ({
+        trilha: key,
+        total: agrupado[key]
+      }))
+    );
 
-    setGrafico(formatado);
-
-    // IA interna simples (sem API)
     let pontuacao = {};
 
     lista.forEach(item => {
@@ -120,17 +108,16 @@ const [respostaIA, setRespostaIA] = useState("");
     let melhor = "";
     let maior = 0;
 
-    Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maior) {
-        maior = pontuacao[trilha];
-        melhor = trilha;
+    Object.keys(pontuacao).forEach(t => {
+      if (pontuacao[t] > maior) {
+        maior = pontuacao[t];
+        melhor = t;
       }
     });
 
     setRecomendacao(melhor);
   }
 
-  // VERIFICAR PREMIUM
   async function verificarPremium() {
     const { data } = await supabase
       .from("feedbacks")
@@ -141,30 +128,28 @@ const [respostaIA, setRespostaIA] = useState("");
       setPremium(true);
     }
   }
-  function gerarRespostaSimples(texto) {
-  if (!texto) return "Me diga como você está se sentindo.";
 
-  if (texto.includes("ansioso")) {
-    return "Respire fundo. Foque no presente. Você está seguro.";
+  // IA SIMPLES (SEGURA)
+  function gerarRespostaIA(texto) {
+    if (!texto) return "Me diga como você está se sentindo.";
+
+    if (texto.includes("ansioso"))
+      return "Respire fundo. Foque no presente. Você está seguro.";
+
+    if (texto.includes("triste"))
+      return "Permita-se sentir, mas não se prenda a isso.";
+
+    if (texto.includes("perdido"))
+      return "Dê um pequeno passo agora. Clareza vem com ação.";
+
+    return "Estou aqui com você. Continue se observando.";
   }
 
-  if (texto.includes("triste")) {
-    return "Tudo bem sentir isso. Permita-se sentir, mas não se prenda.";
+  function enviarParaIA() {
+    const resposta = gerarRespostaIA(mensagemIA.toLowerCase());
+    setRespostaIA(resposta);
   }
 
-  if (texto.includes("perdido")) {
-    return "Vamos dar um passo de cada vez. Qual pequena ação você pode tomar agora?";
-  }
-
-  return "Entendo você. Continue se observando e buscando clareza.";
-}
-
-function enviarParaIA() {
-  const resposta = gerarRespostaSimples(mensagemIA.toLowerCase());
-  setRespostaIA(resposta);
-}
-
-  // INICIAR
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUsuario(data.user);
@@ -178,23 +163,15 @@ function enviarParaIA() {
     }
   }, [usuario, estadoEmocional]);
 
-  // TELA LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
         <h1>🧠 NeuroMapa360</h1>
 
-        <input
-          placeholder="Email"
-          onChange={e => setEmail(e.target.value)}
-        />
+        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
         <br /><br />
 
-        <input
-          type="password"
-          placeholder="Senha"
-          onChange={e => setSenha(e.target.value)}
-        />
+        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
         <br /><br />
 
         <button onClick={login}>Entrar</button>
@@ -203,21 +180,18 @@ function enviarParaIA() {
     );
   }
 
-  // APP PRINCIPAL
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
 
       <h1>🚀 NeuroMapa360</h1>
 
-      <p>Logado como: {usuario.email}</p>
+      <p>{usuario.email}</p>
       <button onClick={logout}>Sair</button>
 
       {!premium && (
-        <div style={{ marginTop: "20px" }}>
+        <div>
           <h3>🔒 Área Premium</h3>
-          <button onClick={ativarPremium}>
-            Ativar Premium
-          </button>
+          <button onClick={ativarPremium}>Ativar Premium</button>
         </div>
       )}
 
@@ -233,13 +207,10 @@ function enviarParaIA() {
       <br /><br />
 
       <button onClick={salvarDados}>
-        Gerar Recomendação Inteligente
+        Gerar Recomendação
       </button>
 
-      <h2>🧠 Recomendação:</h2>
-      <p>{recomendacao}</p>
-
-      <h2>📊 Gráfico</h2>
+      <h2>{recomendacao}</h2>
 
       <BarChart width={300} height={250} data={grafico}>
         <XAxis dataKey="trilha" />
@@ -248,32 +219,23 @@ function enviarParaIA() {
         <Bar dataKey="total" />
       </BarChart>
 
-      <h3>Histórico:</h3>
+      <hr />
 
-      {dados.map((item, index) => (
-        <p key={index}>
-          {item.trilha} - {item.estado}
-        </p>
-      ))}
-        <hr />
+      <h2>🤖 Assistente</h2>
 
-<h2>🤖 Assistente Inteligente</h2>
+      <input
+        placeholder="Digite como você está..."
+        value={mensagemIA}
+        onChange={(e) => setMensagemIA(e.target.value)}
+      />
 
-<input
-  placeholder="Descreva como você está se sentindo..."
-  value={mensagemIA}
-  onChange={(e) => setMensagemIA(e.target.value)}
-/>
+      <br /><br />
 
-<br /><br />
+      <button onClick={enviarParaIA}>
+        Gerar resposta
+      </button>
 
-<button onClick={enviarParaIA}>
-  Gerar orientação
-</button>
-
-<p style={{ marginTop: "20px" }}>
-  {respostaIA}
-</p>
+      <p>{respostaIA}</p>
 
     </div>
   );

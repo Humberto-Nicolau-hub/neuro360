@@ -54,12 +54,10 @@ await supabase.auth.signOut();
 setUsuario(null);
 }
 
-// STRIPE
 function ativarPremium() {
 window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
 }
 
-// TRILHAS
 function gerarTrilha() {
 if (estadoEmocional === "ansioso") return "Respiração e Calma";
 if (estadoEmocional === "desmotivado") return "Motivação e Energia";
@@ -67,7 +65,6 @@ if (estadoEmocional === "sem_foco") return "Foco e Clareza";
 return "Autoconhecimento";
 }
 
-// SALVAR DADOS
 async function salvarDados() {
 if (!usuario) return;
 
@@ -93,7 +90,6 @@ buscarDados();
 
 }
 
-// BUSCAR DADOS
 async function buscarDados() {
 if (!usuario) return;
 
@@ -141,10 +137,10 @@ setRecomendacao(melhor);
 
 }
 
-// IA VIA BACKEND (Render)
+// 🔥 IA VIA BACKEND (CORRIGIDO)
 async function gerarRespostaIA(textoUsuario) {
 try {
-const resposta = await fetch("https://render.com/docs/web-services#port-binding", {
+const resposta = await fetch("https://SEU-BACKEND.onrender.com/chat", {
 method: "POST",
 headers: {
 "Content-Type": "application/json"
@@ -170,7 +166,6 @@ const resposta = await gerarRespostaIA(mensagemIA);
 setRespostaIA(resposta);
 }
 
-// INICIAR
 useEffect(() => {
 supabase.auth.getUser().then(({ data }) => {
 setUsuario(data.user);
@@ -183,7 +178,6 @@ buscarDados();
 }
 }, [usuario, estadoEmocional]);
 
-// LOGIN
 if (!usuario) {
 return (
 <div style={{ textAlign: "center", marginTop: "100px" }}> <h1>🧠 NeuroMapa360</h1>
@@ -204,11 +198,9 @@ return (
 }
 
 return (
-<div style={{ textAlign: "center", marginTop: "50px" }}>
+<div style={{ textAlign: "center", marginTop: "50px" }}> <h1>🚀 NeuroMapa360</h1>
 
 ```
-  <h1>🚀 NeuroMapa360</h1>
-
   <p>Logado como: {usuario.email}</p>
   <button onClick={logout}>Sair</button>
 
@@ -266,7 +258,6 @@ return (
   <p style={{ marginTop: "20px" }}>
     {respostaIA}
   </p>
-
 </div>
 ```
 

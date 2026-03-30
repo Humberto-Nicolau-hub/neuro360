@@ -139,17 +139,26 @@ setRecomendacao(melhor);
 
 // 🔥 IA VIA BACKEND (CORRIGIDO)
 async function gerarRespostaIA(textoUsuario) {
-try {
-const resposta = await fetch("https://neuro360-tkyx.onrender.com", {
-method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-mensagem: textoUsuario,
-email: usuario?.email
-})
-});
+  try {
+    const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem: textoUsuario,
+        email: usuario?.email
+      })
+    });
+
+    const data = await resposta.json();
+    return data.resposta || "Sem resposta da IA.";
+
+  } catch (error) {
+    console.error(error);
+    return "Erro ao conectar com o servidor.";
+  }
+}
 
 ```
   const data = await resposta.json();

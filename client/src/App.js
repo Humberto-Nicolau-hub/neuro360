@@ -140,7 +140,7 @@ setRecomendacao(melhor);
 // 🔥 IA VIA BACKEND (CORRIGIDO)
 async function gerarRespostaIA(textoUsuario) {
 try {
-const resposta = await fetch("https://SEU-BACKEND.onrender.com/chat", {
+const resposta = await fetch("https://neuro360-tkyx.onrender.com", {
 method: "POST",
 headers: {
 "Content-Type": "application/json"

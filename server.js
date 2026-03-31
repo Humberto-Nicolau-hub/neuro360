@@ -7,18 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 CONFIGURAÇÃO SUPABASE (SUBSTITUA COM OS SEUS DADOS)
+// 🔥 CONFIGURE AQUI SEU SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_secret_0Bw5qBFgIWB3fLgFc_lNlA_x2XmaHbQ"
+  "sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K"
 );
 
-// TESTE DE VIDA
+// TESTE
 app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA COM MEMÓRIA REAL + PADRÃO EMOCIONAL
+// 🧠 IA PREDITIVA + MEMÓRIA REAL
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -27,18 +27,27 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // 🔥 BUSCAR HISTÓRICO REAL NO SUPABASE
+    // 🔥 BUSCAR HISTÓRICO REAL DO USUÁRIO
     const { data: historico } = await supabase
       .from("feedbacks")
       .select("*")
       .eq("usuario", email);
 
     let contagem = {};
+    let tendenciaNegativa = 0;
 
     (historico || []).forEach(item => {
       contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+
+      if (
+        item.estado === "ansioso" ||
+        item.estado === "desmotivado"
+      ) {
+        tendenciaNegativa++;
+      }
     });
 
+    // 🔍 PADRÃO DOMINANTE
     let padrao = "neutro";
 
     if (Object.keys(contagem).length > 0) {
@@ -47,43 +56,60 @@ app.post("/chat", async (req, res) => {
       );
     }
 
-    // 🔍 DETECÇÃO DO ESTADO ATUAL
+    // 🔍 ESTADO ATUAL (MENSAGEM)
     const texto = mensagem.toLowerCase();
 
-    let estadoAtual = "neutro";
+    let atual = "neutro";
 
-    if (texto.includes("ansioso")) estadoAtual = "ansioso";
-    else if (texto.includes("cansado")) estadoAtual = "cansado";
-    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
-    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
+    if (texto.includes("ansioso")) atual = "ansioso";
+    else if (texto.includes("cansado")) atual = "cansado";
+    else if (texto.includes("desmotivado")) atual = "desmotivado";
+    else if (texto.includes("sem foco")) atual = "sem_foco";
 
-    // 🧠 IA ADAPTATIVA
-    let resposta = "";
+    // 🔮 PREVISÃO
+    let previsao = "";
 
-    if (estadoAtual === "ansioso") {
-      if (padrao === "ansioso") {
-        resposta = "Percebo que a ansiedade está se repetindo no seu histórico. Isso indica um padrão emocional importante. Vamos trabalhar isso com mais profundidade agora.";
-      } else {
-        resposta = "Você está ansioso neste momento. Vamos desacelerar com uma respiração profunda.";
-      }
-    } 
-    else if (estadoAtual === "desmotivado") {
-      resposta = "Você já apresentou momentos semelhantes antes. A chave aqui é ação pequena e consistente.";
-    } 
-    else if (estadoAtual === "cansado") {
-      resposta = "Seu corpo está pedindo pausa. Isso não é fraqueza, é inteligência do sistema.";
-    } 
-    else if (estadoAtual === "sem_foco") {
-      resposta = "Sua mente está dispersa. Escolha uma única prioridade agora.";
-    } 
-    else {
-      resposta = "Estou analisando seu padrão emocional. Me conte mais para te orientar melhor.";
+    if (tendenciaNegativa >= 3) {
+      previsao = "Alta chance de repetição de padrão emocional negativo";
     }
 
+    // 🎯 RECOMENDAÇÃO AUTOMÁTICA
+    let recomendacao = "";
+
+    if (padrao === "ansioso") {
+      recomendacao = "Respiração guiada + reduzir estímulos";
+    } 
+    else if (padrao === "desmotivado") {
+      recomendacao = "Ação de 5 minutos + micro metas";
+    } 
+    else if (padrao === "sem_foco") {
+      recomendacao = "Técnica Pomodoro (25 minutos de foco)";
+    } 
+    else {
+      recomendacao = "Autoconhecimento e observação emocional";
+    }
+
+    // 🧠 RESPOSTA INTELIGENTE
+    let resposta = `
+🧠 Análise do seu padrão:
+
+• Padrão dominante: ${padrao}
+• Estado atual: ${atual}
+
+${previsao ? "⚠️ Tendência detectada: " + previsao : ""}
+
+🎯 Recomendação prática:
+${recomendacao}
+
+Você não está apenas reagindo ao momento — está construindo padrões. Vamos ajustar isso juntos.
+`;
+
     res.json({
-      resposta: resposta,
-      padrao_detectado: padrao,
-      estado_atual: estadoAtual
+      resposta,
+      padrao,
+      atual,
+      previsao,
+      recomendacao
     });
 
   } catch (error) {

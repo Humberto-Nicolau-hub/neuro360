@@ -1,18 +1,17 @@
-import express from "express";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
 
-// 🔥 MIDDLEWARES
 app.use(cors());
 app.use(express.json());
 
-// 🚀 ROTA PRINCIPAL (TESTE)
+// TESTE
 app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA COM PERFIL EMOCIONAL (FASE 2)
+// 🧠 IA COM MEMÓRIA SIMULADA + PADRÃO
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -23,70 +22,58 @@ app.post("/chat", async (req, res) => {
 
     const texto = mensagem.toLowerCase();
 
-    // 🔍 DETECÇÃO DE PADRÃO EMOCIONAL
-    let perfil = "neutro";
+    // 🔍 DETECÇÃO ATUAL
+    let perfilAtual = "neutro";
 
-    if (
-      texto.includes("ansioso") ||
-      texto.includes("ansiedade") ||
-      texto.includes("preocupado")
-    ) {
-      perfil = "ansiedade";
-    } else if (
-      texto.includes("cansado") ||
-      texto.includes("esgotado") ||
-      texto.includes("sem energia")
-    ) {
-      perfil = "fadiga";
-    } else if (
-      texto.includes("desmotivado") ||
-      texto.includes("sem vontade") ||
-      texto.includes("triste")
-    ) {
-      perfil = "baixa motivação";
-    } else if (
-      texto.includes("confuso") ||
-      texto.includes("perdido") ||
-      texto.includes("sem foco")
-    ) {
-      perfil = "falta de clareza";
+    if (texto.includes("ansioso")) perfilAtual = "ansiedade";
+    else if (texto.includes("cansado")) perfilAtual = "fadiga";
+    else if (texto.includes("desmotivado")) perfilAtual = "baixa motivação";
+    else if (texto.includes("sem foco")) perfilAtual = "falta de clareza";
+
+    // 🧠 MEMÓRIA (simulação inteligente)
+    let historicoFrequente = "neutro";
+
+    if (perfilAtual === "ansiedade") {
+      historicoFrequente = "ansiedade";
     }
 
-    // 🧠 RESPOSTA ADAPTATIVA (PNL BASE)
+    // 🎯 RESPOSTA ADAPTATIVA
     let respostaIA = "";
 
-    if (perfil === "ansiedade") {
-      respostaIA = `Percebo sinais de ansiedade. Vamos reduzir o ritmo agora. Inspire profundamente por 4 segundos, segure 4 e solte em 6. Repita por 1 minuto. Você já está retomando o controle.`;
+    if (perfilAtual === "ansiedade") {
+      if (historicoFrequente === "ansiedade") {
+        respostaIA = `Percebo que a ansiedade está se repetindo. Isso indica um padrão emocional. Vamos trabalhar isso com respiração consciente e redução de estímulos.`;
+      } else {
+        respostaIA = `Você está com sinais de ansiedade agora. Vamos desacelerar com respiração profunda.`;
+      }
     } 
-    else if (perfil === "fadiga") {
-      respostaIA = `Seu corpo e mente estão pedindo recuperação. Isso não é fraqueza, é sinal de sobrecarga. Faça uma pausa consciente agora. Pequenos descansos geram grandes resultados.`;
+    else if (perfilAtual === "fadiga") {
+      respostaIA = `Seu sistema está pedindo recuperação. Isso não é fraqueza, é inteligência do corpo. Faça uma pausa estratégica.`;
     } 
-    else if (perfil === "baixa motivação") {
-      respostaIA = `Motivação não vem antes da ação. Comece pequeno: 5 minutos de ação agora. Isso quebra o ciclo e ativa seu estado interno.`;
+    else if (perfilAtual === "baixa motivação") {
+      respostaIA = `A motivação nasce da ação. Comece com 5 minutos agora. Isso já muda seu estado interno.`;
     } 
-    else if (perfil === "falta de clareza") {
-      respostaIA = `Sua mente está sobrecarregada. Vamos simplificar: escolha apenas UMA prioridade agora. Clareza vem da ação focada.`;
+    else if (perfilAtual === "falta de clareza") {
+      respostaIA = `Sua mente está sobrecarregada. Escolha apenas uma prioridade agora. Clareza vem da ação focada.`;
     } 
     else {
-      respostaIA = `Estou aqui com você. Me conta mais sobre o que está sentindo para eu te orientar de forma mais precisa.`;
+      respostaIA = `Estou aqui com você. Me conte mais para eu te orientar com mais precisão.`;
     }
 
-    // 📊 RESPOSTA FINAL
     res.json({
       resposta: respostaIA,
-      perfil_detectado: perfil,
-      usuario: email || "anonimo"
+      perfil_detectado: perfilAtual,
+      padrao_detectado: historicoFrequente
     });
 
   } catch (error) {
-    console.error("Erro na IA:", error);
-    res.status(500).json({ erro: "Erro interno no servidor" });
+    console.error("Erro IA:", error);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// 🚀 PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log("Servidor rodando na porta " + PORT);
 });

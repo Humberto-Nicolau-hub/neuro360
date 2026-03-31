@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 SUPABASE CONFIG (já com suas chaves)
+// 🔐 SUPABASE (SEGURO - usando ENV)
 const supabase = createClient(
   process.https://qodzwxgabuadsnplcscl.supabase.co,
   process.sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K
@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA QUE APRENDE COM FEEDBACK (FASE 6)
+// 🧠 IA ADAPTATIVA
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -27,7 +27,6 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // 🔍 BUSCAR HISTÓRICO DO USUÁRIO
     const { data: historico, error } = await supabase
       .from("feedbacks")
       .select("*")
@@ -38,7 +37,6 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ erro: "Erro ao buscar histórico" });
     }
 
-    // 🧠 APRENDIZADO POR PONTUAÇÃO
     let pontuacao = {};
 
     (historico || []).forEach(item => {
@@ -46,22 +44,16 @@ app.post("/chat", async (req, res) => {
         pontuacao[item.trilha] = 0;
       }
 
-      // Base
       pontuacao[item.trilha] += 1;
 
-      // 🔥 Funcionou → aumenta muito peso
       if (item.eficaz) pontuacao[item.trilha] += 5;
-
-      // ❌ Não funcionou → penaliza
       else pontuacao[item.trilha] -= 2;
 
-      // 🎯 Contexto atual
       if (mensagem.toLowerCase().includes(item.estado)) {
         pontuacao[item.trilha] += 3;
       }
     });
 
-    // 🧠 ESCOLHER MELHOR TRILHA
     let melhorTrilha = "Autoconhecimento";
     let maior = -Infinity;
 
@@ -72,7 +64,6 @@ app.post("/chat", async (req, res) => {
       }
     });
 
-    // 🔍 DETECTAR ESTADO ATUAL
     const texto = mensagem.toLowerCase();
 
     let estadoAtual = "neutro";
@@ -82,23 +73,18 @@ app.post("/chat", async (req, res) => {
     else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
     else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
 
-    // 🧠 RESPOSTA FINAL INTELIGENTE
     const resposta = `
 🧠 NeuroMapa360 — IA Adaptativa
 
 📍 Estado atual: ${estadoAtual}
 
-📊 Com base no seu histórico REAL:
-A melhor trilha para você agora é:
-
+📊 Com base no seu histórico:
 👉 ${melhorTrilha}
-
-💡 Essa recomendação foi ajustada automaticamente com base no que realmente funcionou para você.
 
 Quanto mais você usa, mais inteligente a IA fica.
 `;
 
-    return res.json({
+    res.json({
       resposta,
       trilha: melhorTrilha,
       estado: estadoAtual
@@ -106,7 +92,7 @@ Quanto mais você usa, mais inteligente a IA fica.
 
   } catch (error) {
     console.error("Erro geral:", error);
-    return res.status(500).json({ erro: "Erro interno do servidor" });
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 

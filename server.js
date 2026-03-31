@@ -1,77 +1,98 @@
 const express = require("express");
 const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// TESTE
+// 🔥 CONFIGURAÇÃO SUPABASE (SUBSTITUA COM OS SEUS DADOS)
+const supabase = createClient(
+  "https://qodzwxgabuadsnplcscl.supabase.co",
+  "sb_secret_0Bw5qBFgIWB3fLgFc_lNlA_x2XmaHbQ"
+);
+
+// TESTE DE VIDA
 app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA COM MEMÓRIA SIMULADA + PADRÃO
+// 🧠 IA COM MEMÓRIA REAL + PADRÃO EMOCIONAL
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
-    if (!mensagem) {
-      return res.status(400).json({ erro: "Mensagem vazia" });
+    if (!mensagem || !email) {
+      return res.status(400).json({ erro: "Dados inválidos" });
     }
 
+    // 🔥 BUSCAR HISTÓRICO REAL NO SUPABASE
+    const { data: historico } = await supabase
+      .from("feedbacks")
+      .select("*")
+      .eq("usuario", email);
+
+    let contagem = {};
+
+    (historico || []).forEach(item => {
+      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+    });
+
+    let padrao = "neutro";
+
+    if (Object.keys(contagem).length > 0) {
+      padrao = Object.keys(contagem).reduce((a, b) =>
+        contagem[a] > contagem[b] ? a : b
+      );
+    }
+
+    // 🔍 DETECÇÃO DO ESTADO ATUAL
     const texto = mensagem.toLowerCase();
 
-    // 🔍 DETECÇÃO ATUAL
-    let perfilAtual = "neutro";
+    let estadoAtual = "neutro";
 
-    if (texto.includes("ansioso")) perfilAtual = "ansiedade";
-    else if (texto.includes("cansado")) perfilAtual = "fadiga";
-    else if (texto.includes("desmotivado")) perfilAtual = "baixa motivação";
-    else if (texto.includes("sem foco")) perfilAtual = "falta de clareza";
+    if (texto.includes("ansioso")) estadoAtual = "ansioso";
+    else if (texto.includes("cansado")) estadoAtual = "cansado";
+    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
+    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
 
-    // 🧠 MEMÓRIA (simulação inteligente)
-    let historicoFrequente = "neutro";
+    // 🧠 IA ADAPTATIVA
+    let resposta = "";
 
-    if (perfilAtual === "ansiedade") {
-      historicoFrequente = "ansiedade";
-    }
-
-    // 🎯 RESPOSTA ADAPTATIVA
-    let respostaIA = "";
-
-    if (perfilAtual === "ansiedade") {
-      if (historicoFrequente === "ansiedade") {
-        respostaIA = `Percebo que a ansiedade está se repetindo. Isso indica um padrão emocional. Vamos trabalhar isso com respiração consciente e redução de estímulos.`;
+    if (estadoAtual === "ansioso") {
+      if (padrao === "ansioso") {
+        resposta = "Percebo que a ansiedade está se repetindo no seu histórico. Isso indica um padrão emocional importante. Vamos trabalhar isso com mais profundidade agora.";
       } else {
-        respostaIA = `Você está com sinais de ansiedade agora. Vamos desacelerar com respiração profunda.`;
+        resposta = "Você está ansioso neste momento. Vamos desacelerar com uma respiração profunda.";
       }
     } 
-    else if (perfilAtual === "fadiga") {
-      respostaIA = `Seu sistema está pedindo recuperação. Isso não é fraqueza, é inteligência do corpo. Faça uma pausa estratégica.`;
+    else if (estadoAtual === "desmotivado") {
+      resposta = "Você já apresentou momentos semelhantes antes. A chave aqui é ação pequena e consistente.";
     } 
-    else if (perfilAtual === "baixa motivação") {
-      respostaIA = `A motivação nasce da ação. Comece com 5 minutos agora. Isso já muda seu estado interno.`;
+    else if (estadoAtual === "cansado") {
+      resposta = "Seu corpo está pedindo pausa. Isso não é fraqueza, é inteligência do sistema.";
     } 
-    else if (perfilAtual === "falta de clareza") {
-      respostaIA = `Sua mente está sobrecarregada. Escolha apenas uma prioridade agora. Clareza vem da ação focada.`;
+    else if (estadoAtual === "sem_foco") {
+      resposta = "Sua mente está dispersa. Escolha uma única prioridade agora.";
     } 
     else {
-      respostaIA = `Estou aqui com você. Me conte mais para eu te orientar com mais precisão.`;
+      resposta = "Estou analisando seu padrão emocional. Me conte mais para te orientar melhor.";
     }
 
     res.json({
-      resposta: respostaIA,
-      perfil_detectado: perfilAtual,
-      padrao_detectado: historicoFrequente
+      resposta: resposta,
+      padrao_detectado: padrao,
+      estado_atual: estadoAtual
     });
 
   } catch (error) {
-    console.error("Erro IA:", error);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro no backend:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
+// 🚀 PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

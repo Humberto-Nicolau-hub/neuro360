@@ -13,29 +13,9 @@ export default function App() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
-
-  // 🔥 ANALISAR PADRÃO EMOCIONAL
-  function analisarPadraoEmocional(dados) {
-    if (!dados.length) return "neutro";
-
-    let contagem = {};
-
-    dados.forEach(item => {
-      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
-    });
-
-    let dominante = Object.keys(contagem).reduce((a, b) =>
-      contagem[a] > contagem[b] ? a : b
-    );
-
-    if (contagem[dominante] >= 3) {
-      return dominante;
-    }
-
-    return "variado";
-  }
 
   // LOGIN
   async function login() {
@@ -44,8 +24,11 @@ export default function App() {
       password: senha
     });
 
-    if (error) alert("Erro no login");
-    else setUsuario(data.user);
+    if (error) {
+      alert("Erro no login");
+    } else {
+      setUsuario(data.user);
+    }
   }
 
   async function cadastro() {
@@ -54,8 +37,11 @@ export default function App() {
       password: senha
     });
 
-    if (error) alert("Erro ao cadastrar");
-    else alert("Cadastro realizado!");
+    if (error) {
+      alert("Erro ao cadastrar");
+    } else {
+      alert("Cadastro realizado!");
+    }
   }
 
   async function logout() {
@@ -63,10 +49,14 @@ export default function App() {
     setUsuario(null);
   }
 
+  function ativarPremium() {
+    window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
+  }
+
   function gerarTrilha() {
-    if (estadoEmocional === "ansioso") return "Respiração e Calma";
-    if (estadoEmocional === "desmotivado") return "Motivação e Energia";
-    if (estadoEmocional === "sem_foco") return "Foco e Clareza";
+    if (estadoEmocional === "ansioso") return "Ansiedade";
+    if (estadoEmocional === "desmotivado") return "Autoestima";
+    if (estadoEmocional === "sem_foco") return "Foco";
     return "Autoconhecimento";
   }
 
@@ -136,50 +126,29 @@ export default function App() {
     setRecomendacao(melhor);
   }
 
-  // 🔥 MEMÓRIA DA IA
-  async function buscarMemoriaIA() {
-    if (!usuario) return [];
-
-    const { data } = await supabase
-      .from("memoria_ia")
-      .select("*")
-      .eq("usuario", usuario.email)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    return data || [];
-  }
-
-  // 🔥 IA ADAPTATIVA
+  // IA VIA BACKEND (CORRETO)
   async function gerarRespostaIA(textoUsuario) {
     try {
-      const memoria = await buscarMemoriaIA();
-
-      const contexto = memoria
-        .map(item => "Usuário: " + item.mensagem + " IA: " + item.resposta)
-        .join(" ");
-
-      const padrao = analisarPadraoEmocional(dados);
-
       const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          mensagem:
-            "Perfil emocional: " + padrao +
-            ". Contexto: " + contexto +
-            ". Mensagem atual: " + textoUsuario,
+          mensagem: textoUsuario,
           email: usuario?.email
         })
       });
+
+      if (!resposta.ok) {
+        throw new Error("Erro HTTP: " + resposta.status);
+      }
 
       const data = await resposta.json();
       return data.resposta || "Sem resposta da IA.";
 
     } catch (error) {
-      console.error(error);
+      console.error("Erro IA:", error);
       return "Erro ao conectar com o servidor.";
     }
   }
@@ -196,9 +165,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (usuario) buscarDados();
+    if (usuario) {
+      buscarDados();
+    }
   }, [usuario, estadoEmocional]);
 
+  // TELA LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -216,17 +188,20 @@ export default function App() {
     );
   }
 
+  // TELA PRINCIPAL
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>🚀 NeuroMapa360</h1>
 
       <p>Logado como: {usuario.email}</p>
-      <button onClick={logout}>Sair</button>
-    <br /><br />
 
-<button onClick={() => window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank")}>
-  🔓 Ativar Premium
-</button>
+      <button onClick={logout}>Sair</button>
+
+      <br /><br />
+
+      <button onClick={ativarPremium}>
+        🔓 Ativar Premium
+      </button>
 
       <br /><br />
 

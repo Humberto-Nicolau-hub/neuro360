@@ -222,6 +222,11 @@ export default function App() {
 
       <p>Logado como: {usuario.email}</p>
       <button onClick={logout}>Sair</button>
+    <br /><br />
+
+<button onClick={() => window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank")}>
+  🔓 Ativar Premium
+</button>
 
       <br /><br />
 

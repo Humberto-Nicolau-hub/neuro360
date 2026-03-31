@@ -16,35 +16,25 @@ export default function App() {
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
 
-  // 🔥 NOVO — SCORE EMOCIONAL
+  // 🔥 SCORE
   const [scoreEmocional, setScoreEmocional] = useState(50);
   const [nivel, setNivel] = useState("Neutro");
 
+  // 🔥 STREAK
+  const [streak, setStreak] = useState(0);
+
   // LOGIN
   async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data } = await supabase.auth.signInWithPassword({
       email,
       password: senha
     });
-
-    if (error) {
-      alert("Erro no login");
-    } else {
-      setUsuario(data.user);
-    }
+    setUsuario(data.user);
   }
 
   async function cadastro() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha
-    });
-
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    await supabase.auth.signUp({ email, password: senha });
+    alert("Cadastro realizado!");
   }
 
   async function logout() {
@@ -54,9 +44,38 @@ export default function App() {
 
   function gerarTrilha() {
     if (estadoEmocional === "ansioso") return "Ansiedade";
-    if (estadoEmocional === "desmotivado") return "Autoestima";
+    if (estadoEmocional === "desmotivado") return "Motivação";
     if (estadoEmocional === "sem_foco") return "Foco";
     return "Autoconhecimento";
+  }
+
+  // 🔥 STREAK
+  function atualizarStreak() {
+    const hoje = new Date().toDateString();
+    const ultima = localStorage.getItem("ultimaAtividade");
+    let streakAtual = parseInt(localStorage.getItem("streak")) || 0;
+
+    if (!ultima) {
+      streakAtual = 1;
+    } 
+    else if (ultima === hoje) {
+      // mantém
+    } 
+    else {
+      const ontem = new Date();
+      ontem.setDate(ontem.getDate() - 1);
+
+      if (new Date(ultima).toDateString() === ontem.toDateString()) {
+        streakAtual += 1;
+      } else {
+        streakAtual = 1;
+      }
+    }
+
+    localStorage.setItem("ultimaAtividade", hoje);
+    localStorage.setItem("streak", streakAtual);
+
+    setStreak(streakAtual);
   }
 
   async function salvarDados() {
@@ -73,6 +92,7 @@ export default function App() {
       }
     ]);
 
+    atualizarStreak(); // 🔥
     buscarDados();
   }
 
@@ -99,30 +119,17 @@ export default function App() {
 
     setGrafico(formatado);
 
-    let pontuacao = {};
-
-    lista.forEach(item => {
-      pontuacao[item.trilha] = (pontuacao[item.trilha] || 0) + 1;
-      if (item.eficaz) pontuacao[item.trilha] += 3;
-      if (item.estado === estadoEmocional) pontuacao[item.trilha] += 4;
-    });
-
     let melhor = "";
-    let maior = 0;
-
-    Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maior) {
-        maior = pontuacao[trilha];
-        melhor = trilha;
-      }
-    });
+    if (lista.length > 0) {
+      melhor = lista[lista.length - 1].trilha;
+    }
 
     setRecomendacao(melhor);
 
-    // 🔥 CALCULAR SCORE
     calcularScore(lista);
   }
 
+  // 🔥 SCORE
   function calcularScore(dados) {
     let score = 50;
 
@@ -161,10 +168,10 @@ export default function App() {
       });
 
       const data = await resposta.json();
-      return data.resposta || "Sem resposta da IA.";
+      return data.resposta;
 
-    } catch (error) {
-      return "Erro ao conectar com o servidor.";
+    } catch {
+      return "Erro ao conectar com IA";
     }
   }
 
@@ -174,20 +181,21 @@ export default function App() {
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUsuario(data.user);
-    });
+    supabase.auth.getUser().then(({ data }) => setUsuario(data.user));
   }, []);
 
   useEffect(() => {
-    if (usuario) {
-      buscarDados();
-    }
+    const streakSalvo = localStorage.getItem("streak");
+    if (streakSalvo) setStreak(parseInt(streakSalvo));
+  }, []);
+
+  useEffect(() => {
+    if (usuario) buscarDados();
   }, [usuario, estadoEmocional]);
 
   if (!usuario) {
     return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
+      <div style={{ textAlign: "center", marginTop: 100 }}>
         <h1>🧠 NeuroMapa360</h1>
 
         <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
@@ -203,10 +211,10 @@ export default function App() {
   }
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
+    <div style={{ textAlign: "center", marginTop: 50 }}>
       <h1>🚀 NeuroMapa360</h1>
 
-      <p>Logado como: {usuario.email}</p>
+      <p>{usuario.email}</p>
       <button onClick={logout}>Sair</button>
 
       <br /><br />
@@ -221,18 +229,19 @@ export default function App() {
       <br /><br />
 
       <button onClick={salvarDados}>
-        Gerar Recomendação Inteligente
+        Gerar Recomendação
       </button>
 
-      <h2>🧠 Recomendação:</h2>
-      <p>{recomendacao}</p>
+      <h2>{recomendacao}</h2>
 
-      {/* 🔥 SCORE EMOCIONAL */}
+      {/* 🔥 SCORE */}
       <h2>📈 Evolução Emocional</h2>
       <p>Score: {scoreEmocional}/100</p>
       <p>Nível: {nivel}</p>
 
-      <h2>📊 Gráfico</h2>
+      {/* 🔥 STREAK */}
+      <h2>🔥 Sequência</h2>
+      <p>{streak} dias seguidos</p>
 
       <BarChart width={300} height={250} data={grafico}>
         <XAxis dataKey="trilha" />
@@ -241,33 +250,23 @@ export default function App() {
         <Bar dataKey="total" />
       </BarChart>
 
-      <h3>Histórico:</h3>
-
-      {dados.map((item, index) => (
-        <p key={index}>
-          {item.trilha} - {item.estado}
-        </p>
-      ))}
-
       <hr />
 
-      <h2>🤖 Assistente Inteligente</h2>
+      <h2>🤖 Assistente</h2>
 
       <input
-        placeholder="Descreva como você está se sentindo..."
         value={mensagemIA}
         onChange={(e) => setMensagemIA(e.target.value)}
+        placeholder="Como você está se sentindo?"
       />
 
       <br /><br />
 
       <button onClick={enviarParaIA}>
-        Gerar orientação
+        Falar com IA
       </button>
 
-      <p style={{ marginTop: "20px" }}>
-        {respostaIA}
-      </p>
+      <p>{respostaIA}</p>
     </div>
   );
 }

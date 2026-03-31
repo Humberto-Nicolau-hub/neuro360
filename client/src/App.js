@@ -13,35 +13,20 @@ export default function App() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
 
-  // LOGIN
   async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data } = await supabase.auth.signInWithPassword({
       email,
       password: senha
     });
-
-    if (error) {
-      alert("Erro no login");
-    } else {
-      setUsuario(data.user);
-    }
+    setUsuario(data.user);
   }
 
   async function cadastro() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha
-    });
-
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    await supabase.auth.signUp({ email, password: senha });
+    alert("Cadastro realizado!");
   }
 
   async function logout() {
@@ -54,8 +39,8 @@ export default function App() {
   }
 
   function gerarTrilha() {
-    if (estadoEmocional === "ansioso") return "Ansiedade";
-    if (estadoEmocional === "desmotivado") return "Autoestima";
+    if (estadoEmocional === "ansioso") return "Respiração";
+    if (estadoEmocional === "desmotivado") return "Motivação";
     if (estadoEmocional === "sem_foco") return "Foco";
     return "Autoconhecimento";
   }
@@ -93,40 +78,22 @@ export default function App() {
     const lista = data || [];
     setDados(lista);
 
-    const agrupado = {};
-    lista.forEach(item => {
-      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
-    });
-
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
+    // 📊 EVOLUÇÃO EMOCIONAL
+    const evolucao = lista.map((item, index) => ({
+      passo: index + 1,
+      valor: item.eficaz ? 10 : 4
     }));
 
-    setGrafico(formatado);
-
-    let pontuacao = {};
-
-    lista.forEach(item => {
-      pontuacao[item.trilha] = (pontuacao[item.trilha] || 0) + 1;
-      if (item.eficaz) pontuacao[item.trilha] += 3;
-      if (item.estado === estadoEmocional) pontuacao[item.trilha] += 4;
-    });
+    setGrafico(evolucao);
 
     let melhor = "";
-    let maior = 0;
-
-    Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maior) {
-        maior = pontuacao[trilha];
-        melhor = trilha;
-      }
-    });
+    if (lista.length > 0) {
+      melhor = lista[lista.length - 1].trilha;
+    }
 
     setRecomendacao(melhor);
   }
 
-  // IA VIA BACKEND (CORRETO)
   async function gerarRespostaIA(textoUsuario) {
     try {
       const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
@@ -140,16 +107,11 @@ export default function App() {
         })
       });
 
-      if (!resposta.ok) {
-        throw new Error("Erro HTTP: " + resposta.status);
-      }
-
       const data = await resposta.json();
-      return data.resposta || "Sem resposta da IA.";
+      return data.resposta;
 
     } catch (error) {
-      console.error("Erro IA:", error);
-      return "Erro ao conectar com o servidor.";
+      return "Erro ao conectar com IA.";
     }
   }
 
@@ -159,42 +121,32 @@ export default function App() {
   }
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUsuario(data.user);
-    });
+    supabase.auth.getUser().then(({ data }) => setUsuario(data.user));
   }, []);
 
   useEffect(() => {
-    if (usuario) {
-      buscarDados();
-    }
+    if (usuario) buscarDados();
   }, [usuario, estadoEmocional]);
 
-  // TELA LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
         <h1>🧠 NeuroMapa360</h1>
-
         <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
         <br /><br />
-
         <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
         <br /><br />
-
         <button onClick={login}>Entrar</button>
         <button onClick={cadastro}>Cadastrar</button>
       </div>
     );
   }
 
-  // TELA PRINCIPAL
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>🚀 NeuroMapa360</h1>
 
-      <p>Logado como: {usuario.email}</p>
-
+      <p>{usuario.email}</p>
       <button onClick={logout}>Sair</button>
 
       <br /><br />
@@ -215,35 +167,24 @@ export default function App() {
       <br /><br />
 
       <button onClick={salvarDados}>
-        Gerar Recomendação Inteligente
+        Gerar Recomendação
       </button>
 
-      <h2>🧠 Recomendação:</h2>
-      <p>{recomendacao}</p>
-
-      <h2>📊 Gráfico</h2>
+      <h2>{recomendacao}</h2>
 
       <BarChart width={300} height={250} data={grafico}>
-        <XAxis dataKey="trilha" />
+        <XAxis dataKey="passo" />
         <YAxis />
         <Tooltip />
-        <Bar dataKey="total" />
+        <Bar dataKey="valor" />
       </BarChart>
-
-      <h3>Histórico:</h3>
-
-      {dados.map((item, index) => (
-        <p key={index}>
-          {item.trilha} - {item.estado}
-        </p>
-      ))}
 
       <hr />
 
-      <h2>🤖 Assistente Inteligente</h2>
+      <h2>🤖 Assistente</h2>
 
       <input
-        placeholder="Descreva como você está se sentindo..."
+        placeholder="Digite como está se sentindo"
         value={mensagemIA}
         onChange={(e) => setMensagemIA(e.target.value)}
       />
@@ -251,12 +192,10 @@ export default function App() {
       <br /><br />
 
       <button onClick={enviarParaIA}>
-        Gerar orientação
+        Falar com IA
       </button>
 
-      <p style={{ marginTop: "20px" }}>
-        {respostaIA}
-      </p>
+      <p>{respostaIA}</p>
     </div>
   );
 }

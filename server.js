@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 CONFIGURE AQUI SEU SUPABASE
+// 🔥 SUPABASE CONFIG (já com suas chaves)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K"
@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA PREDITIVA + MEMÓRIA REAL
+// 🧠 IA QUE APRENDE COM FEEDBACK (FASE 6)
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -27,94 +27,86 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    // 🔥 BUSCAR HISTÓRICO REAL DO USUÁRIO
-    const { data: historico } = await supabase
+    // 🔍 BUSCAR HISTÓRICO DO USUÁRIO
+    const { data: historico, error } = await supabase
       .from("feedbacks")
       .select("*")
       .eq("usuario", email);
 
-    let contagem = {};
-    let tendenciaNegativa = 0;
+    if (error) {
+      console.error("Erro Supabase:", error);
+      return res.status(500).json({ erro: "Erro ao buscar histórico" });
+    }
+
+    // 🧠 APRENDIZADO POR PONTUAÇÃO
+    let pontuacao = {};
 
     (historico || []).forEach(item => {
-      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+      if (!pontuacao[item.trilha]) {
+        pontuacao[item.trilha] = 0;
+      }
 
-      if (
-        item.estado === "ansioso" ||
-        item.estado === "desmotivado"
-      ) {
-        tendenciaNegativa++;
+      // Base
+      pontuacao[item.trilha] += 1;
+
+      // 🔥 Funcionou → aumenta muito peso
+      if (item.eficaz) pontuacao[item.trilha] += 5;
+
+      // ❌ Não funcionou → penaliza
+      else pontuacao[item.trilha] -= 2;
+
+      // 🎯 Contexto atual
+      if (mensagem.toLowerCase().includes(item.estado)) {
+        pontuacao[item.trilha] += 3;
       }
     });
 
-    // 🔍 PADRÃO DOMINANTE
-    let padrao = "neutro";
+    // 🧠 ESCOLHER MELHOR TRILHA
+    let melhorTrilha = "Autoconhecimento";
+    let maior = -Infinity;
 
-    if (Object.keys(contagem).length > 0) {
-      padrao = Object.keys(contagem).reduce((a, b) =>
-        contagem[a] > contagem[b] ? a : b
-      );
-    }
+    Object.keys(pontuacao).forEach(trilha => {
+      if (pontuacao[trilha] > maior) {
+        maior = pontuacao[trilha];
+        melhorTrilha = trilha;
+      }
+    });
 
-    // 🔍 ESTADO ATUAL (MENSAGEM)
+    // 🔍 DETECTAR ESTADO ATUAL
     const texto = mensagem.toLowerCase();
 
-    let atual = "neutro";
+    let estadoAtual = "neutro";
 
-    if (texto.includes("ansioso")) atual = "ansioso";
-    else if (texto.includes("cansado")) atual = "cansado";
-    else if (texto.includes("desmotivado")) atual = "desmotivado";
-    else if (texto.includes("sem foco")) atual = "sem_foco";
+    if (texto.includes("ansioso")) estadoAtual = "ansioso";
+    else if (texto.includes("cansado")) estadoAtual = "cansado";
+    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
+    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
 
-    // 🔮 PREVISÃO
-    let previsao = "";
+    // 🧠 RESPOSTA FINAL INTELIGENTE
+    const resposta = `
+🧠 NeuroMapa360 — IA Adaptativa
 
-    if (tendenciaNegativa >= 3) {
-      previsao = "Alta chance de repetição de padrão emocional negativo";
-    }
+📍 Estado atual: ${estadoAtual}
 
-    // 🎯 RECOMENDAÇÃO AUTOMÁTICA
-    let recomendacao = "";
+📊 Com base no seu histórico REAL:
+A melhor trilha para você agora é:
 
-    if (padrao === "ansioso") {
-      recomendacao = "Respiração guiada + reduzir estímulos";
-    } 
-    else if (padrao === "desmotivado") {
-      recomendacao = "Ação de 5 minutos + micro metas";
-    } 
-    else if (padrao === "sem_foco") {
-      recomendacao = "Técnica Pomodoro (25 minutos de foco)";
-    } 
-    else {
-      recomendacao = "Autoconhecimento e observação emocional";
-    }
+👉 ${melhorTrilha}
 
-    // 🧠 RESPOSTA INTELIGENTE
-    let resposta = `
-🧠 Análise do seu padrão:
+💡 Essa recomendação foi ajustada automaticamente com base no que realmente funcionou para você.
 
-• Padrão dominante: ${padrao}
-• Estado atual: ${atual}
-
-${previsao ? "⚠️ Tendência detectada: " + previsao : ""}
-
-🎯 Recomendação prática:
-${recomendacao}
-
-Você não está apenas reagindo ao momento — está construindo padrões. Vamos ajustar isso juntos.
+Quanto mais você usa, mais inteligente a IA fica.
 `;
 
-    res.json({
+    return res.json({
       resposta,
-      padrao,
-      atual,
-      previsao,
-      recomendacao
+      trilha: melhorTrilha,
+      estado: estadoAtual
     });
 
   } catch (error) {
-    console.error("Erro no backend:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    console.error("Erro geral:", error);
+    return res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 

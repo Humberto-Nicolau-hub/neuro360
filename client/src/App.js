@@ -23,6 +23,9 @@ export default function App() {
   // 🔥 STREAK
   const [streak, setStreak] = useState(0);
 
+  // 🔥 CONQUISTAS
+  const [conquistas, setConquistas] = useState([]);
+
   // LOGIN
   async function login() {
     const { data } = await supabase.auth.signInWithPassword({
@@ -57,11 +60,9 @@ export default function App() {
 
     if (!ultima) {
       streakAtual = 1;
-    } 
-    else if (ultima === hoje) {
+    } else if (ultima === hoje) {
       // mantém
-    } 
-    else {
+    } else {
       const ontem = new Date();
       ontem.setDate(ontem.getDate() - 1);
 
@@ -92,7 +93,7 @@ export default function App() {
       }
     ]);
 
-    atualizarStreak(); // 🔥
+    atualizarStreak();
     buscarDados();
   }
 
@@ -127,6 +128,7 @@ export default function App() {
     setRecomendacao(melhor);
 
     calcularScore(lista);
+    verificarConquistas(lista);
   }
 
   // 🔥 SCORE
@@ -152,6 +154,23 @@ export default function App() {
 
     setScoreEmocional(score);
     setNivel(nivelAtual);
+  }
+
+  // 🔥 CONQUISTAS
+  function verificarConquistas(lista) {
+    let novas = [];
+
+    if (lista.length >= 1) novas.push("🚀 Primeiro passo");
+    if (lista.length >= 5) novas.push("🔥 Consistência inicial");
+    if (lista.length >= 10) novas.push("🏆 Persistência");
+
+    if (streak >= 3) novas.push("📅 3 dias seguidos");
+    if (streak >= 7) novas.push("💪 1 semana firme");
+
+    if (scoreEmocional >= 70) novas.push("🌟 Evoluindo emocionalmente");
+    if (scoreEmocional >= 85) novas.push("🧠 Alta performance emocional");
+
+    setConquistas(novas);
   }
 
   async function gerarRespostaIA(textoUsuario) {
@@ -234,14 +253,18 @@ export default function App() {
 
       <h2>{recomendacao}</h2>
 
-      {/* 🔥 SCORE */}
       <h2>📈 Evolução Emocional</h2>
       <p>Score: {scoreEmocional}/100</p>
       <p>Nível: {nivel}</p>
 
-      {/* 🔥 STREAK */}
       <h2>🔥 Sequência</h2>
       <p>{streak} dias seguidos</p>
+
+      <h2>🏆 Conquistas</h2>
+      {conquistas.length === 0 && <p>Nenhuma ainda</p>}
+      {conquistas.map((c, i) => (
+        <p key={i}>{c}</p>
+      ))}
 
       <BarChart width={300} height={250} data={grafico}>
         <XAxis dataKey="trilha" />

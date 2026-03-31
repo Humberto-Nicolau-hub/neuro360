@@ -170,18 +170,9 @@ const memoria = await buscarMemoriaIA();
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      mensagem: `
-```
-
-Contexto anterior:
-${contexto}
-
-Mensagem atual:
-${textoUsuario}
-`,
-email: usuario?.email
+  mensagem: "Contexto anterior: " + contexto + " Mensagem atual: " + textoUsuario,
+  email: usuario?.email
 })
-});
 
 ```
   const data = await resposta.json();
@@ -196,19 +187,32 @@ email: usuario?.email
 }
 
 // 🔥 ENVIAR + SALVAR MEMÓRIA
-async function enviarParaIA() {
-const resposta = await gerarRespostaIA(mensagemIA);
-setRespostaIA(resposta);
+async function gerarRespostaIA(textoUsuario) {
+  try {
+    const memoria = await buscarMemoriaIA();
 
-```
-if (usuario) {
-  await supabase.from("memoria_ia").insert([
-    {
-      usuario: usuario.email,
-      mensagem: mensagemIA,
-      resposta: resposta
-    }
-  ]);
+    const contexto = memoria.map(item =>
+      "Usuário: " + item.mensagem + " IA: " + item.resposta
+    ).join(" ");
+
+    const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem: "Contexto anterior: " + contexto + " Mensagem atual: " + textoUsuario,
+        email: usuario?.email
+      })
+    });
+
+    const data = await resposta.json();
+    return data.resposta || "Sem resposta da IA.";
+
+  } catch (error) {
+    console.error(error);
+    return "Erro ao conectar com o servidor.";
+  }
 }
 ```
 

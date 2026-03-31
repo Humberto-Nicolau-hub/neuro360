@@ -9,8 +9,8 @@ app.use(express.json());
 
 // 🔥 SUPABASE CONFIG (já com suas chaves)
 const supabase = createClient(
-  "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K"
+  process.https://qodzwxgabuadsnplcscl.supabase.co,
+  process.sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K
 );
 
 // TESTE

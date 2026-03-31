@@ -1,15 +1,17 @@
-import express from "express";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// TESTE DE VIDA
 app.get("/", (req, res) => {
   res.send("Neuro360 backend rodando 🚀");
 });
 
+// ROTA DA IA
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -18,8 +20,7 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Mensagem vazia" });
     }
 
-    // SIMULA IA (enquanto não conecta OpenAI real)
-    const respostaIA = `Olá ${email || "usuário"}, entendi que você disse: "${mensagem}". Vamos trabalhar isso com foco e clareza.`;
+    const respostaIA = `Olá ${email || "usuário"}, entendi que você disse: "${mensagem}". Vamos trabalhar isso com foco, clareza e direção.`;
 
     res.json({ resposta: respostaIA });
 

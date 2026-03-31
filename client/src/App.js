@@ -16,6 +16,27 @@ export default function App() {
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
 
+  // 🔥 ANALISAR PADRÃO EMOCIONAL
+  function analisarPadraoEmocional(dados) {
+    if (!dados.length) return "neutro";
+
+    let contagem = {};
+
+    dados.forEach(item => {
+      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+    });
+
+    let dominante = Object.keys(contagem).reduce((a, b) =>
+      contagem[a] > contagem[b] ? a : b
+    );
+
+    if (contagem[dominante] >= 3) {
+      return dominante;
+    }
+
+    return "variado";
+  }
+
   // LOGIN
   async function login() {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -23,11 +44,8 @@ export default function App() {
       password: senha
     });
 
-    if (error) {
-      alert("Erro no login");
-    } else {
-      setUsuario(data.user);
-    }
+    if (error) alert("Erro no login");
+    else setUsuario(data.user);
   }
 
   async function cadastro() {
@@ -36,11 +54,8 @@ export default function App() {
       password: senha
     });
 
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    if (error) alert("Erro ao cadastrar");
+    else alert("Cadastro realizado!");
   }
 
   async function logout() {
@@ -135,7 +150,7 @@ export default function App() {
     return data || [];
   }
 
-  // 🔥 IA COM MEMÓRIA (CORRIGIDA)
+  // 🔥 IA ADAPTATIVA
   async function gerarRespostaIA(textoUsuario) {
     try {
       const memoria = await buscarMemoriaIA();
@@ -144,13 +159,18 @@ export default function App() {
         .map(item => "Usuário: " + item.mensagem + " IA: " + item.resposta)
         .join(" ");
 
+      const padrao = analisarPadraoEmocional(dados);
+
       const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          mensagem: "Contexto anterior: " + contexto + " Mensagem atual: " + textoUsuario,
+          mensagem:
+            "Perfil emocional: " + padrao +
+            ". Contexto: " + contexto +
+            ". Mensagem atual: " + textoUsuario,
           email: usuario?.email
         })
       });
@@ -176,9 +196,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (usuario) {
-      buscarDados();
-    }
+    if (usuario) buscarDados();
   }, [usuario, estadoEmocional]);
 
   if (!usuario) {

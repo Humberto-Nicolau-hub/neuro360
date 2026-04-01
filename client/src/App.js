@@ -43,19 +43,24 @@ export default function App() {
 
   // IA
   async function enviarParaIA() {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        mensagem: mensagemIA,
-        email: usuario.email
-      })
-    });
+    try {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          mensagem: mensagemIA,
+          email: usuario.email
+        })
+      });
 
-    const data = await res.json();
-    setRespostaIA(data.resposta);
+      const data = await res.json();
+      setRespostaIA(data.resposta);
+
+    } catch (error) {
+      setRespostaIA("Erro ao conectar com a IA.");
+    }
   }
 
   // BUSCAR DADOS
@@ -91,7 +96,7 @@ export default function App() {
     if (usuario) buscarDados();
   }, [usuario]);
 
-  // 🔐 TELA LOGIN
+  // LOGIN SCREEN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -109,7 +114,7 @@ export default function App() {
     );
   }
 
-  // 🚀 DASHBOARD
+  // DASHBOARD
   return (
     <div style={{ maxWidth: "700px", margin: "auto", textAlign: "center" }}>
 
@@ -120,7 +125,6 @@ export default function App() {
 
       <hr />
 
-      {/* INPUT */}
       <h3>Como você está se sentindo?</h3>
 
       <select onChange={e => setEstado(e.target.value)}>
@@ -143,14 +147,12 @@ export default function App() {
 
       <button onClick={enviarParaIA}>Falar com IA</button>
 
-      {/* 🧠 RESPOSTA */}
       {respostaIA && (
         <div style={{
           marginTop: "20px",
           padding: "15px",
           border: "1px solid #ccc",
-          borderRadius: "10px",
-          background: "#f9f9f9"
+          borderRadius: "10px"
         }}>
           <h3>🧠 Resposta da IA</h3>
           <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
@@ -159,7 +161,6 @@ export default function App() {
 
       <hr />
 
-      {/* 📊 GRÁFICO */}
       <h3>📊 Evolução</h3>
 
       <BarChart width={400} height={250} data={grafico}>

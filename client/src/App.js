@@ -7,6 +7,7 @@ const supabase = createClient(
 );
 
 function App() {
+
   const [usuario, setUsuario] = useState({ email: "contatobetaoofertas@gmail.com" });
 
   const [estado, setEstado] = useState("");
@@ -19,7 +20,10 @@ function App() {
   const [streak, setStreak] = useState(0);
   const [foco, setFoco] = useState("");
 
-  // 🔥 NOVAS EMOÇÕES (EXPANSÃO)
+  // ⭐ PREMIUM
+  const [premium, setPremium] = useState(false);
+
+  // 🔥 EMOÇÕES EXPANDIDAS
   const opcoesEmocionais = [
     "Ansioso",
     "Desmotivado",
@@ -50,7 +54,6 @@ function App() {
     const lista = data || [];
     setDados(lista);
 
-    // 🧠 SCORE
     let novoScore = 50;
 
     lista.forEach(item => {
@@ -58,35 +61,43 @@ function App() {
       else novoScore -= 2;
     });
 
-    if (novoScore > 100) novoScore = 100;
-    if (novoScore < 0) novoScore = 0;
-
+    novoScore = Math.max(0, Math.min(100, novoScore));
     setScore(novoScore);
 
-    // 🔥 NÍVEL
     if (novoScore > 70) setNivel("Alta performance");
     else if (novoScore > 40) setNivel("Estável");
     else setNivel("Atenção");
 
-    // 🔥 STREAK
     setStreak(lista.length);
 
-    // 🎯 FOCO
-    let focoAtual = "";
+    let focoAtual = "Autoconhecimento";
 
     if (estado === "Ansioso") focoAtual = "Calma";
     else if (estado === "Desmotivado") focoAtual = "Motivação";
     else if (estado === "Sem foco") focoAtual = "Clareza";
     else if (estado === "Cansado") focoAtual = "Recuperação";
     else if (estado === "Triste") focoAtual = "Equilíbrio emocional";
-    else focoAtual = "Autoconhecimento";
+    else if (estado === "Com medo") focoAtual = "Segurança";
+    else if (estado === "Irritado") focoAtual = "Controle emocional";
 
     setFoco(focoAtual);
   }
 
+  // ⭐ ATIVAR PREMIUM
+  function ativarPremium() {
+    window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
+  }
+
   // 💾 SALVAR
   async function salvar() {
+
     if (!estado) return alert("Selecione um estado");
+
+    // 🔒 LIMITE FREE
+    if (!premium && dados.length >= 5) {
+      alert("🔒 Você atingiu o limite gratuito. Ative o Premium para continuar.");
+      return;
+    }
 
     await supabase.from("feedbacks").insert([
       {
@@ -117,7 +128,7 @@ function App() {
       const data = await res.json();
       setRespostaIA(data.resposta);
 
-    } catch (err) {
+    } catch {
       setRespostaIA("Erro ao conectar com IA");
     }
   }
@@ -128,6 +139,20 @@ function App() {
       <h1>🚀 NeuroMapa360</h1>
 
       <p>{usuario.email}</p>
+
+      {/* ⭐ PREMIUM */}
+      <button
+        onClick={ativarPremium}
+        style={{
+          background: "gold",
+          padding: "10px",
+          border: "none",
+          cursor: "pointer",
+          marginBottom: "10px"
+        }}
+      >
+        ⭐ Ativar Premium
+      </button>
 
       <hr />
 
@@ -163,6 +188,12 @@ function App() {
 
       <p><strong>Score:</strong> {score}/100</p>
       <p><strong>Nível:</strong> {nivel}</p>
+
+      {!premium && (
+        <p style={{ color: "red" }}>
+          🔒 Plano gratuito: limite de 5 registros
+        </p>
+      )}
 
       <h3>🔥 Sequência</h3>
       <p>{streak} registros</p>

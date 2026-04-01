@@ -1,178 +1,174 @@
-const express = require("express");
-const cors = require("cors");
-const { createClient } = require("@supabase/supabase-js");
+import React, { useEffect, useState } from "react";
+import { supabase } from "./supabase";
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 
-const app = express();
+export default function App() {
 
-app.use(cors());
-app.use(express.json());
+  const [usuario, setUsuario] = useState(null);
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
 
-// 🔐 SUPABASE SEGURO
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+  const [estado, setEstado] = useState("");
+  const [mensagemIA, setMensagemIA] = useState("");
+  const [respostaIA, setRespostaIA] = useState("");
 
-// TESTE
-app.get("/", (req, res) => {
-  res.send("Neuro360 API rodando 🚀");
-});
+  const [dados, setDados] = useState([]);
+  const [grafico, setGrafico] = useState([]);
 
-// 🧠 IA COM PNL + APRENDIZADO
-app.post("/chat", async (req, res) => {
-  try {
-    const { mensagem, email } = req.body;
+  // LOGIN
+  async function login() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha
+    });
 
-    if (!mensagem || !email) {
-      return res.status(400).json({ erro: "Dados inválidos" });
-    }
+    if (error) alert("Erro no login");
+    else setUsuario(data.user);
+  }
 
-    const texto = mensagem.toLowerCase();
+  async function cadastro() {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: senha
+    });
 
-    // 🔍 BUSCAR HISTÓRICO
-    const { data: historico, error } = await supabase
+    if (error) alert("Erro ao cadastrar");
+    else alert("Cadastro realizado!");
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setUsuario(null);
+  }
+
+  // IA
+  async function enviarParaIA() {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem: mensagemIA,
+        email: usuario.email
+      })
+    });
+
+    const data = await res.json();
+    setRespostaIA(data.resposta);
+  }
+
+  // BUSCAR DADOS
+  async function buscarDados() {
+    const { data } = await supabase
       .from("feedbacks")
       .select("*")
-      .eq("usuario", email);
+      .eq("usuario", usuario.email);
 
-    if (error) {
-      console.error("Erro Supabase:", error);
-      return res.status(500).json({ erro: "Erro ao buscar histórico" });
-    }
+    const lista = data || [];
+    setDados(lista);
 
-    // 🧠 APRENDIZADO
-    let pontuacao = {};
-
-    (historico || []).forEach(item => {
-      if (!pontuacao[item.trilha]) {
-        pontuacao[item.trilha] = 0;
-      }
-
-      pontuacao[item.trilha] += 1;
-
-      if (item.eficaz) pontuacao[item.trilha] += 5;
-      else pontuacao[item.trilha] -= 2;
-
-      if (texto.includes(item.estado)) {
-        pontuacao[item.trilha] += 3;
-      }
+    const agrupado = {};
+    lista.forEach(item => {
+      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
     });
 
-    let melhorTrilha = "Autoconhecimento";
-    let maior = -Infinity;
+    const formatado = Object.keys(agrupado).map(key => ({
+      trilha: key,
+      total: agrupado[key]
+    }));
 
-    Object.keys(pontuacao).forEach(trilha => {
-      if (pontuacao[trilha] > maior) {
-        maior = pontuacao[trilha];
-        melhorTrilha = trilha;
-      }
-    });
-
-    // 🔍 DETECTAR ESTADO
-    let estadoAtual = "neutro";
-
-    if (texto.includes("ansioso")) estadoAtual = "ansioso";
-    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
-    else if (texto.includes("confuso")) estadoAtual = "confuso";
-    else if (texto.includes("cansado")) estadoAtual = "cansado";
-
-    // 🧠 PNL PROFUNDA (INTERVENÇÃO REAL)
-    let resposta = "";
-
-    if (estadoAtual === "ansioso") {
-      resposta = `
-Percebo sinais de ansiedade.
-
-Vamos fazer juntos agora:
-
-1. Inspire profundamente por 4 segundos  
-2. Segure por 4 segundos  
-3. Solte lentamente por 6 segundos  
-
-Agora imagine essa situação ficando menor, mais distante de você.
-
-👉 O que exatamente está te deixando ansioso?
-
-📊 Com base no seu histórico:
-Recomendo a trilha: ${melhorTrilha}
-`;
-    }
-
-    else if (estadoAtual === "desmotivado") {
-      resposta = `
-A desmotivação não vem da falta de capacidade…
-
-Mas de excesso de carga emocional.
-
-Feche os olhos por alguns segundos…
-
-Imagine você concluindo uma pequena tarefa.
-
-👉 Qual a menor ação que você pode fazer agora?
-
-📊 Sugestão personalizada:
-${melhorTrilha}
-`;
-    }
-
-    else if (estadoAtual === "confuso") {
-      resposta = `
-Quando existe confusão, existe excesso de informação.
-
-Vamos simplificar:
-
-👉 Qual é a única coisa mais importante para você agora?
-
-Clareza vem da ação focada.
-
-📊 Trilha recomendada:
-${melhorTrilha}
-`;
-    }
-
-    else if (estadoAtual === "cansado") {
-      resposta = `
-Seu sistema está pedindo pausa — isso é inteligência, não fraqueza.
-
-Pare por 30 segundos…
-
-Respire…
-
-👉 Seu cansaço é físico ou emocional?
-
-📊 Sugestão:
-${melhorTrilha}
-`;
-    }
-
-    else {
-      resposta = `
-Estou aqui com você.
-
-Descreva com mais detalhes o que está acontecendo.
-
-Quanto mais clareza você traz, mais controle você ganha.
-
-📊 Baseado no seu histórico:
-${melhorTrilha}
-`;
-    }
-
-    return res.json({
-      resposta,
-      trilha: melhorTrilha,
-      estado: estadoAtual
-    });
-
-  } catch (error) {
-    console.error("Erro geral:", error);
-    return res.status(500).json({ erro: "Erro interno do servidor" });
+    setGrafico(formatado);
   }
-});
 
-// 🚀 PORTA
-const PORT = process.env.PORT || 3001;
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUsuario(data.user);
+    });
+  }, []);
 
-app.listen(PORT, () => {
-  console.log("Servidor rodando na porta " + PORT);
-});
+  useEffect(() => {
+    if (usuario) buscarDados();
+  }, [usuario]);
+
+  // 🔐 TELA LOGIN
+  if (!usuario) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h1>🧠 NeuroMapa360</h1>
+
+        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
+        <br /><br />
+
+        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
+        <br /><br />
+
+        <button onClick={login}>Entrar</button>
+        <button onClick={cadastro}>Cadastrar</button>
+      </div>
+    );
+  }
+
+  // 🚀 DASHBOARD
+  return (
+    <div style={{ maxWidth: "700px", margin: "auto", textAlign: "center" }}>
+
+      <h1>🚀 NeuroMapa360</h1>
+
+      <p>{usuario.email}</p>
+      <button onClick={logout}>Sair</button>
+
+      <hr />
+
+      {/* INPUT */}
+      <h3>Como você está se sentindo?</h3>
+
+      <select onChange={e => setEstado(e.target.value)}>
+        <option value="">Selecione</option>
+        <option value="ansioso">Ansioso</option>
+        <option value="desmotivado">Desmotivado</option>
+        <option value="sem_foco">Sem foco</option>
+      </select>
+
+      <br /><br />
+
+      <textarea
+        placeholder="Descreva o que você está sentindo..."
+        value={mensagemIA}
+        onChange={(e) => setMensagemIA(e.target.value)}
+        style={{ width: "100%", height: "80px" }}
+      />
+
+      <br /><br />
+
+      <button onClick={enviarParaIA}>Falar com IA</button>
+
+      {/* 🧠 RESPOSTA */}
+      {respostaIA && (
+        <div style={{
+          marginTop: "20px",
+          padding: "15px",
+          border: "1px solid #ccc",
+          borderRadius: "10px",
+          background: "#f9f9f9"
+        }}>
+          <h3>🧠 Resposta da IA</h3>
+          <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
+        </div>
+      )}
+
+      <hr />
+
+      {/* 📊 GRÁFICO */}
+      <h3>📊 Evolução</h3>
+
+      <BarChart width={400} height={250} data={grafico}>
+        <XAxis dataKey="trilha" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="total" />
+      </BarChart>
+
+    </div>
+  );
+}

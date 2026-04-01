@@ -7,7 +7,7 @@ import {
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "SUA_CHAVE_PUBLICA_AQUI"
+  "sb_secret_t2-L_VPgsex6bxlVASiLNg_XD-F8tO3"
 );
 
 function App() {

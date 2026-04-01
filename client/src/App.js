@@ -12,7 +12,9 @@ const supabase = createClient(
 
 function App() {
 
-  const [usuario] = useState({ email: "contatobetaoofertas@gmail.com" });
+  const [usuario, setUsuario] = useState(null);
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
 
   const [estado, setEstado] = useState("");
   const [mensagemIA, setMensagemIA] = useState("");
@@ -36,52 +38,68 @@ function App() {
   ];
 
   useEffect(() => {
-    buscarDados();
+    verificarUsuario();
   }, []);
 
-  async function buscarDados() {
+  async function verificarUsuario() {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      setUsuario(data.user);
+      buscarDados(data.user.email);
+    }
+  }
+
+  async function login() {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha
+    });
+
+    if (error) return alert("Erro no login");
+
+    setUsuario(data.user);
+    buscarDados(data.user.email);
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setUsuario(null);
+  }
+
+  async function buscarDados(emailUsuario) {
     const { data } = await supabase
       .from("feedbacks")
       .select("*")
-      .eq("usuario", usuario.email);
+      .eq("usuario", emailUsuario);
 
     const lista = data || [];
     setDados(lista);
 
-    // 🔥 GRÁFICO BARRAS
+    // gráfico
     const contagem = {};
     lista.forEach(item => {
       contagem[item.estado] = (contagem[item.estado] || 0) + 1;
     });
 
-    const dadosGrafico = Object.keys(contagem).map(key => ({
-      estado: key,
-      total: contagem[key]
-    }));
+    setGrafico(Object.keys(contagem).map(k => ({
+      estado: k,
+      total: contagem[k]
+    })));
 
-    setGrafico(dadosGrafico);
-
-    // 🔥 LINHA DO TEMPO
+    // linha do tempo
     const porDia = {};
-
     lista.forEach(item => {
-      const dia = item.created_at
-        ? item.created_at.slice(0, 10)
-        : "sem-data";
-
+      const dia = item.created_at?.slice(0,10);
       porDia[dia] = (porDia[dia] || 0) + 1;
     });
 
-    const dadosLinha = Object.keys(porDia).map(dia => ({
-      dia,
-      total: porDia[dia]
-    }));
+    setLinhaTempo(Object.keys(porDia).map(d => ({
+      dia: d,
+      total: porDia[d]
+    })));
 
-    setLinhaTempo(dadosLinha);
-
-    // 🔥 SCORE
+    // score
     let novoScore = 50;
-
     lista.forEach(item => {
       if (item.eficaz) novoScore += 5;
       else novoScore -= 2;
@@ -95,16 +113,6 @@ function App() {
     else setNivel("Atenção");
 
     setStreak(lista.length);
-
-    let focoAtual = "Autoconhecimento";
-
-    if (estado === "Ansioso") focoAtual = "Calma";
-    else if (estado === "Desmotivado") focoAtual = "Motivação";
-    else if (estado === "Sem foco") focoAtual = "Clareza";
-    else if (estado === "Cansado") focoAtual = "Recuperação";
-    else if (estado === "Com medo") focoAtual = "Segurança";
-
-    setFoco(focoAtual);
   }
 
   function ativarPremium() {
@@ -115,7 +123,7 @@ function App() {
     if (!estado) return alert("Selecione um estado");
 
     if (!premium && dados.length >= 5) {
-      alert("🔒 Limite gratuito atingido. Ative o Premium.");
+      alert("Limite gratuito atingido");
       return;
     }
 
@@ -128,26 +136,43 @@ function App() {
       }
     ]);
 
-    buscarDados();
+    buscarDados(usuario.email);
   }
 
   async function falarComIA() {
-    try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mensagem: mensagemIA,
-          email: usuario.email
-        })
-      });
+    const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json"},
+      body: JSON.stringify({
+        mensagem: mensagemIA,
+        email: usuario.email
+      })
+    });
 
-      const data = await res.json();
-      setRespostaIA(data.resposta);
+    const data = await res.json();
+    setRespostaIA(data.resposta);
+  }
 
-    } catch {
-      setRespostaIA("Erro ao conectar com IA");
-    }
+  // 🔥 TELA LOGIN
+  if (!usuario) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 100 }}>
+        <h1>NeuroMapa360</h1>
+
+        <input
+          placeholder="Email"
+          onChange={(e)=>setEmail(e.target.value)}
+        /><br/><br/>
+
+        <input
+          type="password"
+          placeholder="Senha"
+          onChange={(e)=>setSenha(e.target.value)}
+        /><br/><br/>
+
+        <button onClick={login}>Entrar</button>
+      </div>
+    );
   }
 
   return (
@@ -155,6 +180,10 @@ function App() {
 
       <h1>🚀 NeuroMapa360</h1>
       <p>{usuario.email}</p>
+
+      <button onClick={logout}>Sair</button>
+
+      <br/><br/>
 
       <button onClick={ativarPremium} style={{ background: "gold", padding: 10 }}>
         ⭐ Ativar Premium
@@ -164,22 +193,21 @@ function App() {
 
       <h3>Como você está se sentindo?</h3>
 
-      <select onChange={(e) => setEstado(e.target.value)}>
+      <select onChange={(e)=>setEstado(e.target.value)}>
         <option value="">Selecione</option>
-        {opcoesEmocionais.map((item, i) => (
-          <option key={i}>{item}</option>
+        {opcoesEmocionais.map((o,i)=>(
+          <option key={i}>{o}</option>
         ))}
       </select>
 
-      <br /><br />
+      <br/><br/>
 
       <textarea
-        placeholder="Descreva o que você está sentindo..."
-        value={mensagemIA}
-        onChange={(e) => setMensagemIA(e.target.value)}
+        placeholder="Descreva..."
+        onChange={(e)=>setMensagemIA(e.target.value)}
       />
 
-      <br /><br />
+      <br/><br/>
 
       <button onClick={salvar}>Salvar</button>
       <button onClick={falarComIA}>Falar com IA</button>
@@ -188,21 +216,14 @@ function App() {
 
       <h2>{foco}</h2>
 
-      <h3>📊 Evolução Emocional</h3>
+      <h3>📊 Evolução</h3>
       <p>Score: {score}</p>
       <p>Nível: {nivel}</p>
 
       <h3>🔥 Sequência</h3>
       <p>{streak} registros</p>
 
-      {!premium && (
-        <p style={{ color: "red" }}>🔒 Plano gratuito limitado</p>
-      )}
-
       <hr />
-
-      {/* 📊 GRÁFICO BARRAS */}
-      <h3>📊 Padrão emocional</h3>
 
       <BarChart width={400} height={300} data={grafico}>
         <CartesianGrid strokeDasharray="3 3" />
@@ -213,9 +234,6 @@ function App() {
       </BarChart>
 
       <hr />
-
-      {/* 📈 LINHA DO TEMPO */}
-      <h3>📈 Evolução por dia</h3>
 
       <LineChart width={400} height={300} data={linhaTempo}>
         <CartesianGrid strokeDasharray="3 3" />

@@ -1,48 +1,107 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "./supabase";
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import React, { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 
-export default function App() {
+const supabase = createClient(
+  "https://qodzwxgabuadsnplcscl.supabase.co",
+  "SUA_CHAVE_PUBLICA_AQUI"
+);
 
-  const [usuario, setUsuario] = useState(null);
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+function App() {
+  const [usuario, setUsuario] = useState({ email: "contatobetaoofertas@gmail.com" });
 
   const [estado, setEstado] = useState("");
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
 
   const [dados, setDados] = useState([]);
-  const [grafico, setGrafico] = useState([]);
+  const [score, setScore] = useState(50);
+  const [nivel, setNivel] = useState("Estável");
+  const [streak, setStreak] = useState(0);
+  const [foco, setFoco] = useState("");
 
-  // LOGIN
-  async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha
+  // 🔥 NOVAS EMOÇÕES (EXPANSÃO)
+  const opcoesEmocionais = [
+    "Ansioso",
+    "Desmotivado",
+    "Sem foco",
+    "Cansado",
+    "Triste",
+    "Irritado",
+    "Com medo",
+    "Confuso",
+    "Sobrecarregado",
+    "Sem energia",
+    "Procrastinando",
+    "Desanimado",
+    "Inseguro",
+    "Frustrado"
+  ];
+
+  useEffect(() => {
+    buscarDados();
+  }, []);
+
+  async function buscarDados() {
+    const { data } = await supabase
+      .from("feedbacks")
+      .select("*")
+      .eq("usuario", usuario.email);
+
+    const lista = data || [];
+    setDados(lista);
+
+    // 🧠 SCORE
+    let novoScore = 50;
+
+    lista.forEach(item => {
+      if (item.eficaz) novoScore += 5;
+      else novoScore -= 2;
     });
 
-    if (error) alert("Erro no login");
-    else setUsuario(data.user);
+    if (novoScore > 100) novoScore = 100;
+    if (novoScore < 0) novoScore = 0;
+
+    setScore(novoScore);
+
+    // 🔥 NÍVEL
+    if (novoScore > 70) setNivel("Alta performance");
+    else if (novoScore > 40) setNivel("Estável");
+    else setNivel("Atenção");
+
+    // 🔥 STREAK
+    setStreak(lista.length);
+
+    // 🎯 FOCO
+    let focoAtual = "";
+
+    if (estado === "Ansioso") focoAtual = "Calma";
+    else if (estado === "Desmotivado") focoAtual = "Motivação";
+    else if (estado === "Sem foco") focoAtual = "Clareza";
+    else if (estado === "Cansado") focoAtual = "Recuperação";
+    else if (estado === "Triste") focoAtual = "Equilíbrio emocional";
+    else focoAtual = "Autoconhecimento";
+
+    setFoco(focoAtual);
   }
 
-  async function cadastro() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha
-    });
+  // 💾 SALVAR
+  async function salvar() {
+    if (!estado) return alert("Selecione um estado");
 
-    if (error) alert("Erro ao cadastrar");
-    else alert("Cadastro realizado!");
+    await supabase.from("feedbacks").insert([
+      {
+        usuario: usuario.email,
+        estado: estado.toLowerCase(),
+        trilha: foco,
+        eficaz: true
+      }
+    ]);
+
+    buscarDados();
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setUsuario(null);
-  }
-
-  // IA
-  async function enviarParaIA() {
+  // 🤖 IA
+  async function falarComIA() {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
@@ -58,80 +117,27 @@ export default function App() {
       const data = await res.json();
       setRespostaIA(data.resposta);
 
-    } catch (error) {
-      setRespostaIA("Erro ao conectar com a IA.");
+    } catch (err) {
+      setRespostaIA("Erro ao conectar com IA");
     }
   }
 
-  // BUSCAR DADOS
-  async function buscarDados() {
-    const { data } = await supabase
-      .from("feedbacks")
-      .select("*")
-      .eq("usuario", usuario.email);
-
-    const lista = data || [];
-    setDados(lista);
-
-    const agrupado = {};
-    lista.forEach(item => {
-      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
-    });
-
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
-
-    setGrafico(formatado);
-  }
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUsuario(data.user);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (usuario) buscarDados();
-  }, [usuario]);
-
-  // LOGIN SCREEN
-  if (!usuario) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h1>🧠 NeuroMapa360</h1>
-
-        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-        <br /><br />
-
-        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-        <br /><br />
-
-        <button onClick={login}>Entrar</button>
-        <button onClick={cadastro}>Cadastrar</button>
-      </div>
-    );
-  }
-
-  // DASHBOARD
   return (
-    <div style={{ maxWidth: "700px", margin: "auto", textAlign: "center" }}>
+    <div style={{ textAlign: "center", padding: 20 }}>
 
       <h1>🚀 NeuroMapa360</h1>
 
       <p>{usuario.email}</p>
-      <button onClick={logout}>Sair</button>
 
       <hr />
 
       <h3>Como você está se sentindo?</h3>
 
-      <select onChange={e => setEstado(e.target.value)}>
+      <select onChange={(e) => setEstado(e.target.value)}>
         <option value="">Selecione</option>
-        <option value="ansioso">Ansioso</option>
-        <option value="desmotivado">Desmotivado</option>
-        <option value="sem_foco">Sem foco</option>
+        {opcoesEmocionais.map((item, i) => (
+          <option key={i}>{item}</option>
+        ))}
       </select>
 
       <br /><br />
@@ -140,36 +146,34 @@ export default function App() {
         placeholder="Descreva o que você está sentindo..."
         value={mensagemIA}
         onChange={(e) => setMensagemIA(e.target.value)}
-        style={{ width: "100%", height: "80px" }}
+        rows={4}
+        cols={40}
       />
 
       <br /><br />
 
-      <button onClick={enviarParaIA}>Falar com IA</button>
-
-      {respostaIA && (
-        <div style={{
-          marginTop: "20px",
-          padding: "15px",
-          border: "1px solid #ccc",
-          borderRadius: "10px"
-        }}>
-          <h3>🧠 Resposta da IA</h3>
-          <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
-        </div>
-      )}
+      <button onClick={salvar}>Salvar</button>
+      <button onClick={falarComIA}>Falar com IA</button>
 
       <hr />
 
-      <h3>📊 Evolução</h3>
+      <h2>{foco}</h2>
 
-      <BarChart width={400} height={250} data={grafico}>
-        <XAxis dataKey="trilha" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="total" />
-      </BarChart>
+      <h3>📊 Evolução Emocional</h3>
+
+      <p><strong>Score:</strong> {score}/100</p>
+      <p><strong>Nível:</strong> {nivel}</p>
+
+      <h3>🔥 Sequência</h3>
+      <p>{streak} registros</p>
+
+      <hr />
+
+      <h3>🤖 Resposta da IA</h3>
+      <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
 
     </div>
   );
 }
+
+export default App;

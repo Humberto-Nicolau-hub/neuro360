@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
@@ -15,6 +16,8 @@ function App() {
   const [respostaIA, setRespostaIA] = useState("");
 
   const [dados, setDados] = useState([]);
+  const [grafico, setGrafico] = useState([]);
+
   const [score, setScore] = useState(50);
   const [nivel, setNivel] = useState("Estável");
   const [streak, setStreak] = useState(0);
@@ -22,22 +25,10 @@ function App() {
 
   const [premium, setPremium] = useState(false);
 
-  // 🔥 EMOÇÕES EXPANDIDAS
   const opcoesEmocionais = [
-    "Ansioso",
-    "Desmotivado",
-    "Sem foco",
-    "Cansado",
-    "Triste",
-    "Irritado",
-    "Com medo",
-    "Confuso",
-    "Sobrecarregado",
-    "Sem energia",
-    "Procrastinando",
-    "Desanimado",
-    "Inseguro",
-    "Frustrado"
+    "Ansioso","Desmotivado","Sem foco","Cansado","Triste",
+    "Irritado","Com medo","Confuso","Sobrecarregado",
+    "Sem energia","Procrastinando","Desanimado","Inseguro","Frustrado"
   ];
 
   useEffect(() => {
@@ -53,8 +44,21 @@ function App() {
     const lista = data || [];
     setDados(lista);
 
-    let novoScore = 50;
+    // 🔥 GRÁFICO
+    const contagem = {};
+    lista.forEach(item => {
+      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+    });
 
+    const dadosGrafico = Object.keys(contagem).map(key => ({
+      estado: key,
+      total: contagem[key]
+    }));
+
+    setGrafico(dadosGrafico);
+
+    // 🔥 SCORE
+    let novoScore = 50;
     lista.forEach(item => {
       if (item.eficaz) novoScore += 5;
       else novoScore -= 2;
@@ -75,21 +79,16 @@ function App() {
     else if (estado === "Desmotivado") focoAtual = "Motivação";
     else if (estado === "Sem foco") focoAtual = "Clareza";
     else if (estado === "Cansado") focoAtual = "Recuperação";
-    else if (estado === "Triste") focoAtual = "Equilíbrio emocional";
     else if (estado === "Com medo") focoAtual = "Segurança";
-    else if (estado === "Irritado") focoAtual = "Controle emocional";
 
     setFoco(focoAtual);
   }
 
-  // ⭐ PREMIUM
   function ativarPremium() {
     window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
   }
 
-  // 💾 SALVAR
   async function salvar() {
-
     if (!estado) return alert("Selecione um estado");
 
     if (!premium && dados.length >= 5) {
@@ -109,7 +108,6 @@ function App() {
     buscarDados();
   }
 
-  // 🤖 IA
   async function falarComIA() {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
@@ -135,26 +133,14 @@ function App() {
     <div style={{ textAlign: "center", padding: 20 }}>
 
       <h1>🚀 NeuroMapa360</h1>
-
       <p>{usuario.email}</p>
 
-      {/* ⭐ PREMIUM */}
-      <button
-        onClick={ativarPremium}
-        style={{
-          background: "gold",
-          padding: "10px",
-          border: "none",
-          cursor: "pointer",
-          marginBottom: "10px"
-        }}
-      >
+      <button onClick={ativarPremium} style={{ background: "gold", padding: 10 }}>
         ⭐ Ativar Premium
       </button>
 
       <hr />
 
-      {/* EMOÇÃO */}
       <h3>Como você está se sentindo?</h3>
 
       <select onChange={(e) => setEstado(e.target.value)}>
@@ -166,13 +152,10 @@ function App() {
 
       <br /><br />
 
-      {/* TEXTO */}
       <textarea
         placeholder="Descreva o que você está sentindo..."
         value={mensagemIA}
         onChange={(e) => setMensagemIA(e.target.value)}
-        rows={4}
-        cols={40}
       />
 
       <br /><br />
@@ -182,36 +165,36 @@ function App() {
 
       <hr />
 
-      {/* FOCO */}
       <h2>{foco}</h2>
 
-      {/* EVOLUÇÃO */}
       <h3>📊 Evolução Emocional</h3>
+      <p>Score: {score}</p>
+      <p>Nível: {nivel}</p>
 
-      <p><strong>Score:</strong> {score}/100</p>
-      <p><strong>Nível:</strong> {nivel}</p>
-
-      {!premium && (
-        <p style={{ color: "red" }}>
-          🔒 Plano gratuito: limite de 5 registros
-        </p>
-      )}
-
-      {/* STREAK */}
       <h3>🔥 Sequência</h3>
       <p>{streak} registros</p>
 
+      {!premium && (
+        <p style={{ color: "red" }}>🔒 Plano gratuito limitado</p>
+      )}
+
       <hr />
 
-      {/* IA */}
-      <h3>🤖 Resposta da IA</h3>
-      <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
+      {/* 📊 GRÁFICO */}
+      <h3>📈 Seu padrão emocional</h3>
 
-      {/* PERFIL */}
-      <h3>🧬 Perfil emocional</h3>
-      <p>
-        {respostaIA.includes("padrão") ? "Perfil detectado automaticamente pela IA acima." : "Em análise..."}
-      </p>
+      <BarChart width={400} height={300} data={grafico}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="estado" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="total" />
+      </BarChart>
+
+      <hr />
+
+      <h3>🤖 IA</h3>
+      <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
 
     </div>
   );

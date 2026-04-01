@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  CartesianGrid, LineChart, Line
+} from "recharts";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
@@ -17,6 +20,7 @@ function App() {
 
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
+  const [linhaTempo, setLinhaTempo] = useState([]);
 
   const [score, setScore] = useState(50);
   const [nivel, setNivel] = useState("Estável");
@@ -44,7 +48,7 @@ function App() {
     const lista = data || [];
     setDados(lista);
 
-    // 🔥 GRÁFICO
+    // 🔥 GRÁFICO BARRAS
     const contagem = {};
     lista.forEach(item => {
       contagem[item.estado] = (contagem[item.estado] || 0) + 1;
@@ -57,8 +61,27 @@ function App() {
 
     setGrafico(dadosGrafico);
 
+    // 🔥 LINHA DO TEMPO
+    const porDia = {};
+
+    lista.forEach(item => {
+      const dia = item.created_at
+        ? item.created_at.slice(0, 10)
+        : "sem-data";
+
+      porDia[dia] = (porDia[dia] || 0) + 1;
+    });
+
+    const dadosLinha = Object.keys(porDia).map(dia => ({
+      dia,
+      total: porDia[dia]
+    }));
+
+    setLinhaTempo(dadosLinha);
+
     // 🔥 SCORE
     let novoScore = 50;
+
     lista.forEach(item => {
       if (item.eficaz) novoScore += 5;
       else novoScore -= 2;
@@ -112,9 +135,7 @@ function App() {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mensagem: mensagemIA,
           email: usuario.email
@@ -180,8 +201,8 @@ function App() {
 
       <hr />
 
-      {/* 📊 GRÁFICO */}
-      <h3>📈 Seu padrão emocional</h3>
+      {/* 📊 GRÁFICO BARRAS */}
+      <h3>📊 Padrão emocional</h3>
 
       <BarChart width={400} height={300} data={grafico}>
         <CartesianGrid strokeDasharray="3 3" />
@@ -190,6 +211,19 @@ function App() {
         <Tooltip />
         <Bar dataKey="total" />
       </BarChart>
+
+      <hr />
+
+      {/* 📈 LINHA DO TEMPO */}
+      <h3>📈 Evolução por dia</h3>
+
+      <LineChart width={400} height={300} data={linhaTempo}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="dia" />
+        <YAxis />
+        <Tooltip />
+        <Line type="monotone" dataKey="total" />
+      </LineChart>
 
       <hr />
 

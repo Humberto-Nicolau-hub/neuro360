@@ -7,18 +7,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔐 SUPABASE (via ENV - correto e seguro)
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
+// TESTE
 app.get("/", (req, res) => {
   res.send("Neuro360 Perfil IA 🚀");
 });
 
+// 🧠 IA COMPLETA (PERFIL + EVOLUÇÃO + METAS)
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
+
+    if (!mensagem || !email) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+    }
 
     const texto = mensagem.toLowerCase();
 
@@ -51,6 +58,8 @@ app.post("/chat", async (req, res) => {
     else if (texto.includes("triste")) estado = "triste";
     else if (texto.includes("raiva")) estado = "raiva";
     else if (texto.includes("desmotivado")) estado = "desmotivado";
+    else if (texto.includes("cansado")) estado = "cansado";
+    else if (texto.includes("sem foco")) estado = "sem_foco";
 
     // 🧠 PERFIL PSICOLÓGICO
     let perfil = "";
@@ -74,9 +83,54 @@ app.post("/chat", async (req, res) => {
       evolucao = "Você está no início do seu processo de evolução.";
     }
 
-    // 🧠 RESPOSTA FINAL
+    // 🎯 METAS INTELIGENTES
+    let meta = "";
+    let trilha = "";
+
+    switch (estado) {
+      case "ansioso":
+        meta = "Reduzir ansiedade com respiração guiada por 3 dias";
+        trilha = "Respiração + controle emocional";
+        break;
+
+      case "medo":
+        meta = "Enfrentar pequenos medos progressivamente por 5 dias";
+        trilha = "Reprogramação de medo";
+        break;
+
+      case "raiva":
+        meta = "Controlar reações impulsivas por 3 dias";
+        trilha = "Controle emocional";
+        break;
+
+      case "triste":
+        meta = "Elevar energia emocional com gratidão por 5 dias";
+        trilha = "Elevação emocional";
+        break;
+
+      case "desmotivado":
+        meta = "Executar micro ações por 5 dias consecutivos";
+        trilha = "Ação e disciplina";
+        break;
+
+      case "cansado":
+        meta = "Recuperar energia com pausas estratégicas";
+        trilha = "Regulação de energia";
+        break;
+
+      case "sem_foco":
+        meta = "Aplicar técnica Pomodoro por 3 dias";
+        trilha = "Foco profundo";
+        break;
+
+      default:
+        meta = "Observar emoções e registrar por 3 dias";
+        trilha = "Autoconhecimento";
+    }
+
+    // 🧠 RESPOSTA FINAL COMPLETA
     const resposta = `
-🧠 NeuroMapa360 — Análise Profunda
+🧠 NeuroMapa360 — IA Evolutiva Profunda
 
 📍 Estado atual: ${estado}
 
@@ -86,17 +140,31 @@ ${perfil}
 📊 Evolução:
 ${evolucao}
 
-Você não é seu estado atual — você é o padrão que constrói.
+🎯 Meta recomendada:
+${meta}
+
+🚀 Trilha ideal:
+${trilha}
+
+Você não é seu estado atual.
+Você é o padrão que repete — e hoje você começou a mudar isso.
 `;
 
-    res.json({ resposta });
+    res.json({
+      resposta,
+      estado,
+      padrao,
+      meta,
+      trilha
+    });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro no servidor:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 
+// 🚀 PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

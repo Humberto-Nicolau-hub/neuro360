@@ -7,24 +7,130 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 SUPABASE (via ENV - mais seguro)
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-// TESTE
 app.get("/", (req, res) => {
-  res.send("Neuro360 API rodando 🚀");
+  res.send("Neuro360 IA Terapêutica 🚀");
 });
 
-// 🧠 IA CORRIGIDA (PRIORIZA ESTADO ATUAL)
+// 🧠 IA COM PNL REAL
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
-    if (!mensagem || !email) {
-      return res.status(400).json({ erro: "Dados inválidos" });
+    const texto = mensagem.toLowerCase();
+
+    let estado = "neutro";
+
+    if (texto.includes("ansioso")) estado = "ansioso";
+    else if (texto.includes("medo")) estado = "medo";
+    else if (texto.includes("triste")) estado = "triste";
+    else if (texto.includes("raiva")) estado = "raiva";
+    else if (texto.includes("desmotivado")) estado = "desmotivado";
+    else if (texto.includes("sem foco")) estado = "sem_foco";
+
+    // 🧠 TÉCNICAS PNL
+    let tecnica = "";
+
+    if (estado === "ansioso") {
+      tecnica = `
+Percebo ansiedade.
+
+Vamos regular isso agora:
+
+1. Inspire profundamente por 4 segundos  
+2. Segure por 4 segundos  
+3. Solte lentamente por 6 segundos  
+
+Repita 3 vezes.
+
+Agora imagine essa sensação diminuindo como um volume abaixando.
+`;
+    }
+
+    else if (estado === "medo") {
+      tecnica = `
+Percebo medo.
+
+Vamos trazer controle:
+
+1. Feche os olhos por alguns segundos  
+2. Imagine você em um lugar seguro  
+3. Agora veja essa situação como se estivesse distante  
+
+Você não está em perigo agora — apenas interpretando um cenário.
+`;
+    }
+
+    else if (estado === "triste") {
+      tecnica = `
+Percebo tristeza.
+
+Vamos mudar o estado:
+
+1. Lembre de um momento positivo da sua vida  
+2. Reviva essa sensação por alguns segundos  
+3. Traga essa emoção para o presente  
+
+Seu cérebro responde ao foco.
+`;
+    }
+
+    else if (estado === "raiva") {
+      tecnica = `
+Percebo tensão emocional.
+
+Vamos descarregar isso:
+
+1. Inspire profundamente  
+2. Contraia o corpo por 3 segundos  
+3. Solte lentamente  
+
+Repita algumas vezes.
+
+Agora observe: a intensidade já diminuiu.
+`;
+    }
+
+    else if (estado === "desmotivado") {
+      tecnica = `
+Percebo desmotivação.
+
+Vamos ativar ação:
+
+Faça algo extremamente simples agora:
+
+👉 Levante  
+👉 Dê 3 passos  
+👉 Respire fundo  
+
+Movimento gera mudança emocional.
+`;
+    }
+
+    else if (estado === "sem_foco") {
+      tecnica = `
+Percebo falta de foco.
+
+Vamos ajustar:
+
+1. Escolha UMA tarefa pequena  
+2. Execute por apenas 5 minutos  
+3. Ignore todo o resto  
+
+Foco nasce da ação, não da espera.
+`;
+    }
+
+    else {
+      tecnica = `
+Vamos observar seu estado com curiosidade.
+
+Sem julgamento. Apenas percepção.
+`;
     }
 
     // 🔍 HISTÓRICO
@@ -33,70 +139,33 @@ app.post("/chat", async (req, res) => {
       .select("*")
       .eq("usuario", email);
 
-    // 🔍 DETECTAR ESTADO ATUAL (PRIORIDADE)
-    const texto = mensagem.toLowerCase();
-
-    let estadoAtual = "neutro";
-
-    if (texto.includes("ansioso")) estadoAtual = "ansioso";
-    else if (texto.includes("medo")) estadoAtual = "medo";
-    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
-    else if (texto.includes("cansado")) estadoAtual = "cansado";
-    else if (texto.includes("triste")) estadoAtual = "triste";
-    else if (texto.includes("raiva")) estadoAtual = "raiva";
-    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
-
-    // 🎯 TRILHA BASE (AGORA CORRETA)
-    let trilhaBase = "";
-
-    if (estadoAtual === "ansioso") trilhaBase = "Respiração e Calma";
-    else if (estadoAtual === "medo") trilhaBase = "Segurança e Controle";
-    else if (estadoAtual === "desmotivado") trilhaBase = "Motivação e Ação";
-    else if (estadoAtual === "cansado") trilhaBase = "Recuperação e Energia";
-    else if (estadoAtual === "triste") trilhaBase = "Equilíbrio Emocional";
-    else if (estadoAtual === "raiva") trilhaBase = "Controle Emocional";
-    else if (estadoAtual === "sem_foco") trilhaBase = "Foco e Clareza";
-    else trilhaBase = "Autoconhecimento";
-
-    // 📊 AJUSTE COM HISTÓRICO (INTELIGÊNCIA)
     let ajuste = "";
 
-    if (historico && historico.length > 0) {
-      const eficazCount = historico.filter(i => i.eficaz).length;
-
-      if (eficazCount > historico.length / 2) {
-        ajuste = "\n💡 Baseado no seu histórico, você responde bem às práticas anteriores.";
-      }
+    if (historico && historico.length > 3) {
+      ajuste = "\n💡 Você já está criando um padrão de evolução. Continue.";
     }
 
-    // 🧠 RESPOSTA INTELIGENTE
+    // 🧠 RESPOSTA FINAL
     const resposta = `
-🧠 NeuroMapa360 — IA Terapêutica
+🧠 NeuroMapa360 — Intervenção Inteligente
 
-📍 Identifiquei que você está: ${estadoAtual}
+📍 Estado identificado: ${estado}
 
-🎯 Vamos agir direto nisso:
-
-👉 ${trilhaBase}
+${tecnica}
 
 ${ajuste}
 
-Respire. Você não está preso a esse estado — está apenas passando por ele.
+Você está treinando sua mente. Isso muda tudo.
 `;
 
-    return res.json({
-      resposta,
-      estado: estadoAtual,
-      trilha: trilhaBase
-    });
+    res.json({ resposta });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Erro interno" });
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// 🚀 PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

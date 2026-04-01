@@ -7,10 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 SUPABASE (SEGURO - usando ENV)
+// 🔐 SUPABASE SEGURO
 const supabase = createClient(
-  process.https://qodzwxgabuadsnplcscl.supabase.co,
-  process.sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 // TESTE
@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
   res.send("Neuro360 API rodando 🚀");
 });
 
-// 🧠 IA ADAPTATIVA
+// 🧠 IA COM PNL + APRENDIZADO
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
@@ -27,6 +27,9 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
+    const texto = mensagem.toLowerCase();
+
+    // 🔍 BUSCAR HISTÓRICO
     const { data: historico, error } = await supabase
       .from("feedbacks")
       .select("*")
@@ -37,6 +40,7 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ erro: "Erro ao buscar histórico" });
     }
 
+    // 🧠 APRENDIZADO
     let pontuacao = {};
 
     (historico || []).forEach(item => {
@@ -49,7 +53,7 @@ app.post("/chat", async (req, res) => {
       if (item.eficaz) pontuacao[item.trilha] += 5;
       else pontuacao[item.trilha] -= 2;
 
-      if (mensagem.toLowerCase().includes(item.estado)) {
+      if (texto.includes(item.estado)) {
         pontuacao[item.trilha] += 3;
       }
     });
@@ -64,27 +68,97 @@ app.post("/chat", async (req, res) => {
       }
     });
 
-    const texto = mensagem.toLowerCase();
-
+    // 🔍 DETECTAR ESTADO
     let estadoAtual = "neutro";
 
     if (texto.includes("ansioso")) estadoAtual = "ansioso";
-    else if (texto.includes("cansado")) estadoAtual = "cansado";
     else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
-    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
+    else if (texto.includes("confuso")) estadoAtual = "confuso";
+    else if (texto.includes("cansado")) estadoAtual = "cansado";
 
-    const resposta = `
-🧠 NeuroMapa360 — IA Adaptativa
+    // 🧠 PNL PROFUNDA (INTERVENÇÃO REAL)
+    let resposta = "";
 
-📍 Estado atual: ${estadoAtual}
+    if (estadoAtual === "ansioso") {
+      resposta = `
+Percebo sinais de ansiedade.
+
+Vamos fazer juntos agora:
+
+1. Inspire profundamente por 4 segundos  
+2. Segure por 4 segundos  
+3. Solte lentamente por 6 segundos  
+
+Agora imagine essa situação ficando menor, mais distante de você.
+
+👉 O que exatamente está te deixando ansioso?
 
 📊 Com base no seu histórico:
-👉 ${melhorTrilha}
-
-Quanto mais você usa, mais inteligente a IA fica.
+Recomendo a trilha: ${melhorTrilha}
 `;
+    }
 
-    res.json({
+    else if (estadoAtual === "desmotivado") {
+      resposta = `
+A desmotivação não vem da falta de capacidade…
+
+Mas de excesso de carga emocional.
+
+Feche os olhos por alguns segundos…
+
+Imagine você concluindo uma pequena tarefa.
+
+👉 Qual a menor ação que você pode fazer agora?
+
+📊 Sugestão personalizada:
+${melhorTrilha}
+`;
+    }
+
+    else if (estadoAtual === "confuso") {
+      resposta = `
+Quando existe confusão, existe excesso de informação.
+
+Vamos simplificar:
+
+👉 Qual é a única coisa mais importante para você agora?
+
+Clareza vem da ação focada.
+
+📊 Trilha recomendada:
+${melhorTrilha}
+`;
+    }
+
+    else if (estadoAtual === "cansado") {
+      resposta = `
+Seu sistema está pedindo pausa — isso é inteligência, não fraqueza.
+
+Pare por 30 segundos…
+
+Respire…
+
+👉 Seu cansaço é físico ou emocional?
+
+📊 Sugestão:
+${melhorTrilha}
+`;
+    }
+
+    else {
+      resposta = `
+Estou aqui com você.
+
+Descreva com mais detalhes o que está acontecendo.
+
+Quanto mais clareza você traz, mais controle você ganha.
+
+📊 Baseado no seu histórico:
+${melhorTrilha}
+`;
+    }
+
+    return res.json({
       resposta,
       trilha: melhorTrilha,
       estado: estadoAtual
@@ -92,7 +166,7 @@ Quanto mais você usa, mais inteligente a IA fica.
 
   } catch (error) {
     console.error("Erro geral:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    return res.status(500).json({ erro: "Erro interno do servidor" });
   }
 });
 

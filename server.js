@@ -1,174 +1,104 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "./supabase";
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+const express = require("express");
+const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
 
-export default function App() {
+const app = express();
 
-  const [usuario, setUsuario] = useState(null);
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+app.use(cors());
+app.use(express.json());
 
-  const [estado, setEstado] = useState("");
-  const [mensagemIA, setMensagemIA] = useState("");
-  const [respostaIA, setRespostaIA] = useState("");
+// 🔐 SUPABASE (SEGURO - usando ENV)
+const supabase = createClient(
+  process.https://qodzwxgabuadsnplcscl.supabase.co,
+  process.sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K
+);
 
-  const [dados, setDados] = useState([]);
-  const [grafico, setGrafico] = useState([]);
+// TESTE
+app.get("/", (req, res) => {
+  res.send("Neuro360 API rodando 🚀");
+});
 
-  // LOGIN
-  async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha
-    });
+// 🧠 IA ADAPTATIVA
+app.post("/chat", async (req, res) => {
+  try {
+    const { mensagem, email } = req.body;
 
-    if (error) alert("Erro no login");
-    else setUsuario(data.user);
-  }
+    if (!mensagem || !email) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+    }
 
-  async function cadastro() {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha
-    });
-
-    if (error) alert("Erro ao cadastrar");
-    else alert("Cadastro realizado!");
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    setUsuario(null);
-  }
-
-  // IA
-  async function enviarParaIA() {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        mensagem: mensagemIA,
-        email: usuario.email
-      })
-    });
-
-    const data = await res.json();
-    setRespostaIA(data.resposta);
-  }
-
-  // BUSCAR DADOS
-  async function buscarDados() {
-    const { data } = await supabase
+    const { data: historico, error } = await supabase
       .from("feedbacks")
       .select("*")
-      .eq("usuario", usuario.email);
+      .eq("usuario", email);
 
-    const lista = data || [];
-    setDados(lista);
+    if (error) {
+      console.error("Erro Supabase:", error);
+      return res.status(500).json({ erro: "Erro ao buscar histórico" });
+    }
 
-    const agrupado = {};
-    lista.forEach(item => {
-      agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
+    let pontuacao = {};
+
+    (historico || []).forEach(item => {
+      if (!pontuacao[item.trilha]) {
+        pontuacao[item.trilha] = 0;
+      }
+
+      pontuacao[item.trilha] += 1;
+
+      if (item.eficaz) pontuacao[item.trilha] += 5;
+      else pontuacao[item.trilha] -= 2;
+
+      if (mensagem.toLowerCase().includes(item.estado)) {
+        pontuacao[item.trilha] += 3;
+      }
     });
 
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
+    let melhorTrilha = "Autoconhecimento";
+    let maior = -Infinity;
 
-    setGrafico(formatado);
-  }
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUsuario(data.user);
+    Object.keys(pontuacao).forEach(trilha => {
+      if (pontuacao[trilha] > maior) {
+        maior = pontuacao[trilha];
+        melhorTrilha = trilha;
+      }
     });
-  }, []);
 
-  useEffect(() => {
-    if (usuario) buscarDados();
-  }, [usuario]);
+    const texto = mensagem.toLowerCase();
 
-  // 🔐 TELA LOGIN
-  if (!usuario) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h1>🧠 NeuroMapa360</h1>
+    let estadoAtual = "neutro";
 
-        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-        <br /><br />
+    if (texto.includes("ansioso")) estadoAtual = "ansioso";
+    else if (texto.includes("cansado")) estadoAtual = "cansado";
+    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
+    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
 
-        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-        <br /><br />
+    const resposta = `
+🧠 NeuroMapa360 — IA Adaptativa
 
-        <button onClick={login}>Entrar</button>
-        <button onClick={cadastro}>Cadastrar</button>
-      </div>
-    );
+📍 Estado atual: ${estadoAtual}
+
+📊 Com base no seu histórico:
+👉 ${melhorTrilha}
+
+Quanto mais você usa, mais inteligente a IA fica.
+`;
+
+    res.json({
+      resposta,
+      trilha: melhorTrilha,
+      estado: estadoAtual
+    });
+
+  } catch (error) {
+    console.error("Erro geral:", error);
+    res.status(500).json({ erro: "Erro interno do servidor" });
   }
+});
 
-  // 🚀 DASHBOARD
-  return (
-    <div style={{ maxWidth: "700px", margin: "auto", textAlign: "center" }}>
+// 🚀 PORTA
+const PORT = process.env.PORT || 3001;
 
-      <h1>🚀 NeuroMapa360</h1>
-
-      <p>{usuario.email}</p>
-      <button onClick={logout}>Sair</button>
-
-      <hr />
-
-      {/* INPUT */}
-      <h3>Como você está se sentindo?</h3>
-
-      <select onChange={e => setEstado(e.target.value)}>
-        <option value="">Selecione</option>
-        <option value="ansioso">Ansioso</option>
-        <option value="desmotivado">Desmotivado</option>
-        <option value="sem_foco">Sem foco</option>
-      </select>
-
-      <br /><br />
-
-      <textarea
-        placeholder="Descreva o que você está sentindo..."
-        value={mensagemIA}
-        onChange={(e) => setMensagemIA(e.target.value)}
-        style={{ width: "100%", height: "80px" }}
-      />
-
-      <br /><br />
-
-      <button onClick={enviarParaIA}>Falar com IA</button>
-
-      {/* 🧠 RESPOSTA */}
-      {respostaIA && (
-        <div style={{
-          marginTop: "20px",
-          padding: "15px",
-          border: "1px solid #ccc",
-          borderRadius: "10px",
-          background: "#f9f9f9"
-        }}>
-          <h3>🧠 Resposta da IA</h3>
-          <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
-        </div>
-      )}
-
-      <hr />
-
-      {/* 📊 GRÁFICO */}
-      <h3>📊 Evolução</h3>
-
-      <BarChart width={400} height={250} data={grafico}>
-        <XAxis dataKey="trilha" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="total" />
-      </BarChart>
-
-    </div>
-  );
-}
+app.listen(PORT, () => {
+  console.log("Servidor rodando na porta " + PORT);
+});

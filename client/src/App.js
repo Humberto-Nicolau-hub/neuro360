@@ -5,7 +5,7 @@ import {
   CartesianGrid, LineChart, Line
 } from "recharts";
 
-// 🔥 USE SUA ANON KEY AQUI (NÃO A SECRET)
+// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
@@ -20,6 +20,9 @@ function App() {
   const [estado, setEstado] = useState("");
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
+
+  const [meta, setMeta] = useState("");
+  const [trilha, setTrilha] = useState("");
 
   const [dados, setDados] = useState([]);
   const [grafico, setGrafico] = useState([]);
@@ -155,14 +158,18 @@ function App() {
       });
 
       const data = await res.json();
+
       setRespostaIA(data.resposta);
+      setMeta(data.meta || "");
+      setTrilha(data.trilha || "");
+      setFoco(data.trilha || "");
 
     } catch {
       setRespostaIA("Erro ao conectar com IA");
     }
   }
 
-  // 🔥 LOGIN
+  // LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -226,7 +233,21 @@ function App() {
 
       <hr />
 
-      <h2>{foco}</h2>
+      {/* 🎯 META */}
+      {meta && (
+        <>
+          <h2>🎯 Meta</h2>
+          <p>{meta}</p>
+        </>
+      )}
+
+      {/* 🚀 TRILHA */}
+      {trilha && (
+        <>
+          <h2>🚀 Trilha</h2>
+          <p>{trilha}</p>
+        </>
+      )}
 
       <h3>📊 Evolução</h3>
       <p>Score: {score}</p>
@@ -257,7 +278,7 @@ function App() {
 
       <hr />
 
-      <h3>🤖 IA</h3>
+      <h3>🤖 Resposta da IA</h3>
       <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
 
     </div>

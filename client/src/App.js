@@ -16,17 +16,11 @@ export default function App() {
   const [mensagemIA, setMensagemIA] = useState("");
   const [respostaIA, setRespostaIA] = useState("");
 
-  // 🔥 SCORE
   const [scoreEmocional, setScoreEmocional] = useState(50);
   const [nivel, setNivel] = useState("Neutro");
-
-  // 🔥 STREAK
   const [streak, setStreak] = useState(0);
-
-  // 🔥 CONQUISTAS
   const [conquistas, setConquistas] = useState([]);
 
-  // LOGIN
   async function login() {
     const { data } = await supabase.auth.signInWithPassword({
       email,
@@ -52,17 +46,13 @@ export default function App() {
     return "Autoconhecimento";
   }
 
-  // 🔥 STREAK
   function atualizarStreak() {
     const hoje = new Date().toDateString();
     const ultima = localStorage.getItem("ultimaAtividade");
     let streakAtual = parseInt(localStorage.getItem("streak")) || 0;
 
-    if (!ultima) {
-      streakAtual = 1;
-    } else if (ultima === hoje) {
-      // mantém
-    } else {
+    if (!ultima) streakAtual = 1;
+    else if (ultima !== hoje) {
       const ontem = new Date();
       ontem.setDate(ontem.getDate() - 1);
 
@@ -113,25 +103,17 @@ export default function App() {
       agrupado[item.trilha] = (agrupado[item.trilha] || 0) + 1;
     });
 
-    const formatado = Object.keys(agrupado).map(key => ({
-      trilha: key,
-      total: agrupado[key]
-    }));
+    setGrafico(Object.keys(agrupado).map(k => ({
+      trilha: k,
+      total: agrupado[k]
+    })));
 
-    setGrafico(formatado);
-
-    let melhor = "";
-    if (lista.length > 0) {
-      melhor = lista[lista.length - 1].trilha;
-    }
-
-    setRecomendacao(melhor);
+    setRecomendacao(lista.length ? lista[lista.length - 1].trilha : "");
 
     calcularScore(lista);
     verificarConquistas(lista);
   }
 
-  // 🔥 SCORE
   function calcularScore(dados) {
     let score = 50;
 
@@ -142,11 +124,9 @@ export default function App() {
       if (item.estado === "calmo") score += 2;
     });
 
-    if (score < 0) score = 0;
-    if (score > 100) score = 100;
+    score = Math.max(0, Math.min(100, score));
 
     let nivelAtual = "Neutro";
-
     if (score < 30) nivelAtual = "Crítico";
     else if (score < 50) nivelAtual = "Baixo";
     else if (score < 70) nivelAtual = "Estável";
@@ -156,7 +136,6 @@ export default function App() {
     setNivel(nivelAtual);
   }
 
-  // 🔥 CONQUISTAS
   function verificarConquistas(lista) {
     let novas = [];
 
@@ -167,36 +146,26 @@ export default function App() {
     if (streak >= 3) novas.push("📅 3 dias seguidos");
     if (streak >= 7) novas.push("💪 1 semana firme");
 
-    if (scoreEmocional >= 70) novas.push("🌟 Evoluindo emocionalmente");
-    if (scoreEmocional >= 85) novas.push("🧠 Alta performance emocional");
+    if (scoreEmocional >= 70) novas.push("🌟 Evoluindo");
+    if (scoreEmocional >= 85) novas.push("🧠 Alta performance");
 
     setConquistas(novas);
   }
 
-  async function gerarRespostaIA(textoUsuario) {
-    try {
-      const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          mensagem: textoUsuario,
-          email: usuario?.email
-        })
-      });
-
-      const data = await resposta.json();
-      return data.resposta;
-
-    } catch {
-      return "Erro ao conectar com IA";
-    }
-  }
-
   async function enviarParaIA() {
-    const resposta = await gerarRespostaIA(mensagemIA);
-    setRespostaIA(resposta);
+    const resposta = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem: mensagemIA,
+        email: usuario?.email
+      })
+    });
+
+    const data = await resposta.json();
+    setRespostaIA(data.resposta);
   }
 
   useEffect(() => {
@@ -204,8 +173,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const streakSalvo = localStorage.getItem("streak");
-    if (streakSalvo) setStreak(parseInt(streakSalvo));
+    const s = localStorage.getItem("streak");
+    if (s) setStreak(parseInt(s));
   }, []);
 
   useEffect(() => {
@@ -216,13 +185,8 @@ export default function App() {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
         <h1>🧠 NeuroMapa360</h1>
-
-        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-        <br /><br />
-
-        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-        <br /><br />
-
+        <input placeholder="Email" onChange={e => setEmail(e.target.value)} /><br /><br />
+        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} /><br /><br />
         <button onClick={login}>Entrar</button>
         <button onClick={cadastro}>Cadastrar</button>
       </div>
@@ -231,40 +195,47 @@ export default function App() {
 
   return (
     <div style={{ textAlign: "center", marginTop: 50 }}>
+
       <h1>🚀 NeuroMapa360</h1>
-
-      <p>{usuario.email}</p>
-      <button onClick={logout}>Sair</button>
-
-      <br /><br />
 
       <select onChange={e => setEstadoEmocional(e.target.value)}>
         <option value="">Como você está se sentindo?</option>
         <option value="ansioso">Ansioso</option>
+        <option value="triste">Triste</option>
         <option value="desmotivado">Desmotivado</option>
         <option value="sem_foco">Sem foco</option>
+        <option value="cansado">Cansado</option>
+        <option value="sobrecarregado">Sobrecarregado</option>
+        <option value="com_medo">Com medo</option>
+        <option value="com_raiva">Com raiva</option>
+        <option value="confuso">Confuso</option>
+        <option value="sem_proposito">Sem propósito</option>
+        <option value="calmo">Calmo</option>
+        <option value="focado">Focado</option>
+        <option value="motivado">Motivado</option>
       </select>
 
       <br /><br />
 
-      <button onClick={salvarDados}>
-        Gerar Recomendação
-      </button>
+      <textarea
+        placeholder="Descreva o que está acontecendo..."
+        value={mensagemIA}
+        onChange={(e) => setMensagemIA(e.target.value)}
+        style={{ width: "80%", height: 80 }}
+      />
+
+      <br /><br />
+
+      <button onClick={salvarDados}>Salvar</button>
+      <button onClick={enviarParaIA}>Falar com IA</button>
 
       <h2>{recomendacao}</h2>
 
-      <h2>📈 Evolução Emocional</h2>
-      <p>Score: {scoreEmocional}/100</p>
-      <p>Nível: {nivel}</p>
+      <h3>Score: {scoreEmocional} | {nivel}</h3>
+      <h3>🔥 Streak: {streak}</h3>
 
-      <h2>🔥 Sequência</h2>
-      <p>{streak} dias seguidos</p>
-
-      <h2>🏆 Conquistas</h2>
-      {conquistas.length === 0 && <p>Nenhuma ainda</p>}
-      {conquistas.map((c, i) => (
-        <p key={i}>{c}</p>
-      ))}
+      <h3>🏆 Conquistas</h3>
+      {conquistas.map((c, i) => <p key={i}>{c}</p>)}
 
       <BarChart width={300} height={250} data={grafico}>
         <XAxis dataKey="trilha" />
@@ -272,22 +243,6 @@ export default function App() {
         <Tooltip />
         <Bar dataKey="total" />
       </BarChart>
-
-      <hr />
-
-      <h2>🤖 Assistente</h2>
-
-      <input
-        value={mensagemIA}
-        onChange={(e) => setMensagemIA(e.target.value)}
-        placeholder="Como você está se sentindo?"
-      />
-
-      <br /><br />
-
-      <button onClick={enviarParaIA}>
-        Falar com IA
-      </button>
 
       <p>{respostaIA}</p>
     </div>

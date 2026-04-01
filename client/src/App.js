@@ -5,9 +5,10 @@ import {
   CartesianGrid, LineChart, Line
 } from "recharts";
 
+// 🔥 USE SUA ANON KEY AQUI (NÃO A SECRET)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_secret_fbSXnlQOsNQz2EA8GQ8kVA_5HlWt3cT"
+  "SUA_ANON_PUBLIC_KEY_AQUI"
 );
 
 function App() {
@@ -43,7 +44,7 @@ function App() {
 
   async function verificarUsuario() {
     const { data } = await supabase.auth.getUser();
-    if (data.user) {
+    if (data?.user) {
       setUsuario(data.user);
       buscarDados(data.user.email);
     }
@@ -55,7 +56,10 @@ function App() {
       password: senha
     });
 
-    if (error) return alert("Erro no login");
+    if (error) {
+      alert("Erro: " + error.message);
+      return;
+    }
 
     setUsuario(data.user);
     buscarDados(data.user.email);
@@ -75,7 +79,6 @@ function App() {
     const lista = data || [];
     setDados(lista);
 
-    // gráfico
     const contagem = {};
     lista.forEach(item => {
       contagem[item.estado] = (contagem[item.estado] || 0) + 1;
@@ -86,11 +89,12 @@ function App() {
       total: contagem[k]
     })));
 
-    // linha do tempo
     const porDia = {};
     lista.forEach(item => {
       const dia = item.created_at?.slice(0,10);
-      porDia[dia] = (porDia[dia] || 0) + 1;
+      if (dia) {
+        porDia[dia] = (porDia[dia] || 0) + 1;
+      }
     });
 
     setLinhaTempo(Object.keys(porDia).map(d => ({
@@ -98,8 +102,8 @@ function App() {
       total: porDia[d]
     })));
 
-    // score
     let novoScore = 50;
+
     lista.forEach(item => {
       if (item.eficaz) novoScore += 5;
       else novoScore -= 2;
@@ -140,20 +144,25 @@ function App() {
   }
 
   async function falarComIA() {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json"},
-      body: JSON.stringify({
-        mensagem: mensagemIA,
-        email: usuario.email
-      })
-    });
+    try {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({
+          mensagem: mensagemIA,
+          email: usuario.email
+        })
+      });
 
-    const data = await res.json();
-    setRespostaIA(data.resposta);
+      const data = await res.json();
+      setRespostaIA(data.resposta);
+
+    } catch {
+      setRespostaIA("Erro ao conectar com IA");
+    }
   }
 
-  // 🔥 TELA LOGIN
+  // 🔥 LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: 100 }}>
@@ -161,12 +170,14 @@ function App() {
 
         <input
           placeholder="Email"
+          value={email}
           onChange={(e)=>setEmail(e.target.value)}
         /><br/><br/>
 
         <input
           type="password"
           placeholder="Senha"
+          value={senha}
           onChange={(e)=>setSenha(e.target.value)}
         /><br/><br/>
 
@@ -204,6 +215,7 @@ function App() {
 
       <textarea
         placeholder="Descreva..."
+        value={mensagemIA}
         onChange={(e)=>setMensagemIA(e.target.value)}
       />
 

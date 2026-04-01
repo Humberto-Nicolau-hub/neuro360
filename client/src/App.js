@@ -8,7 +8,7 @@ import {
 // 🔥 USE SUA ANON KEY AQUI (NÃO A SECRET)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "SUA_ANON_PUBLIC_KEY_AQUI"
+  "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
 function App() {

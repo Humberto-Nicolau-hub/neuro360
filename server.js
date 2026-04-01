@@ -13,125 +13,14 @@ const supabase = createClient(
 );
 
 app.get("/", (req, res) => {
-  res.send("Neuro360 IA Terapêutica 🚀");
+  res.send("Neuro360 Perfil IA 🚀");
 });
 
-// 🧠 IA COM PNL REAL
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
     const texto = mensagem.toLowerCase();
-
-    let estado = "neutro";
-
-    if (texto.includes("ansioso")) estado = "ansioso";
-    else if (texto.includes("medo")) estado = "medo";
-    else if (texto.includes("triste")) estado = "triste";
-    else if (texto.includes("raiva")) estado = "raiva";
-    else if (texto.includes("desmotivado")) estado = "desmotivado";
-    else if (texto.includes("sem foco")) estado = "sem_foco";
-
-    // 🧠 TÉCNICAS PNL
-    let tecnica = "";
-
-    if (estado === "ansioso") {
-      tecnica = `
-Percebo ansiedade.
-
-Vamos regular isso agora:
-
-1. Inspire profundamente por 4 segundos  
-2. Segure por 4 segundos  
-3. Solte lentamente por 6 segundos  
-
-Repita 3 vezes.
-
-Agora imagine essa sensação diminuindo como um volume abaixando.
-`;
-    }
-
-    else if (estado === "medo") {
-      tecnica = `
-Percebo medo.
-
-Vamos trazer controle:
-
-1. Feche os olhos por alguns segundos  
-2. Imagine você em um lugar seguro  
-3. Agora veja essa situação como se estivesse distante  
-
-Você não está em perigo agora — apenas interpretando um cenário.
-`;
-    }
-
-    else if (estado === "triste") {
-      tecnica = `
-Percebo tristeza.
-
-Vamos mudar o estado:
-
-1. Lembre de um momento positivo da sua vida  
-2. Reviva essa sensação por alguns segundos  
-3. Traga essa emoção para o presente  
-
-Seu cérebro responde ao foco.
-`;
-    }
-
-    else if (estado === "raiva") {
-      tecnica = `
-Percebo tensão emocional.
-
-Vamos descarregar isso:
-
-1. Inspire profundamente  
-2. Contraia o corpo por 3 segundos  
-3. Solte lentamente  
-
-Repita algumas vezes.
-
-Agora observe: a intensidade já diminuiu.
-`;
-    }
-
-    else if (estado === "desmotivado") {
-      tecnica = `
-Percebo desmotivação.
-
-Vamos ativar ação:
-
-Faça algo extremamente simples agora:
-
-👉 Levante  
-👉 Dê 3 passos  
-👉 Respire fundo  
-
-Movimento gera mudança emocional.
-`;
-    }
-
-    else if (estado === "sem_foco") {
-      tecnica = `
-Percebo falta de foco.
-
-Vamos ajustar:
-
-1. Escolha UMA tarefa pequena  
-2. Execute por apenas 5 minutos  
-3. Ignore todo o resto  
-
-Foco nasce da ação, não da espera.
-`;
-    }
-
-    else {
-      tecnica = `
-Vamos observar seu estado com curiosidade.
-
-Sem julgamento. Apenas percepção.
-`;
-    }
 
     // 🔍 HISTÓRICO
     const { data: historico } = await supabase
@@ -139,23 +28,65 @@ Sem julgamento. Apenas percepção.
       .select("*")
       .eq("usuario", email);
 
-    let ajuste = "";
+    let contagem = {};
 
-    if (historico && historico.length > 3) {
-      ajuste = "\n💡 Você já está criando um padrão de evolução. Continue.";
+    (historico || []).forEach(item => {
+      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
+    });
+
+    // 🔥 PADRÃO DOMINANTE
+    let padrao = "equilibrado";
+
+    if (Object.keys(contagem).length > 0) {
+      padrao = Object.keys(contagem).reduce((a, b) =>
+        contagem[a] > contagem[b] ? a : b
+      );
+    }
+
+    // 🔍 ESTADO ATUAL
+    let estado = "neutro";
+
+    if (texto.includes("ansioso")) estado = "ansioso";
+    else if (texto.includes("medo")) estado = "medo";
+    else if (texto.includes("triste")) estado = "triste";
+    else if (texto.includes("raiva")) estado = "raiva";
+    else if (texto.includes("desmotivado")) estado = "desmotivado";
+
+    // 🧠 PERFIL PSICOLÓGICO
+    let perfil = "";
+
+    if (padrao === "ansioso") {
+      perfil = "Tendência à ansiedade antecipatória";
+    } else if (padrao === "desmotivado") {
+      perfil = "Oscilação entre ação e desmotivação";
+    } else if (padrao === "sem_foco") {
+      perfil = "Dificuldade de manter constância";
+    } else {
+      perfil = "Perfil emocional equilibrado em construção";
+    }
+
+    // 📈 EVOLUÇÃO
+    let evolucao = "";
+
+    if (historico && historico.length > 5) {
+      evolucao = "Você já está criando um padrão de evolução emocional consistente.";
+    } else {
+      evolucao = "Você está no início do seu processo de evolução.";
     }
 
     // 🧠 RESPOSTA FINAL
     const resposta = `
-🧠 NeuroMapa360 — Intervenção Inteligente
+🧠 NeuroMapa360 — Análise Profunda
 
-📍 Estado identificado: ${estado}
+📍 Estado atual: ${estado}
 
-${tecnica}
+🧬 Seu padrão emocional:
+${perfil}
 
-${ajuste}
+📊 Evolução:
+${evolucao}
 
-Você está treinando sua mente. Isso muda tudo.
+Você não é seu estado atual — você é o padrão que constrói.
 `;
 
     res.json({ resposta });

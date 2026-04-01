@@ -7,10 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 SUPABASE (SEGURO - usando ENV)
+// 🔐 VARIÁVEIS DE AMBIENTE
 const supabase = createClient(
-  process.https://qodzwxgabuadsnplcscl.supabase.co,
-  process.sb_secret_kwL3ZwIgZeRPIGLFaC-Y7w_oTjoAi3K
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 // TESTE
@@ -27,15 +27,10 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ erro: "Dados inválidos" });
     }
 
-    const { data: historico, error } = await supabase
+    const { data: historico } = await supabase
       .from("feedbacks")
       .select("*")
       .eq("usuario", email);
-
-    if (error) {
-      console.error("Erro Supabase:", error);
-      return res.status(500).json({ erro: "Erro ao buscar histórico" });
-    }
 
     let pontuacao = {};
 
@@ -64,39 +59,24 @@ app.post("/chat", async (req, res) => {
       }
     });
 
-    const texto = mensagem.toLowerCase();
-
-    let estadoAtual = "neutro";
-
-    if (texto.includes("ansioso")) estadoAtual = "ansioso";
-    else if (texto.includes("cansado")) estadoAtual = "cansado";
-    else if (texto.includes("desmotivado")) estadoAtual = "desmotivado";
-    else if (texto.includes("sem foco")) estadoAtual = "sem_foco";
-
     const resposta = `
-🧠 NeuroMapa360 — IA Adaptativa
+🧠 IA NeuroMapa360
 
-📍 Estado atual: ${estadoAtual}
+👉 Melhor trilha para você agora:
+${melhorTrilha}
 
-📊 Com base no seu histórico:
-👉 ${melhorTrilha}
-
-Quanto mais você usa, mais inteligente a IA fica.
+A IA está aprendendo com seu comportamento real.
 `;
 
-    res.json({
-      resposta,
-      trilha: melhorTrilha,
-      estado: estadoAtual
-    });
+    res.json({ resposta });
 
   } catch (error) {
-    console.error("Erro geral:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    console.error(error);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// 🚀 PORTA
+// PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

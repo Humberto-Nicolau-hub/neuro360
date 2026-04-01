@@ -8,7 +8,7 @@ const supabase = createClient(
 
 function App() {
 
-  const [usuario, setUsuario] = useState({ email: "contatobetaoofertas@gmail.com" });
+  const [usuario] = useState({ email: "contatobetaoofertas@gmail.com" });
 
   const [estado, setEstado] = useState("");
   const [mensagemIA, setMensagemIA] = useState("");
@@ -20,7 +20,6 @@ function App() {
   const [streak, setStreak] = useState(0);
   const [foco, setFoco] = useState("");
 
-  // ⭐ PREMIUM
   const [premium, setPremium] = useState(false);
 
   // 🔥 EMOÇÕES EXPANDIDAS
@@ -83,7 +82,7 @@ function App() {
     setFoco(focoAtual);
   }
 
-  // ⭐ ATIVAR PREMIUM
+  // ⭐ PREMIUM
   function ativarPremium() {
     window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
   }
@@ -93,9 +92,8 @@ function App() {
 
     if (!estado) return alert("Selecione um estado");
 
-    // 🔒 LIMITE FREE
     if (!premium && dados.length >= 5) {
-      alert("🔒 Você atingiu o limite gratuito. Ative o Premium para continuar.");
+      alert("🔒 Limite gratuito atingido. Ative o Premium.");
       return;
     }
 
@@ -156,6 +154,7 @@ function App() {
 
       <hr />
 
+      {/* EMOÇÃO */}
       <h3>Como você está se sentindo?</h3>
 
       <select onChange={(e) => setEstado(e.target.value)}>
@@ -167,6 +166,7 @@ function App() {
 
       <br /><br />
 
+      {/* TEXTO */}
       <textarea
         placeholder="Descreva o que você está sentindo..."
         value={mensagemIA}
@@ -182,8 +182,10 @@ function App() {
 
       <hr />
 
+      {/* FOCO */}
       <h2>{foco}</h2>
 
+      {/* EVOLUÇÃO */}
       <h3>📊 Evolução Emocional</h3>
 
       <p><strong>Score:</strong> {score}/100</p>
@@ -195,13 +197,21 @@ function App() {
         </p>
       )}
 
+      {/* STREAK */}
       <h3>🔥 Sequência</h3>
       <p>{streak} registros</p>
 
       <hr />
 
+      {/* IA */}
       <h3>🤖 Resposta da IA</h3>
       <p style={{ whiteSpace: "pre-line" }}>{respostaIA}</p>
+
+      {/* PERFIL */}
+      <h3>🧬 Perfil emocional</h3>
+      <p>
+        {respostaIA.includes("padrão") ? "Perfil detectado automaticamente pela IA acima." : "Em análise..."}
+      </p>
 
     </div>
   );

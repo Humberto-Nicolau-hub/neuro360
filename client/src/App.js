@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -13,20 +13,14 @@ function App() {
   const [senha, setSenha] = useState("");
 
   const [texto, setTexto] = useState("");
-
   const [resposta, setResposta] = useState("");
-  const [perfil, setPerfil] = useState("");
-  const [fase, setFase] = useState("");
-  const [tendencia, setTendencia] = useState("");
-  const [total, setTotal] = useState(0);
+  const [relatorio, setRelatorio] = useState("");
 
   async function login() {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data } = await supabase.auth.signInWithPassword({
       email,
       password: senha
     });
-
-    if (error) return alert("Erro login");
 
     setUsuario(data.user);
   }
@@ -42,12 +36,20 @@ function App() {
     });
 
     const data = await res.json();
-
     setResposta(data.resposta);
-    setPerfil(data.perfil);
-    setFase(data.fase);
-    setTendencia(data.tendencia);
-    setTotal(data.totalRegistros);
+  }
+
+  async function verRelatorio() {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        email: usuario.email
+      })
+    });
+
+    const data = await res.json();
+    setRelatorio(data.relatorio);
   }
 
   if (!usuario) {
@@ -67,26 +69,24 @@ function App() {
       <h1>🚀 NeuroMapa360</h1>
 
       <textarea
-        placeholder="Descreva seu estado..."
+        placeholder="Fale com a IA..."
         onChange={e=>setTexto(e.target.value)}
       />
 
       <br/><br/>
 
-      <button onClick={falarIA}>Analisar</button>
-
-      <hr />
-
-      <h2>📊 Dashboard</h2>
-      <p>🧬 Perfil: {perfil}</p>
-      <p>📍 Fase: {fase}</p>
-      <p>📈 Tendência: {tendencia}</p>
-      <p>📅 Registros: {total}</p>
+      <button onClick={falarIA}>Falar com IA</button>
+      <button onClick={verRelatorio}>📊 Ver meu relatório</button>
 
       <hr />
 
       <h2>🧠 IA</h2>
       <p>{resposta}</p>
+
+      <hr />
+
+      <h2>📊 Relatório</h2>
+      <p>{relatorio}</p>
 
     </div>
   );

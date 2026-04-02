@@ -12,15 +12,25 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-app.get("/", (req, res) => {
-  res.send("Neuro360 IA Comportamental 🚀");
-});
+// 🔍 DETECTAR ESTADO
+function detectarEstado(texto) {
+  texto = texto.toLowerCase();
+
+  if (texto.includes("ansioso") || texto.includes("ansiedade")) return "ansioso";
+  if (texto.includes("medo")) return "medo";
+  if (texto.includes("triste")) return "triste";
+  if (texto.includes("raiva") || texto.includes("irritado")) return "raiva";
+  if (texto.includes("desmotivado")) return "desmotivado";
+  if (texto.includes("frustrado")) return "frustrado";
+
+  return "neutro";
+}
 
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
-    const texto = mensagem.toLowerCase();
+    const estadoAtual = detectarEstado(mensagem);
 
     // 🔍 HISTÓRICO
     const { data: historico } = await supabase
@@ -29,99 +39,82 @@ app.post("/chat", async (req, res) => {
       .eq("usuario", email)
       .order("created_at", { ascending: false });
 
-    // 🔥 STREAK REAL
-    let streak = 0;
+    const lista = historico || [];
 
-    if (historico && historico.length > 0) {
-      let hoje = new Date();
+    // 🔥 ANALISAR TENDÊNCIA
+    let negativosRecentes = 0;
 
-      for (let i = 0; i < historico.length; i++) {
-        let dataRegistro = new Date(historico[i].created_at);
-
-        let diff = Math.floor(
-          (hoje - dataRegistro) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diff === i) {
-          streak++;
-        } else {
-          break;
-        }
+    lista.slice(0, 5).forEach(item => {
+      if (
+        item.estado === "ansioso" ||
+        item.estado === "desmotivado" ||
+        item.estado === "frustrado"
+      ) {
+        negativosRecentes++;
       }
-    }
+    });
 
-    // 🔥 DETECTAR FALHA
-    let falhou = false;
+    let tendencia = "estavel";
 
-    if (historico && historico.length > 0) {
-      let ultimo = new Date(historico[0].created_at);
-      let hoje = new Date();
+    if (negativosRecentes >= 4) tendencia = "queda";
+    else if (negativosRecentes <= 1) tendencia = "melhora";
 
-      let diff = Math.floor(
-        (hoje - ultimo) / (1000 * 60 * 60 * 24)
-      );
+    // 🔥 STREAK
+    let streak = lista.length;
 
-      if (diff > 1) falhou = true;
-    }
-
-    // 🔍 ESTADO
-    let estado = "neutro";
-
-    if (texto.includes("ansioso")) estado = "ansioso";
-    else if (texto.includes("medo")) estado = "medo";
-    else if (texto.includes("triste")) estado = "triste";
-    else if (texto.includes("raiva")) estado = "raiva";
-    else if (texto.includes("desmotivado")) estado = "desmotivado";
-    else if (texto.includes("frustrado")) estado = "frustrado";
-
-    // 🎯 META INTELIGENTE
+    // 🎯 META
     let meta = "Observar emoções por 3 dias";
     let trilha = "Autoconhecimento";
 
-    if (estado === "ansioso") {
-      meta = "Respirar por 3 dias";
-      trilha = "Ansiedade";
-    } else if (estado === "desmotivado") {
+    if (estadoAtual === "ansioso") {
+      meta = "Respiração por 3 dias";
+      trilha = "Controle da ansiedade";
+    }
+    else if (estadoAtual === "desmotivado") {
       meta = "Ação por 5 dias";
       trilha = "Produtividade";
-    } else if (estado === "frustrado") {
-      meta = "Reprogramar pensamentos por 3 dias";
+    }
+    else if (estadoAtual === "frustrado") {
+      meta = "Reprogramação mental por 3 dias";
       trilha = "Mentalidade";
     }
 
-    // 🧠 IA COMPORTAMENTAL
-    let mensagemIA = "";
+    // 🧠 TOM DA IA
+    let resposta = "🧠 NeuroMapa360 — IA Preditiva\n\n";
 
-    if (falhou) {
-      mensagemIA += "⚠️ Você quebrou sua sequência.\n";
-      mensagemIA += "Mas isso não é falha — é reinício consciente.\n\n";
+    if (tendencia === "queda") {
+      resposta += "⚠️ Estou detectando um padrão de queda emocional.\n";
+      resposta += "Se não ajustarmos agora, isso tende a se repetir.\n\n";
     }
 
-    if (streak > 0) {
-      mensagemIA += `🔥 Você está com ${streak} dias de consistência.\n\n`;
+    if (tendencia === "melhora") {
+      resposta += "📈 Você está evoluindo emocionalmente.\n";
+      resposta += "Continue reforçando esse comportamento.\n\n";
     }
 
-    if (estado === "ansioso") {
-      mensagemIA += "Seu sistema está em alerta.\nRespire profundamente por 4 segundos.\n";
-    } 
-    else if (estado === "desmotivado") {
-      mensagemIA += "Ação gera motivação, não o contrário.\nComece pequeno hoje.\n";
-    } 
-    else if (estado === "frustrado") {
-      mensagemIA += "Frustração indica expectativa não atendida.\nVamos ajustar sua percepção.\n";
-    } 
+    if (estadoAtual === "ansioso") {
+      resposta += "Sua mente está acelerada. Vamos desacelerar.\n";
+    }
+    else if (estadoAtual === "desmotivado") {
+      resposta += "Motivação vem depois da ação.\nComece pequeno.\n";
+    }
+    else if (estadoAtual === "frustrado") {
+      resposta += "Frustração é desalinhamento de expectativa.\nVamos recalibrar.\n";
+    }
     else {
-      mensagemIA += "Vamos manter consciência do seu estado atual.\n";
+      resposta += "Vamos manter consciência emocional.\n";
     }
 
-    mensagemIA += `\n🎯 Meta: ${meta}`;
-    mensagemIA += `\n🚀 Trilha: ${trilha}`;
+    resposta += `\n🎯 Meta: ${meta}`;
+    resposta += `\n🚀 Trilha: ${trilha}`;
+    resposta += `\n🔥 Sequência atual: ${streak} dias`;
 
     res.json({
-      resposta: mensagemIA,
+      resposta,
       meta,
       trilha,
-      streak
+      streak,
+      tendencia
     });
 
   } catch (error) {

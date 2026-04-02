@@ -12,14 +12,13 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// 🔍 DETECTAR ESTADO
 function detectarEstado(texto) {
   texto = texto.toLowerCase();
 
   if (texto.includes("ansioso")) return "ansioso";
   if (texto.includes("medo")) return "medo";
   if (texto.includes("triste")) return "triste";
-  if (texto.includes("raiva") || texto.includes("irritado")) return "raiva";
+  if (texto.includes("raiva")) return "raiva";
   if (texto.includes("desmotivado")) return "desmotivado";
   if (texto.includes("frustrado")) return "frustrado";
 
@@ -32,7 +31,6 @@ app.post("/chat", async (req, res) => {
 
     const estadoAtual = detectarEstado(mensagem);
 
-    // 🔍 HISTÓRICO
     const { data: historico } = await supabase
       .from("feedbacks")
       .select("*")
@@ -40,77 +38,63 @@ app.post("/chat", async (req, res) => {
 
     const lista = historico || [];
 
-    // 🧬 PERFIL PSICOLÓGICO
+    // 🧬 PERFIL
     let contagem = {};
-
     lista.forEach(item => {
       contagem[item.estado] = (contagem[item.estado] || 0) + 1;
     });
 
-    let perfil = "em desenvolvimento";
+    let perfil = "Equilibrado";
+    let maior = 0;
 
-    if (contagem["ansioso"] > 3) {
-      perfil = "Ansioso antecipatório";
-    }
-    else if (contagem["desmotivado"] > 3) {
-      perfil = "Oscilador de motivação";
-    }
-    else if (contagem["frustrado"] > 3) {
-      perfil = "Reativo emocional";
-    }
+    Object.keys(contagem).forEach(e => {
+      if (contagem[e] > maior) {
+        maior = contagem[e];
+        perfil = e;
+      }
+    });
 
-    // 🔥 FASE DO USUÁRIO
-    let fase = "início";
+    // 🔥 FASE
+    let fase = "Início";
+    if (lista.length > 5) fase = "Consciência";
+    if (lista.length > 10) fase = "Controle";
+    if (lista.length > 20) fase = "Transformação";
 
-    if (lista.length > 5) fase = "consciência";
-    if (lista.length > 10) fase = "controle";
-    if (lista.length > 20) fase = "transformação";
+    // 📊 RELATÓRIO
+    let negativos = ["ansioso","desmotivado","frustrado"];
+    let qtdNegativos = lista.filter(i => negativos.includes(i.estado)).length;
 
-    // 🎯 META PERSONALIZADA
-    let meta = "Observar emoções por 3 dias";
+    let tendencia = "Estável";
+    if (qtdNegativos > lista.length / 2) tendencia = "Queda";
+    else if (qtdNegativos < lista.length / 3) tendencia = "Melhora";
+
+    // 🎯 META
+    let meta = "Observar emoções";
     let trilha = "Autoconhecimento";
 
     if (estadoAtual === "ansioso") {
       meta = "Respiração por 3 dias";
       trilha = "Controle da ansiedade";
     }
-    else if (estadoAtual === "desmotivado") {
-      meta = "Ação por 5 dias";
-      trilha = "Produtividade";
-    }
-    else if (estadoAtual === "frustrado") {
-      meta = "Reprogramação mental por 3 dias";
-      trilha = "Mentalidade";
-    }
 
-    // 🧠 RESPOSTA INTELIGENTE
-    let resposta = `🧠 NeuroMapa360 — IA de Jornada\n\n`;
+    // 🧠 RESPOSTA
+    let resposta = `🧠 NeuroMapa360 — Relatório Inteligente\n\n`;
 
-    resposta += `🧬 Perfil identificado: ${perfil}\n`;
-    resposta += `📍 Fase atual: ${fase}\n\n`;
+    resposta += `🧬 Perfil: ${perfil}\n`;
+    resposta += `📍 Fase: ${fase}\n`;
+    resposta += `📊 Tendência: ${tendencia}\n\n`;
 
-    if (fase === "início") {
-      resposta += "Você está começando a entender seus padrões.\n";
-    }
-    else if (fase === "consciência") {
-      resposta += "Você já percebe seus padrões — agora pode intervir.\n";
-    }
-    else if (fase === "controle") {
-      resposta += "Você está assumindo controle emocional.\n";
-    }
-    else {
-      resposta += "Você está em transformação emocional real.\n";
-    }
-
-    resposta += `\n🎯 Meta atual: ${meta}`;
-    resposta += `\n🚀 Trilha: ${trilha}`;
+    resposta += `🎯 Meta: ${meta}\n`;
+    resposta += `🚀 Trilha: ${trilha}\n`;
 
     res.json({
       resposta,
       perfil,
       fase,
+      tendencia,
       meta,
-      trilha
+      trilha,
+      totalRegistros: lista.length
     });
 
   } catch (error) {

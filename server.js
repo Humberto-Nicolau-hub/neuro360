@@ -7,27 +7,39 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 SUPABASE (via ENV - correto e seguro)
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-// TESTE
-app.get("/", (req, res) => {
-  res.send("Neuro360 Perfil IA 🚀");
-});
+// 🧠 DETECÇÃO INTELIGENTE
+function detectarEstado(texto) {
+  texto = texto.toLowerCase();
 
-// 🧠 IA COMPLETA (PERFIL + EVOLUÇÃO + METAS)
+  const estados = {
+    ansioso: ["ansioso", "ansiedade", "nervoso", "preocupado"],
+    medo: ["medo", "inseguro", "receio", "assustado"],
+    triste: ["triste", "deprimido", "pra baixo", "desanimado"],
+    raiva: ["raiva", "irritado", "estressado", "bravo"],
+    desmotivado: ["desmotivado", "sem vontade", "preguiça", "desânimo"],
+    cansado: ["cansado", "esgotado", "sem energia"],
+    sem_foco: ["sem foco", "distraído", "não consigo focar"]
+  };
+
+  for (let estado in estados) {
+    if (estados[estado].some(p => texto.includes(p))) {
+      return estado;
+    }
+  }
+
+  return "neutro";
+}
+
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
-    if (!mensagem || !email) {
-      return res.status(400).json({ erro: "Dados inválidos" });
-    }
-
-    const texto = mensagem.toLowerCase();
+    const estado = detectarEstado(mensagem);
 
     // 🔍 HISTÓRICO
     const { data: historico } = await supabase
@@ -35,136 +47,83 @@ app.post("/chat", async (req, res) => {
       .select("*")
       .eq("usuario", email);
 
-    let contagem = {};
-
-    (historico || []).forEach(item => {
-      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
-    });
-
-    // 🔥 PADRÃO DOMINANTE
-    let padrao = "equilibrado";
-
-    if (Object.keys(contagem).length > 0) {
-      padrao = Object.keys(contagem).reduce((a, b) =>
-        contagem[a] > contagem[b] ? a : b
-      );
-    }
-
-    // 🔍 ESTADO ATUAL
-    let estado = "neutro";
-
-    if (texto.includes("ansioso")) estado = "ansioso";
-    else if (texto.includes("medo")) estado = "medo";
-    else if (texto.includes("triste")) estado = "triste";
-    else if (texto.includes("raiva")) estado = "raiva";
-    else if (texto.includes("desmotivado")) estado = "desmotivado";
-    else if (texto.includes("cansado")) estado = "cansado";
-    else if (texto.includes("sem foco")) estado = "sem_foco";
-
-    // 🧠 PERFIL PSICOLÓGICO
-    let perfil = "";
-
-    if (padrao === "ansioso") {
-      perfil = "Tendência à ansiedade antecipatória";
-    } else if (padrao === "desmotivado") {
-      perfil = "Oscilação entre ação e desmotivação";
-    } else if (padrao === "sem_foco") {
-      perfil = "Dificuldade de manter constância";
-    } else {
-      perfil = "Perfil emocional equilibrado em construção";
-    }
-
-    // 📈 EVOLUÇÃO
-    let evolucao = "";
+    // 🧠 PERFIL
+    let perfil = "Perfil em construção";
 
     if (historico && historico.length > 5) {
-      evolucao = "Você já está criando um padrão de evolução emocional consistente.";
-    } else {
-      evolucao = "Você está no início do seu processo de evolução.";
+      perfil = "Você já demonstra padrões emocionais consistentes";
     }
 
-    // 🎯 METAS INTELIGENTES
+    // 🎯 METAS + RESPOSTA PERSONALIZADA
+    let resposta = "";
     let meta = "";
     let trilha = "";
 
-    switch (estado) {
-      case "ansioso":
-        meta = "Reduzir ansiedade com respiração guiada por 3 dias";
-        trilha = "Respiração + controle emocional";
-        break;
-
-      case "medo":
-        meta = "Enfrentar pequenos medos progressivamente por 5 dias";
-        trilha = "Reprogramação de medo";
-        break;
-
-      case "raiva":
-        meta = "Controlar reações impulsivas por 3 dias";
-        trilha = "Controle emocional";
-        break;
-
-      case "triste":
-        meta = "Elevar energia emocional com gratidão por 5 dias";
-        trilha = "Elevação emocional";
-        break;
-
-      case "desmotivado":
-        meta = "Executar micro ações por 5 dias consecutivos";
-        trilha = "Ação e disciplina";
-        break;
-
-      case "cansado":
-        meta = "Recuperar energia com pausas estratégicas";
-        trilha = "Regulação de energia";
-        break;
-
-      case "sem_foco":
-        meta = "Aplicar técnica Pomodoro por 3 dias";
-        trilha = "Foco profundo";
-        break;
-
-      default:
-        meta = "Observar emoções e registrar por 3 dias";
-        trilha = "Autoconhecimento";
+    if (estado === "ansioso") {
+      resposta = "Percebo sinais de ansiedade. Vamos desacelerar sua mente agora.";
+      meta = "Controlar ansiedade por 3 dias com respiração guiada";
+      trilha = "Respiração + relaxamento";
     }
 
-    // 🧠 RESPOSTA FINAL COMPLETA
-    const resposta = `
-🧠 NeuroMapa360 — IA Evolutiva Profunda
+    else if (estado === "desmotivado") {
+      resposta = "Você está com baixa motivação — precisamos gerar movimento.";
+      meta = "Executar pequenas ações por 5 dias";
+      trilha = "Ação e disciplina";
+    }
 
-📍 Estado atual: ${estado}
+    else if (estado === "medo") {
+      resposta = "O medo está ativo — vamos trazer sensação de segurança.";
+      meta = "Enfrentar pequenos desafios por 5 dias";
+      trilha = "Reprogramação de medo";
+    }
 
-🧬 Seu padrão emocional:
-${perfil}
+    else if (estado === "triste") {
+      resposta = "Percebo tristeza — vamos elevar sua energia emocional.";
+      meta = "Praticar gratidão por 5 dias";
+      trilha = "Elevação emocional";
+    }
 
-📊 Evolução:
-${evolucao}
+    else if (estado === "raiva") {
+      resposta = "Você está sob tensão — vamos reduzir essa carga.";
+      meta = "Controlar reações por 3 dias";
+      trilha = "Controle emocional";
+    }
 
-🎯 Meta recomendada:
+    else {
+      resposta = "Vamos observar seu estado com consciência.";
+      meta = "Registrar emoções por 3 dias";
+      trilha = "Autoconhecimento";
+    }
+
+    const respostaFinal = `
+🧠 NeuroMapa360 — IA Inteligente
+
+📍 Estado identificado: ${estado}
+
+${resposta}
+
+🎯 Meta:
 ${meta}
 
-🚀 Trilha ideal:
+🚀 Trilha:
 ${trilha}
 
-Você não é seu estado atual.
-Você é o padrão que repete — e hoje você começou a mudar isso.
+${perfil}
 `;
 
     res.json({
-      resposta,
+      resposta: respostaFinal,
       estado,
-      padrao,
       meta,
       trilha
     });
 
   } catch (error) {
-    console.error("Erro no servidor:", error);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    console.error(error);
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
-// 🚀 PORTA
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

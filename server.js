@@ -12,6 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// 🔍 DETECTAR ESTADO
 function detectarEstado(texto) {
   texto = texto.toLowerCase();
 
@@ -25,11 +26,51 @@ function detectarEstado(texto) {
   return "neutro";
 }
 
+// 🧠 GERAR RELATÓRIO AUTOMÁTICO
+function gerarRelatorio(lista) {
+
+  if (!lista || lista.length === 0) {
+    return "Você ainda não iniciou sua jornada.";
+  }
+
+  let negativos = ["ansioso","desmotivado","frustrado"];
+
+  let qtdNegativos = lista.filter(i => negativos.includes(i.estado)).length;
+
+  let tendencia = "Estável";
+
+  if (qtdNegativos > lista.length / 2) {
+    tendencia = "Queda";
+  } else if (qtdNegativos < lista.length / 3) {
+    tendencia = "Melhora";
+  }
+
+  let mensagem = "📊 Relatório Inteligente:\n\n";
+
+  if (tendencia === "Queda") {
+    mensagem += "⚠️ Você está entrando em um padrão negativo.\n";
+    mensagem += "Hoje é um ponto crítico de mudança.\n";
+  }
+
+  if (tendencia === "Melhora") {
+    mensagem += "📈 Você está evoluindo emocionalmente.\n";
+    mensagem += "Continue reforçando esse padrão.\n";
+  }
+
+  if (tendencia === "Estável") {
+    mensagem += "⚖️ Você está em estabilidade emocional.\n";
+    mensagem += "Agora é hora de evoluir conscientemente.\n";
+  }
+
+  return mensagem;
+}
+
+// 🔥 CHAT
 app.post("/chat", async (req, res) => {
   try {
     const { mensagem, email } = req.body;
 
-    const estadoAtual = detectarEstado(mensagem);
+    const estado = detectarEstado(mensagem);
 
     const { data: historico } = await supabase
       .from("feedbacks")
@@ -38,63 +79,17 @@ app.post("/chat", async (req, res) => {
 
     const lista = historico || [];
 
-    // 🧬 PERFIL
-    let contagem = {};
-    lista.forEach(item => {
-      contagem[item.estado] = (contagem[item.estado] || 0) + 1;
-    });
+    const relatorio = gerarRelatorio(lista);
 
-    let perfil = "Equilibrado";
-    let maior = 0;
+    let resposta = `🧠 NeuroMapa360 — IA Ativa\n\n`;
 
-    Object.keys(contagem).forEach(e => {
-      if (contagem[e] > maior) {
-        maior = contagem[e];
-        perfil = e;
-      }
-    });
+    resposta += relatorio;
 
-    // 🔥 FASE
-    let fase = "Início";
-    if (lista.length > 5) fase = "Consciência";
-    if (lista.length > 10) fase = "Controle";
-    if (lista.length > 20) fase = "Transformação";
-
-    // 📊 RELATÓRIO
-    let negativos = ["ansioso","desmotivado","frustrado"];
-    let qtdNegativos = lista.filter(i => negativos.includes(i.estado)).length;
-
-    let tendencia = "Estável";
-    if (qtdNegativos > lista.length / 2) tendencia = "Queda";
-    else if (qtdNegativos < lista.length / 3) tendencia = "Melhora";
-
-    // 🎯 META
-    let meta = "Observar emoções";
-    let trilha = "Autoconhecimento";
-
-    if (estadoAtual === "ansioso") {
-      meta = "Respiração por 3 dias";
-      trilha = "Controle da ansiedade";
-    }
-
-    // 🧠 RESPOSTA
-    let resposta = `🧠 NeuroMapa360 — Relatório Inteligente\n\n`;
-
-    resposta += `🧬 Perfil: ${perfil}\n`;
-    resposta += `📍 Fase: ${fase}\n`;
-    resposta += `📊 Tendência: ${tendencia}\n\n`;
-
-    resposta += `🎯 Meta: ${meta}\n`;
-    resposta += `🚀 Trilha: ${trilha}\n`;
+    resposta += `\n📍 Estado atual: ${estado}\n`;
 
     res.json({
       resposta,
-      perfil,
-      fase,
-      tendencia,
-      meta,
-      trilha,
-      totalRegistros: lista.length
+      relatorio
     });
 
   } catch (error) {
@@ -103,8 +98,27 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// 🔥 ROTA RELATÓRIO DIRETO
+app.post("/relatorio", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const { data } = await supabase
+      .from("feedbacks")
+      .select("*")
+      .eq("usuario", email);
+
+    const relatorio = gerarRelatorio(data || []);
+
+    res.json({ relatorio });
+
+  } catch {
+    res.status(500).json({ erro: "Erro" });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log("Servidor rodando na porta " + PORT);
+  console.log("Servidor rodando 🚀");
 });

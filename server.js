@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
@@ -12,94 +13,43 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// 🔍 DETECTAR ESTADO
-function detectarEstado(texto) {
-  texto = texto.toLowerCase();
-
-  if (texto.includes("ansioso")) return "ansioso";
-  if (texto.includes("medo")) return "medo";
-  if (texto.includes("triste")) return "triste";
-  if (texto.includes("raiva")) return "raiva";
-  if (texto.includes("desmotivado")) return "desmotivado";
-  if (texto.includes("frustrado")) return "frustrado";
-
-  return "neutro";
-}
-
-// 🧠 GERAR RELATÓRIO AUTOMÁTICO
-function gerarRelatorio(lista) {
-
-  if (!lista || lista.length === 0) {
-    return "Você ainda não iniciou sua jornada.";
-  }
-
-  let negativos = ["ansioso","desmotivado","frustrado"];
-
-  let qtdNegativos = lista.filter(i => negativos.includes(i.estado)).length;
-
-  let tendencia = "Estável";
-
-  if (qtdNegativos > lista.length / 2) {
-    tendencia = "Queda";
-  } else if (qtdNegativos < lista.length / 3) {
-    tendencia = "Melhora";
-  }
-
-  let mensagem = "📊 Relatório Inteligente:\n\n";
-
-  if (tendencia === "Queda") {
-    mensagem += "⚠️ Você está entrando em um padrão negativo.\n";
-    mensagem += "Hoje é um ponto crítico de mudança.\n";
-  }
-
-  if (tendencia === "Melhora") {
-    mensagem += "📈 Você está evoluindo emocionalmente.\n";
-    mensagem += "Continue reforçando esse padrão.\n";
-  }
-
-  if (tendencia === "Estável") {
-    mensagem += "⚖️ Você está em estabilidade emocional.\n";
-    mensagem += "Agora é hora de evoluir conscientemente.\n";
-  }
-
-  return mensagem;
-}
-
-// 🔥 CHAT
-app.post("/chat", async (req, res) => {
-  try {
-    const { mensagem, email } = req.body;
-
-    const estado = detectarEstado(mensagem);
-
-    const { data: historico } = await supabase
-      .from("feedbacks")
-      .select("*")
-      .eq("usuario", email);
-
-    const lista = historico || [];
-
-    const relatorio = gerarRelatorio(lista);
-
-    let resposta = `🧠 NeuroMapa360 — IA Ativa\n\n`;
-
-    resposta += relatorio;
-
-    resposta += `\n📍 Estado atual: ${estado}\n`;
-
-    res.json({
-      resposta,
-      relatorio
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ erro: "Erro interno" });
+// 🔐 EMAIL CONFIG (GMAIL)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
-// 🔥 ROTA RELATÓRIO DIRETO
-app.post("/relatorio", async (req, res) => {
+// 🧠 GERAR MENSAGEM INTELIGENTE
+function gerarMensagem(lista) {
+  if (!lista || lista.length === 0) {
+    return "Vamos começar sua jornada hoje?";
+  }
+
+  let negativos = ["ansioso","desmotivado","frustrado"];
+  let qtd = lista.filter(i => negativos.includes(i.estado)).length;
+
+  if (qtd > lista.length / 2) {
+    return "⚠️ Seu padrão emocional está em queda. Volte hoje e ajuste isso.";
+  }
+
+  return "📈 Você está evoluindo. Continue hoje para manter sua sequência.";
+}
+
+// 📩 ENVIAR EMAIL
+async function enviarEmail(destino, mensagem) {
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: destino,
+    subject: "NeuroMapa360 - Sua evolução emocional",
+    text: mensagem
+  });
+}
+
+// 🔥 ROTA DE NOTIFICAÇÃO
+app.post("/notificar", async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -108,13 +58,20 @@ app.post("/relatorio", async (req, res) => {
       .select("*")
       .eq("usuario", email);
 
-    const relatorio = gerarRelatorio(data || []);
+    const mensagem = gerarMensagem(data || []);
 
-    res.json({ relatorio });
+    await enviarEmail(email, mensagem);
 
-  } catch {
-    res.status(500).json({ erro: "Erro" });
+    res.json({ ok: true, mensagem });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao enviar email" });
   }
+});
+
+app.get("/", (req, res) => {
+  res.send("Neuro360 Notificações 🚀");
 });
 
 const PORT = process.env.PORT || 3001;

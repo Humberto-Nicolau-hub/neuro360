@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// 🔐 SUPABASE (ANON KEY)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
+  "SUA_ANON_KEY_AQUI"
 );
-
-// 👑 ADMIN
-const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 function App() {
 
@@ -16,41 +12,13 @@ function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const [estado, setEstado] = useState("");
   const [texto, setTexto] = useState("");
 
-  const [respostaIA, setRespostaIA] = useState("");
-  const [meta, setMeta] = useState("");
-  const [trilha, setTrilha] = useState("");
-
-  const [progresso, setProgresso] = useState(0);
-  const [metaTotal, setMetaTotal] = useState(3);
-
-  const [streak, setStreak] = useState(0);
-
-  const [premium, setPremium] = useState(false);
-
-  const estados = [
-    "Ansioso","Desmotivado","Sem foco","Cansado","Triste",
-    "Irritado","Com medo","Confuso","Sobrecarregado",
-    "Procrastinando","Inseguro","Frustrado"
-  ];
-
-  useEffect(() => {
-    verificarUsuario();
-  }, []);
-
-  async function verificarUsuario() {
-    const { data } = await supabase.auth.getUser();
-
-    if (data?.user) {
-      setUsuario(data.user);
-
-      if (data.user.email === ADMIN_EMAIL) {
-        setPremium(true);
-      }
-    }
-  }
+  const [resposta, setResposta] = useState("");
+  const [perfil, setPerfil] = useState("");
+  const [fase, setFase] = useState("");
+  const [tendencia, setTendencia] = useState("");
+  const [total, setTotal] = useState(0);
 
   async function login() {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -58,153 +26,67 @@ function App() {
       password: senha
     });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    if (error) return alert("Erro login");
 
     setUsuario(data.user);
-
-    if (data.user.email === ADMIN_EMAIL) {
-      setPremium(true);
-    }
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setUsuario(null);
-  }
-
-  // 🤖 IA
-  async function falarComIA() {
+  async function falarIA() {
     const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        mensagem: texto + " " + estado,
+        mensagem: texto,
         email: usuario.email
       })
     });
 
     const data = await res.json();
 
-    setRespostaIA(data.resposta || "");
-    setMeta(data.meta || "");
-    setTrilha(data.trilha || "");
-    setStreak(data.streak || 0);
-
-    // 🔥 duração da meta
-    if (data.meta?.includes("5")) setMetaTotal(5);
-    else setMetaTotal(3);
-
-    setProgresso(0);
+    setResposta(data.resposta);
+    setPerfil(data.perfil);
+    setFase(data.fase);
+    setTendencia(data.tendencia);
+    setTotal(data.totalRegistros);
   }
 
-  // ✅ CHECK DIÁRIO
-  function completarDia() {
-    if (progresso < metaTotal) {
-      setProgresso(progresso + 1);
-    }
-  }
-
-  // 📊 BARRA VISUAL
-  function barraProgresso() {
-    let cheio = "█".repeat(progresso);
-    let vazio = "░".repeat(metaTotal - progresso);
-    return cheio + vazio;
-  }
-
-  // 🔐 LOGIN SCREEN
   if (!usuario) {
     return (
-      <div style={{ textAlign: "center", marginTop: 100 }}>
+      <div style={{ textAlign:"center", marginTop:100 }}>
         <h1>NeuroMapa360</h1>
-
-        <input
-          placeholder="Email"
-          onChange={e => setEmail(e.target.value)}
-        /><br /><br />
-
-        <input
-          type="password"
-          placeholder="Senha"
-          onChange={e => setSenha(e.target.value)}
-        /><br /><br />
-
+        <input placeholder="Email" onChange={e=>setEmail(e.target.value)} /><br/><br/>
+        <input type="password" placeholder="Senha" onChange={e=>setSenha(e.target.value)} /><br/><br/>
         <button onClick={login}>Entrar</button>
       </div>
     );
   }
 
-  // 🚀 APP
   return (
-    <div style={{ textAlign: "center", padding: 20 }}>
+    <div style={{ textAlign:"center", padding:20 }}>
 
       <h1>🚀 NeuroMapa360</h1>
-      <p>{usuario.email}</p>
-
-      <button onClick={logout}>Sair</button>
-
-      <br /><br />
-
-      <button style={{ background: "gold" }}>
-        ⭐ {premium ? "Premium Ativo" : "Ativar Premium"}
-      </button>
-
-      <hr />
-
-      <h3>Como você está se sentindo?</h3>
-
-      <select onChange={e => setEstado(e.target.value)}>
-        <option>Selecione</option>
-        {estados.map((e, i) => (
-          <option key={i}>{e}</option>
-        ))}
-      </select>
-
-      <br /><br />
 
       <textarea
-        placeholder="Descreva o que está sentindo..."
-        value={texto}
-        onChange={e => setTexto(e.target.value)}
+        placeholder="Descreva seu estado..."
+        onChange={e=>setTexto(e.target.value)}
       />
 
-      <br /><br />
+      <br/><br/>
 
-      <button onClick={falarComIA}>Falar com IA</button>
-
-      <hr />
-
-      {meta && (
-        <>
-          <h2>🎯 Meta</h2>
-          <p>{meta}</p>
-
-          <h3>📊 Progresso: {progresso}/{metaTotal}</h3>
-          <p>{barraProgresso()}</p>
-
-          <button onClick={completarDia}>
-            ✅ Completei hoje
-          </button>
-
-          <h3>🔥 Sequência: {streak} dias</h3>
-        </>
-      )}
-
-      {trilha && (
-        <>
-          <h2>🚀 Trilha</h2>
-          <p>{trilha}</p>
-        </>
-      )}
+      <button onClick={falarIA}>Analisar</button>
 
       <hr />
 
-      <h3>🤖 Resposta da IA</h3>
-      <p style={{ whiteSpace: "pre-line" }}>
-        {respostaIA}
-      </p>
+      <h2>📊 Dashboard</h2>
+      <p>🧬 Perfil: {perfil}</p>
+      <p>📍 Fase: {fase}</p>
+      <p>📈 Tendência: {tendencia}</p>
+      <p>📅 Registros: {total}</p>
+
+      <hr />
+
+      <h2>🧠 IA</h2>
+      <p>{resposta}</p>
 
     </div>
   );

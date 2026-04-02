@@ -51,7 +51,7 @@ function App() {
   // ✅ CHAMAR IA
   const falarComIA = async () => {
     try {
-      const res = await fetch("https://SEU-BACKEND.onrender.com/chat", {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

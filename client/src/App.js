@@ -11,6 +11,9 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
+// 🔥 EMAIL ADMIN (SEU)
+const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
+
 function App() {
 
   const [usuario, setUsuario] = useState(null);
@@ -47,8 +50,15 @@ function App() {
 
   async function verificarUsuario() {
     const { data } = await supabase.auth.getUser();
+
     if (data?.user) {
       setUsuario(data.user);
+
+      // 🔥 LIBERA PREMIUM PARA ADMIN
+      if (data.user.email === ADMIN_EMAIL) {
+        setPremium(true);
+      }
+
       buscarDados(data.user.email);
     }
   }
@@ -65,12 +75,19 @@ function App() {
     }
 
     setUsuario(data.user);
+
+    // 🔥 LIBERA PREMIUM PARA ADMIN
+    if (data.user.email === ADMIN_EMAIL) {
+      setPremium(true);
+    }
+
     buscarDados(data.user.email);
   }
 
   async function logout() {
     await supabase.auth.signOut();
     setUsuario(null);
+    setPremium(false);
   }
 
   async function buscarDados(emailUsuario) {
@@ -123,6 +140,11 @@ function App() {
   }
 
   function ativarPremium() {
+    if (premium) {
+      alert("Você já é Premium 🚀");
+      return;
+    }
+
     window.open("https://buy.stripe.com/test_00wbJ04be46146ecdqeZ200", "_blank");
   }
 
@@ -204,7 +226,7 @@ function App() {
       <br/><br/>
 
       <button onClick={ativarPremium} style={{ background: "gold", padding: 10 }}>
-        ⭐ Ativar Premium
+        ⭐ {premium ? "Premium Ativo" : "Ativar Premium"}
       </button>
 
       <hr />
@@ -233,7 +255,6 @@ function App() {
 
       <hr />
 
-      {/* 🎯 META */}
       {meta && (
         <>
           <h2>🎯 Meta</h2>
@@ -241,7 +262,6 @@ function App() {
         </>
       )}
 
-      {/* 🚀 TRILHA */}
       {trilha && (
         <>
           <h2>🚀 Trilha</h2>

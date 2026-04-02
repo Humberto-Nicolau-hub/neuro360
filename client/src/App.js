@@ -11,7 +11,7 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// 🔥 EMAIL ADMIN (SEU)
+// 🔥 ADMIN
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 function App() {
@@ -21,7 +21,7 @@ function App() {
   const [senha, setSenha] = useState("");
 
   const [estado, setEstado] = useState("");
-  const [mensagemIA, setMensagemIA] = useState("");
+  const [texto, setTexto] = useState(""); // 🔥 TEXTO REAL
   const [respostaIA, setRespostaIA] = useState("");
 
   const [meta, setMeta] = useState("");
@@ -34,14 +34,14 @@ function App() {
   const [score, setScore] = useState(50);
   const [nivel, setNivel] = useState("Estável");
   const [streak, setStreak] = useState(0);
-  const [foco, setFoco] = useState("");
 
   const [premium, setPremium] = useState(false);
 
-  const opcoesEmocionais = [
+  const estados = [
     "Ansioso","Desmotivado","Sem foco","Cansado","Triste",
     "Irritado","Com medo","Confuso","Sobrecarregado",
-    "Sem energia","Procrastinando","Desanimado","Inseguro","Frustrado"
+    "Sem energia","Procrastinando","Desanimado",
+    "Inseguro","Frustrado"
   ];
 
   useEffect(() => {
@@ -54,7 +54,6 @@ function App() {
     if (data?.user) {
       setUsuario(data.user);
 
-      // 🔥 LIBERA PREMIUM PARA ADMIN
       if (data.user.email === ADMIN_EMAIL) {
         setPremium(true);
       }
@@ -76,7 +75,6 @@ function App() {
 
     setUsuario(data.user);
 
-    // 🔥 LIBERA PREMIUM PARA ADMIN
     if (data.user.email === ADMIN_EMAIL) {
       setPremium(true);
     }
@@ -112,9 +110,7 @@ function App() {
     const porDia = {};
     lista.forEach(item => {
       const dia = item.created_at?.slice(0,10);
-      if (dia) {
-        porDia[dia] = (porDia[dia] || 0) + 1;
-      }
+      if (dia) porDia[dia] = (porDia[dia] || 0) + 1;
     });
 
     setLinhaTempo(Object.keys(porDia).map(d => ({
@@ -152,7 +148,7 @@ function App() {
     if (!estado) return alert("Selecione um estado");
 
     if (!premium && dados.length >= 5) {
-      alert("Limite gratuito atingido");
+      alert("Limite do plano gratuito atingido");
       return;
     }
 
@@ -160,7 +156,7 @@ function App() {
       {
         usuario: usuario.email,
         estado: estado.toLowerCase(),
-        trilha: foco,
+        trilha: trilha,
         eficaz: true
       }
     ]);
@@ -168,13 +164,16 @@ function App() {
     buscarDados(usuario.email);
   }
 
+  // 🔥 IA CORRIGIDA
   async function falarComIA() {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          mensagem: mensagemIA,
+          mensagem: texto + " " + estado, // 🔥 CORREÇÃO AQUI
           email: usuario.email
         })
       });
@@ -184,9 +183,9 @@ function App() {
       setRespostaIA(data.resposta);
       setMeta(data.meta || "");
       setTrilha(data.trilha || "");
-      setFoco(data.trilha || "");
 
-    } catch {
+    } catch (erro) {
+      console.error(erro);
       setRespostaIA("Erro ao conectar com IA");
     }
   }
@@ -235,17 +234,18 @@ function App() {
 
       <select onChange={(e)=>setEstado(e.target.value)}>
         <option value="">Selecione</option>
-        {opcoesEmocionais.map((o,i)=>(
-          <option key={i}>{o}</option>
+        {estados.map((e,i)=>(
+          <option key={i}>{e}</option>
         ))}
       </select>
 
       <br/><br/>
 
       <textarea
-        placeholder="Descreva..."
-        value={mensagemIA}
-        onChange={(e)=>setMensagemIA(e.target.value)}
+        placeholder="Descreva o que você está sentindo..."
+        value={texto}
+        onChange={(e)=>setTexto(e.target.value)}
+        style={{ width: "300px", height: "80px" }}
       />
 
       <br/><br/>

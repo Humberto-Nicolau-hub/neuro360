@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// 🔐 SUPABASE
+// 🔐 SUPABASE (ANON KEY)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
+// 👑 ADMIN
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 function App() {
@@ -17,13 +18,15 @@ function App() {
 
   const [estado, setEstado] = useState("");
   const [texto, setTexto] = useState("");
-  const [respostaIA, setRespostaIA] = useState("");
 
+  const [respostaIA, setRespostaIA] = useState("");
   const [meta, setMeta] = useState("");
   const [trilha, setTrilha] = useState("");
 
   const [progresso, setProgresso] = useState(0);
   const [metaTotal, setMetaTotal] = useState(3);
+
+  const [streak, setStreak] = useState(0);
 
   const [premium, setPremium] = useState(false);
 
@@ -55,7 +58,10 @@ function App() {
       password: senha
     });
 
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
     setUsuario(data.user);
 
@@ -69,11 +75,11 @@ function App() {
     setUsuario(null);
   }
 
-  // 🔥 IA
+  // 🤖 IA
   async function falarComIA() {
     const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mensagem: texto + " " + estado,
         email: usuario.email
@@ -82,55 +88,66 @@ function App() {
 
     const data = await res.json();
 
-    setRespostaIA(data.resposta);
-    setMeta(data.meta);
-    setTrilha(data.trilha);
+    setRespostaIA(data.resposta || "");
+    setMeta(data.meta || "");
+    setTrilha(data.trilha || "");
+    setStreak(data.streak || 0);
 
-    // 🔥 define duração da meta
+    // 🔥 duração da meta
     if (data.meta?.includes("5")) setMetaTotal(5);
     else setMetaTotal(3);
 
-    setProgresso(0); // reinicia meta
+    setProgresso(0);
   }
 
-  // 🔥 CHECK DIÁRIO
+  // ✅ CHECK DIÁRIO
   function completarDia() {
     if (progresso < metaTotal) {
       setProgresso(progresso + 1);
     }
   }
 
-  // 🔥 BARRA VISUAL
+  // 📊 BARRA VISUAL
   function barraProgresso() {
-    let preenchido = "█".repeat(progresso);
+    let cheio = "█".repeat(progresso);
     let vazio = "░".repeat(metaTotal - progresso);
-    return preenchido + vazio;
+    return cheio + vazio;
   }
 
+  // 🔐 LOGIN SCREEN
   if (!usuario) {
     return (
-      <div style={{ textAlign:"center", marginTop:100 }}>
+      <div style={{ textAlign: "center", marginTop: 100 }}>
         <h1>NeuroMapa360</h1>
 
-        <input placeholder="Email" onChange={e=>setEmail(e.target.value)} /><br/><br/>
-        <input type="password" placeholder="Senha" onChange={e=>setSenha(e.target.value)} /><br/><br/>
+        <input
+          placeholder="Email"
+          onChange={e => setEmail(e.target.value)}
+        /><br /><br />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          onChange={e => setSenha(e.target.value)}
+        /><br /><br />
 
         <button onClick={login}>Entrar</button>
       </div>
     );
   }
 
+  // 🚀 APP
   return (
-    <div style={{ textAlign:"center", padding:20 }}>
+    <div style={{ textAlign: "center", padding: 20 }}>
 
       <h1>🚀 NeuroMapa360</h1>
       <p>{usuario.email}</p>
 
       <button onClick={logout}>Sair</button>
 
-      <br/><br/>
+      <br /><br />
 
-      <button style={{ background:"gold" }}>
+      <button style={{ background: "gold" }}>
         ⭐ {premium ? "Premium Ativo" : "Ativar Premium"}
       </button>
 
@@ -138,20 +155,22 @@ function App() {
 
       <h3>Como você está se sentindo?</h3>
 
-      <select onChange={e=>setEstado(e.target.value)}>
+      <select onChange={e => setEstado(e.target.value)}>
         <option>Selecione</option>
-        {estados.map((e,i)=><option key={i}>{e}</option>)}
+        {estados.map((e, i) => (
+          <option key={i}>{e}</option>
+        ))}
       </select>
 
-      <br/><br/>
+      <br /><br />
 
       <textarea
-        placeholder="Descreva..."
+        placeholder="Descreva o que está sentindo..."
         value={texto}
-        onChange={e=>setTexto(e.target.value)}
+        onChange={e => setTexto(e.target.value)}
       />
 
-      <br/><br/>
+      <br /><br />
 
       <button onClick={falarComIA}>Falar com IA</button>
 
@@ -162,12 +181,14 @@ function App() {
           <h2>🎯 Meta</h2>
           <p>{meta}</p>
 
-          <h3>Progresso: {progresso}/{metaTotal}</h3>
+          <h3>📊 Progresso: {progresso}/{metaTotal}</h3>
           <p>{barraProgresso()}</p>
 
           <button onClick={completarDia}>
             ✅ Completei hoje
           </button>
+
+          <h3>🔥 Sequência: {streak} dias</h3>
         </>
       )}
 
@@ -180,8 +201,10 @@ function App() {
 
       <hr />
 
-      <h3>🤖 IA</h3>
-      <p style={{ whiteSpace:"pre-line" }}>{respostaIA}</p>
+      <h3>🤖 Resposta da IA</h3>
+      <p style={{ whiteSpace: "pre-line" }}>
+        {respostaIA}
+      </p>
 
     </div>
   );

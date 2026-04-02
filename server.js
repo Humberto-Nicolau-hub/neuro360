@@ -12,18 +12,23 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// 🧠 DETECÇÃO INTELIGENTE
+// 🧠 DETECÇÃO COMPLETA (ALINHADA COM O APP)
 function detectarEstado(texto) {
   texto = texto.toLowerCase();
 
   const estados = {
     ansioso: ["ansioso", "ansiedade", "nervoso", "preocupado"],
-    medo: ["medo", "inseguro", "receio", "assustado"],
-    triste: ["triste", "deprimido", "pra baixo", "desanimado"],
-    raiva: ["raiva", "irritado", "estressado", "bravo"],
-    desmotivado: ["desmotivado", "sem vontade", "preguiça", "desânimo"],
+    desmotivado: ["desmotivado", "sem vontade", "desânimo"],
+    sem_foco: ["sem foco", "distraído"],
     cansado: ["cansado", "esgotado", "sem energia"],
-    sem_foco: ["sem foco", "distraído", "não consigo focar"]
+    triste: ["triste", "deprimido", "pra baixo"],
+    irritado: ["irritado", "estressado", "bravo"],
+    medo: ["medo", "inseguro", "receio"],
+    confuso: ["confuso", "perdido"],
+    sobrecarregado: ["sobrecarregado", "muita pressão"],
+    procrastinando: ["procrastinando", "adiando tudo"],
+    inseguro: ["inseguro", "incerteza"],
+    frustrado: ["frustrado", "frustração"],
   };
 
   for (let estado in estados) {
@@ -41,66 +46,86 @@ app.post("/chat", async (req, res) => {
 
     const estado = detectarEstado(mensagem);
 
-    // 🔍 HISTÓRICO
-    const { data: historico } = await supabase
-      .from("feedbacks")
-      .select("*")
-      .eq("usuario", email);
-
-    // 🧠 PERFIL
-    let perfil = "Perfil em construção";
-
-    if (historico && historico.length > 5) {
-      perfil = "Você já demonstra padrões emocionais consistentes";
-    }
-
-    // 🎯 METAS + RESPOSTA PERSONALIZADA
+    // 🎯 RESPOSTAS PERSONALIZADAS
     let resposta = "";
     let meta = "";
     let trilha = "";
 
-    if (estado === "ansioso") {
-      resposta = "Percebo sinais de ansiedade. Vamos desacelerar sua mente agora.";
-      meta = "Controlar ansiedade por 3 dias com respiração guiada";
-      trilha = "Respiração + relaxamento";
-    }
+    switch (estado) {
 
-    else if (estado === "desmotivado") {
-      resposta = "Você está com baixa motivação — precisamos gerar movimento.";
-      meta = "Executar pequenas ações por 5 dias";
-      trilha = "Ação e disciplina";
-    }
+      case "ansioso":
+        resposta = "Sua mente está acelerada. Vamos desacelerar.";
+        meta = "Respiração guiada por 3 dias";
+        trilha = "Controle da ansiedade";
+        break;
 
-    else if (estado === "medo") {
-      resposta = "O medo está ativo — vamos trazer sensação de segurança.";
-      meta = "Enfrentar pequenos desafios por 5 dias";
-      trilha = "Reprogramação de medo";
-    }
+      case "desmotivado":
+        resposta = "Falta de energia para agir — vamos gerar movimento.";
+        meta = "Ação de 5 minutos por 5 dias";
+        trilha = "Ativação comportamental";
+        break;
 
-    else if (estado === "triste") {
-      resposta = "Percebo tristeza — vamos elevar sua energia emocional.";
-      meta = "Praticar gratidão por 5 dias";
-      trilha = "Elevação emocional";
-    }
+      case "frustrado":
+        resposta = "A frustração indica expectativa não atendida. Vamos reajustar sua estratégia.";
+        meta = "Reavaliar metas e dar um pequeno passo hoje";
+        trilha = "Reestruturação emocional";
+        break;
 
-    else if (estado === "raiva") {
-      resposta = "Você está sob tensão — vamos reduzir essa carga.";
-      meta = "Controlar reações por 3 dias";
-      trilha = "Controle emocional";
-    }
+      case "medo":
+        resposta = "O medo está te protegendo — mas também te limitando.";
+        meta = "Enfrentar 1 pequeno desconforto por dia";
+        trilha = "Coragem progressiva";
+        break;
 
-    else {
-      resposta = "Vamos observar seu estado com consciência.";
-      meta = "Registrar emoções por 3 dias";
-      trilha = "Autoconhecimento";
+      case "triste":
+        resposta = "A tristeza pede acolhimento, não resistência.";
+        meta = "Registrar 3 coisas positivas por dia";
+        trilha = "Elevação emocional";
+        break;
+
+      case "raiva":
+      case "irritado":
+        resposta = "Há excesso de tensão emocional. Vamos descarregar isso.";
+        meta = "Respiração + pausa antes de reagir";
+        trilha = "Controle emocional";
+        break;
+
+      case "confuso":
+        resposta = "Sua mente está sem direção clara.";
+        meta = "Definir 1 prioridade hoje";
+        trilha = "Clareza mental";
+        break;
+
+      case "sobrecarregado":
+        resposta = "Você está com excesso de carga mental.";
+        meta = "Eliminar 1 tarefa desnecessária";
+        trilha = "Gestão emocional";
+        break;
+
+      case "procrastinando":
+        resposta = "Você está evitando ação.";
+        meta = "Executar 1 tarefa em 5 minutos";
+        trilha = "Produtividade";
+        break;
+
+      case "inseguro":
+        resposta = "Falta de confiança momentânea.";
+        meta = "Listar 3 conquistas suas";
+        trilha = "Autoestima";
+        break;
+
+      default:
+        resposta = "Vamos observar seu estado com consciência.";
+        meta = "Registrar emoções por 3 dias";
+        trilha = "Autoconhecimento";
     }
 
     const respostaFinal = `
-🧠 NeuroMapa360 — IA Inteligente
+🧠 NeuroMapa360 — IA Evolutiva
 
 📍 Estado identificado: ${estado}
 
-${resposta}
+💬 ${resposta}
 
 🎯 Meta:
 ${meta}
@@ -108,7 +133,8 @@ ${meta}
 🚀 Trilha:
 ${trilha}
 
-${perfil}
+Você não é seu estado atual.
+Você é o padrão que constrói.
 `;
 
     res.json({

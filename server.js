@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
+const nodemailer = require("nodemailer"); // ✅ CORREÇÃO
 
 const app = express();
 

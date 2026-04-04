@@ -1,26 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-const nodemailer = require("nodemailer"); // ✅ CORREÇÃO
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// 🔗 SUPABASE
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
-
-// 🔐 EMAIL CONFIG (GMAIL)
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 
 // 🧠 GERAR MENSAGEM INTELIGENTE
 function gerarMensagem(lista) {
@@ -28,7 +19,7 @@ function gerarMensagem(lista) {
     return "Vamos começar sua jornada hoje?";
   }
 
-  let negativos = ["ansioso","desmotivado","frustrado"];
+  let negativos = ["ansioso", "desmotivado", "frustrado"];
   let qtd = lista.filter(i => negativos.includes(i.estado)).length;
 
   if (qtd > lista.length / 2) {
@@ -38,17 +29,7 @@ function gerarMensagem(lista) {
   return "📈 Você está evoluindo. Continue hoje para manter sua sequência.";
 }
 
-// 📩 ENVIAR EMAIL
-async function enviarEmail(destino, mensagem) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to: destino,
-    subject: "NeuroMapa360 - Sua evolução emocional",
-    text: mensagem
-  });
-}
-
-// 🔥 ROTA DE NOTIFICAÇÃO
+// 🔥 ROTA PRINCIPAL (SUBSTITUI EMAIL)
 app.post("/notificar", async (req, res) => {
   try {
     const { email } = req.body;
@@ -60,18 +41,20 @@ app.post("/notificar", async (req, res) => {
 
     const mensagem = gerarMensagem(data || []);
 
-    await enviarEmail(email, mensagem);
-
-    res.json({ ok: true, mensagem });
+    res.json({
+      ok: true,
+      mensagem
+    });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ erro: "Erro ao enviar email" });
+    res.status(500).json({ erro: "Erro interno" });
   }
 });
 
+// TESTE
 app.get("/", (req, res) => {
-  res.send("Neuro360 Notificações 🚀");
+  res.send("Neuro360 Backend Funcionando 🚀");
 });
 
 const PORT = process.env.PORT || 3001;

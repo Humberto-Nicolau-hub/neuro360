@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// 🔥 CONFIG SUPABASE (ANON KEY)
+// 🔥 CONFIG SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
@@ -14,8 +14,9 @@ function App() {
 
   const [mensagem, setMensagem] = useState("");
   const [resposta, setResposta] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // ✅ LOGIN CORRIGIDO
+  // ✅ LOGIN
   const fazerLogin = async () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -24,20 +25,15 @@ function App() {
       });
 
       if (error) {
-        console.error("Erro login:", error.message);
         alert("Erro no login: " + error.message);
         return;
       }
 
-      if (data?.user) {
-        setUsuario(data.user);
-        alert("Login realizado com sucesso 🚀");
-      } else {
-        alert("Usuário não encontrado");
-      }
+      setUsuario(data.user);
+      alert("Login realizado com sucesso 🚀");
 
     } catch (err) {
-      console.error("Erro geral:", err);
+      console.error(err);
       alert("Erro inesperado no login");
     }
   };
@@ -48,8 +44,15 @@ function App() {
     setUsuario(null);
   };
 
-  // ✅ CHAMAR IA
+  // 🔥 CHAMAR IA (CORRIGIDO)
   const falarComIA = async () => {
+    if (!mensagem) {
+      alert("Digite algo primeiro");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
         method: "POST",
@@ -58,20 +61,30 @@ function App() {
         },
         body: JSON.stringify({
           mensagem,
-          email: usuario.email
+          email: usuario?.email || "anonimo"
         })
       });
 
       const data = await res.json();
-      setResposta(data.resposta);
+
+      console.log("RESPOSTA BACKEND:", data);
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erro no servidor");
+      }
+
+      setResposta(data.resposta || "Sem resposta da IA");
 
     } catch (err) {
-      console.error(err);
+      console.error("ERRO IA:", err);
+      setResposta("Erro ao falar com IA (veja console)");
       alert("Erro ao falar com IA");
     }
+
+    setLoading(false);
   };
 
-  // 🔐 TELA LOGIN
+  // 🔐 LOGIN
   if (!usuario) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -98,7 +111,7 @@ function App() {
     );
   }
 
-  // 🔥 APP PRINCIPAL
+  // 🚀 APP
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       <h1>🚀 NeuroMapa360</h1>
@@ -114,11 +127,14 @@ function App() {
         placeholder="Descreva seu estado..."
         value={mensagem}
         onChange={(e) => setMensagem(e.target.value)}
+        style={{ width: "300px", height: "80px" }}
       />
 
       <br /><br />
 
-      <button onClick={falarComIA}>Falar com IA</button>
+      <button onClick={falarComIA} disabled={loading}>
+        {loading ? "Pensando..." : "Falar com IA"}
+      </button>
 
       <hr />
 

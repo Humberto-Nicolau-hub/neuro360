@@ -7,7 +7,7 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// 🎯 SCORE EMOCIONAL
+// 🎯 SCORE
 function calcularScore(emocao) {
   switch (emocao) {
     case "ansioso": return -2;
@@ -21,9 +21,9 @@ function calcularScore(emocao) {
 
 // 🧠 NÍVEL
 function calcularNivel(score) {
-  if (score < 20) return "Instável";
-  if (score < 50) return "Em recuperação";
-  if (score < 80) return "Consistente";
+  if (score < 10) return "Instável";
+  if (score < 30) return "Em evolução";
+  if (score < 60) return "Consistente";
   return "Alta performance";
 }
 
@@ -32,9 +32,10 @@ function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
-  const [emocao, setEmocao] = useState("desmotivado");
+  const [emocao, setEmocao] = useState("ansioso");
   const [mensagem, setMensagem] = useState("");
   const [resposta, setResposta] = useState("");
+  const [trilha, setTrilha] = useState([]);
 
   const [score, setScore] = useState(0);
 
@@ -56,10 +57,9 @@ function App() {
     setUsuario(null);
   };
 
-  // SALVAR ESTADO
+  // SALVAR
   const salvar = async () => {
     const novoScore = score + calcularScore(emocao);
-
     setScore(novoScore);
 
     await supabase.from("feedbacks").insert([
@@ -71,10 +71,10 @@ function App() {
       }
     ]);
 
-    alert("Registro salvo 🚀");
+    alert("Salvo com sucesso 🚀");
   };
 
-  // IA COM PNL
+  // IA + TRILHA
   const falarComIA = async () => {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
@@ -90,9 +90,12 @@ function App() {
       });
 
       const data = await res.json();
-      setResposta(data.resposta);
 
-    } catch {
+      setResposta(data.resposta);
+      setTrilha(data.trilha || []);
+
+    } catch (err) {
+      console.error(err);
       alert("Erro ao falar com IA");
     }
   };
@@ -105,6 +108,7 @@ function App() {
 
         <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
         <br /><br />
+
         <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
         <br /><br />
 
@@ -114,7 +118,8 @@ function App() {
   }
 
   return (
-    <div style={{ textAlign: "center", marginTop: 50 }}>
+    <div style={{ textAlign: "center", marginTop: 40 }}>
+
       <h1>🚀 NeuroMapa360</h1>
 
       <p>{usuario.email}</p>
@@ -124,7 +129,7 @@ function App() {
 
       <h2>Como você está se sentindo?</h2>
 
-      {/* 🔥 DROPDOWN */}
+      {/* EMOÇÃO */}
       <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
         <option value="ansioso">Ansioso</option>
         <option value="desmotivado">Desmotivado</option>
@@ -161,6 +166,19 @@ function App() {
       {/* IA */}
       <h2>🤖 Resposta da IA</h2>
       <p>{resposta}</p>
+
+      <hr />
+
+      {/* TRILHA */}
+      <h2>🧠 Sua trilha de evolução</h2>
+      {trilha.length > 0 ? (
+        trilha.map((passo, i) => (
+          <p key={i}>👉 {passo}</p>
+        ))
+      ) : (
+        <p>Nenhuma trilha ainda</p>
+      )}
+
     </div>
   );
 }

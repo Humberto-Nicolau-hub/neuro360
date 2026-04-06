@@ -77,7 +77,7 @@ function App() {
   // IA + TRILHA
   const falarComIA = async () => {
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/chat", {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

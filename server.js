@@ -8,31 +8,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-function gerarResposta(texto, emocao) {
-  if (emocao === "Desmotivado") {
-    return `Entendo como você está se sentindo. Às vezes a falta de motivação é apenas um sinal de que seu corpo e mente precisam de uma pausa. Que tal começar com algo pequeno hoje?`;
+function gerarResposta(texto, emocao, score) {
+  if (score <= -2) {
+    return "Percebo que você está em um momento mais difícil. Vamos dar um passo pequeno hoje, algo leve, só para começar a mudar esse estado.";
   }
 
-  if (emocao === "Ansioso") {
-    return `Respira fundo comigo. A ansiedade pode ser intensa, mas você não precisa resolver tudo agora. Foque em um passo de cada vez.`;
+  if (score === -1) {
+    return "Você parece um pouco sobrecarregado. Que tal desacelerar e focar em uma coisa de cada vez?";
   }
 
-  if (emocao === "Triste") {
-    return `Sinto muito que você esteja se sentindo assim. Permita-se sentir, mas lembre-se: isso é passageiro. Você não está sozinho.`;
+  if (score === 0) {
+    return "Você está em um estado neutro. Esse é um ótimo ponto para escolher uma direção positiva.";
   }
 
-  if (emocao === "Motivado") {
-    return `Excelente! Aproveite esse momento de energia para avançar em algo importante para você.`;
+  if (score >= 1) {
+    return "Excelente energia! Aproveite esse momento para avançar com força em algo importante.";
   }
 
-  return `Obrigado por compartilhar. Continue observando seus sentimentos e cuidando de si mesmo.`;
+  return "Continue observando seus sentimentos e evoluindo.";
 }
 
-app.post("/ia", async (req, res) => {
+app.post("/ia", (req, res) => {
   try {
-    const { texto, emocao } = req.body;
+    const { texto, emocao, score } = req.body;
 
-    const resposta = gerarResposta(texto, emocao);
+    const resposta = gerarResposta(texto, emocao, score);
 
     res.json({ resposta });
 
@@ -43,5 +43,5 @@ app.post("/ia", async (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("Servidor rodando na porta 3001");
+  console.log("Servidor rodando");
 });

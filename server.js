@@ -9,13 +9,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 Supabase Admin (usa SERVICE ROLE KEY)
-const supabase = createClient(
+// 🔐 Cliente ADMIN (apenas auth)
+const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔐 Middleware de autenticação REAL
+// 🔐 Middleware de autenticação
 async function autenticarUsuario(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
 
@@ -23,26 +23,40 @@ async function autenticarUsuario(req, res, next) {
     return res.status(401).json({ erro: "Token não enviado" });
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !data?.user) {
     return res.status(401).json({ erro: "Token inválido" });
   }
 
+  // 🔥 CLIENTE COM TOKEN DO USUÁRIO (RESPEITA RLS)
+  const supabaseUser = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    }
+  );
+
   req.user = data.user;
+  req.supabase = supabaseUser;
+
   next();
 }
 
-// 🚀 Rota da IA protegida
+// 🚀 Rota IA
 app.post("/ia", autenticarUsuario, async (req, res) => {
   const { texto } = req.body;
   const user = req.user;
+  const supabase = req.supabase;
 
   try {
-    // 💡 Simulação IA (substituir depois)
     const resposta = `Entendi que você está se sentindo: ${texto}. Vamos trabalhar isso juntos.`;
 
-    // 🔥 SALVANDO COM USER_ID CORRETO
     const { error } = await supabase
       .from("feedbacks")
       .insert([
@@ -61,6 +75,7 @@ app.post("/ia", autenticarUsuario, async (req, res) => {
 
     res.json({ resposta });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ erro: "Erro interno" });
   }
 });

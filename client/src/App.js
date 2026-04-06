@@ -8,6 +8,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [texto, setTexto] = useState("");
+  const [emocao, setEmocao] = useState("Neutro");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -69,14 +70,14 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ texto }),
+        body: JSON.stringify({ texto, emocao }),
       });
 
       const json = await res.json();
 
       setResposta(json?.resposta || "Sem resposta");
-
       setTexto("");
+
     } catch (err) {
       setResposta("Erro ao conectar com IA");
     } finally {
@@ -115,10 +116,24 @@ function App() {
 
           <br /><br />
 
+          <p><strong>Como você está se sentindo?</strong></p>
+          <select onChange={(e) => setEmocao(e.target.value)} value={emocao}>
+            <option>Motivado</option>
+            <option>Feliz</option>
+            <option>Produtivo</option>
+            <option>Neutro</option>
+            <option>Ansioso</option>
+            <option>Desmotivado</option>
+            <option>Triste</option>
+            <option>Cansado</option>
+          </select>
+
+          <br /><br />
+
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Como você está se sentindo?"
+            placeholder="Descreva como você está..."
             style={{ width: "300px", padding: "8px" }}
           />
 
@@ -129,6 +144,8 @@ function App() {
           </button>
 
           <br /><br />
+
+          <p><strong>Emoção:</strong> {emocao}</p>
 
           <p><strong>Resposta:</strong></p>
           <p>{resposta}</p>

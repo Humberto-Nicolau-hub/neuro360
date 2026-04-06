@@ -14,16 +14,25 @@ function App() {
   }, []);
 
   async function carregarUsuario() {
-    const { data } = await supabase.auth.getUser();
-    setUser(data.user);
+    try {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+    } catch (err) {
+      console.error("Erro ao carregar usuário:", err);
+    }
   }
 
   async function enviarTexto() {
+    if (!texto.trim()) {
+      setResposta("⚠️ Digite algo antes de enviar");
+      return;
+    }
+
     try {
       setLoading(true);
 
       const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = data?.session?.access_token;
 
       if (!token) {
         setResposta("⚠️ Usuário não autenticado");
@@ -50,7 +59,7 @@ function App() {
 
       console.log("RESPOSTA:", json);
 
-      setResposta(json.resposta || "⚠️ Sem resposta da IA");
+      setResposta(json?.resposta || "⚠️ Sem resposta da IA");
 
       setTexto("");
 

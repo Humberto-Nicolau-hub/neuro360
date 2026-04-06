@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import Stripe from "stripe";
 
 dotenv.config();
 
@@ -8,76 +9,38 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-async function gerarRespostaGPT(texto, emocao, score, tendencia) {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// 🔥 CRIAR CHECKOUT
+app.post("/create-checkout-session", async (req, res) => {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `
-Você é um assistente terapêutico especializado em Programação Neurolinguística (PNL).
-Seu papel é ajudar emocionalmente o usuário com empatia, clareza e orientação prática.
-
-Regras:
-- Seja acolhedor
-- Use linguagem simples
-- Ofereça um pequeno passo prático
-- Nunca seja técnico demais
-`,
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: "NeuroMapa360 Premium",
+            },
+            unit_amount: 1990, // R$19,90
           },
-          {
-            role: "user",
-            content: `
-Emoção atual: ${emocao}
-Score atual: ${score}
-Tendência emocional: ${tendencia}
-
-Usuário disse: ${texto}
-
-Responda de forma personalizada.
-`,
-          },
-        ],
-      }),
+          quantity: 1,
+        },
+      ],
+      success_url: "https://SEU-APP.vercel.app/sucesso",
+      cancel_url: "https://SEU-APP.vercel.app/cancelado",
     });
 
-    const data = await response.json();
+    res.json({ url: session.url });
 
-    return (
-      data.choices?.[0]?.message?.content ||
-      "Não consegui gerar resposta no momento."
-    );
-  } catch (error) {
-    console.error("Erro OpenAI:", error);
-    return "Erro ao conectar com IA.";
-  }
-}
-
-app.post("/ia", async (req, res) => {
-  try {
-    const { texto, emocao, score, tendencia } = req.body;
-
-    const resposta = await gerarRespostaGPT(
-      texto,
-      emocao,
-      score,
-      tendencia
-    );
-
-    res.json({ resposta });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Erro no servidor");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro ao criar checkout");
   }
 });
 
 app.listen(3001, () => {
-  console.log("Servidor rodando com GPT 🚀");
+  console.log("Servidor com Stripe rodando 💰");
 });

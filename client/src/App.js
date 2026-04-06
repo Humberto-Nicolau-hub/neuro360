@@ -120,6 +120,11 @@ function App() {
   }
 
   async function enviarTexto() {
+    if (!texto.trim()) {
+      setResposta("⚠️ Digite algo antes de enviar");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -141,7 +146,7 @@ function App() {
         usuario?.plano === "free" &&
         usosHoje.length >= usuario.limite_diario
       ) {
-        setResposta("🚫 Limite diário atingido.");
+        setResposta("🚫 Limite diário atingido. Faça upgrade 💎");
         return;
       }
 
@@ -171,44 +176,89 @@ function App() {
     }
   }
 
+  // 🔥 STRIPE
+  async function irParaPagamento() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/create-checkout-session`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      window.location.href = data.url;
+
+    } catch (err) {
+      alert("Erro ao iniciar pagamento");
+    }
+  }
+
   return (
     <div style={{ padding: 20 }}>
       <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
         <>
-          <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Senha" onChange={(e) => setSenha(e.target.value)} />
+          <h3>Login / Cadastro</h3>
+
+          <input
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <br /><br />
+
+          <input
+            type="password"
+            placeholder="Senha"
+            onChange={(e) => setSenha(e.target.value)}
+          />
+          <br /><br />
+
           <button onClick={login}>Entrar</button>
           <button onClick={cadastrar}>Cadastrar</button>
         </>
       ) : (
         <>
-          <p>{user.email}</p>
+          <p><strong>{user.email}</strong></p>
           <button onClick={logout}>Sair</button>
 
-          <select onChange={(e) => setEmocao(e.target.value)}>
+          <h3>Como você está se sentindo?</h3>
+
+          <select
+            onChange={(e) => setEmocao(e.target.value)}
+            value={emocao}
+          >
             <option>Motivado</option>
             <option>Feliz</option>
+            <option>Produtivo</option>
             <option>Neutro</option>
             <option>Ansioso</option>
+            <option>Desmotivado</option>
             <option>Triste</option>
+            <option>Cansado</option>
           </select>
+
+          <br /><br />
 
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
+            placeholder="Descreva como você está..."
           />
 
-          <button onClick={enviarTexto}>
-            {loading ? "..." : "Enviar"}
+          <br /><br />
+
+          <button onClick={enviarTexto} disabled={loading}>
+            {loading ? "Processando..." : "Falar com IA"}
           </button>
 
+          <br /><br />
+
+          <button onClick={irParaPagamento}>
+            💎 Tornar Premium
+          </button>
+
+          <h3>Resposta</h3>
           <p>{resposta}</p>
-
-          <button onClick={() => alert("Premium em breve 💎")}>
-            Upgrade
-          </button>
         </>
       )}
     </div>

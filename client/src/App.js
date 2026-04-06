@@ -3,6 +3,17 @@ import { supabase } from "./supabaseClient";
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
+const SCORE_MAP = {
+  Motivado: 2,
+  Feliz: 2,
+  Produtivo: 1,
+  Neutro: 0,
+  Ansioso: -1,
+  Desmotivado: -2,
+  Triste: -2,
+  Cansado: -1,
+};
+
 function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
@@ -11,10 +22,16 @@ function App() {
   const [emocao, setEmocao] = useState("Neutro");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historico, setHistorico] = useState([]);
+  const [scoreTotal, setScoreTotal] = useState(0);
 
   useEffect(() => {
     verificarUsuario();
   }, []);
+
+  useEffect(() => {
+    if (user) carregarHistorico();
+  }, [user]);
 
   async function verificarUsuario() {
     const { data } = await supabase.auth.getUser();
@@ -27,11 +44,8 @@ function App() {
       password: senha,
     });
 
-    if (error) {
-      alert("Erro no login");
-    } else {
-      verificarUsuario();
-    }
+    if (error) alert("Erro no login");
+    else verificarUsuario();
   }
 
   async function cadastrar() {
@@ -40,16 +54,37 @@ function App() {
       password: senha,
     });
 
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Cadastro realizado!");
-    }
+    if (error) alert("Erro ao cadastrar");
+    else alert("Cadastro realizado!");
   }
 
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
+  }
+
+  async function salvarRegistro(score) {
+    await supabase.from("registros_emocionais").insert([
+      {
+        user_id: user.id,
+        emocao,
+        texto,
+        score,
+      },
+    ]);
+  }
+
+  async function carregarHistorico() {
+    const { data } = await supabase
+      .from("registros_emocionais")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    setHistorico(data || []);
+
+    const total = (data || []).reduce((acc, item) => acc + item.score, 0);
+    setScoreTotal(total);
   }
 
   async function enviarTexto() {
@@ -61,6 +96,8 @@ function App() {
     try {
       setLoading(true);
 
+      const score = SCORE_MAP[emocao] || 0;
+
       const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
 
@@ -70,12 +107,20 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ texto, emocao }),
+        body: JSON.stringify({
+          texto,
+          emocao,
+          score,
+        }),
       });
 
       const json = await res.json();
 
       setResposta(json?.resposta || "Sem resposta");
+
+      await salvarRegistro(score);
+      await carregarHistorico();
+
       setTexto("");
 
     } catch (err) {
@@ -93,17 +138,10 @@ function App() {
         <>
           <h3>Login / Cadastro</h3>
 
-          <input
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
           <br /><br />
 
-          <input
-            type="password"
-            placeholder="Senha"
-            onChange={(e) => setSenha(e.target.value)}
-          />
+          <input type="password" placeholder="Senha" onChange={(e) => setSenha(e.target.value)} />
           <br /><br />
 
           <button onClick={login}>Entrar</button>
@@ -114,9 +152,8 @@ function App() {
           <p>Logado como: {user.email}</p>
           <button onClick={logout}>Sair</button>
 
-          <br /><br />
+          <h3>Como você está se sentindo?</h3>
 
-          <p><strong>Como você está se sentindo?</strong></p>
           <select onChange={(e) => setEmocao(e.target.value)} value={emocao}>
             <option>Motivado</option>
             <option>Feliz</option>
@@ -134,7 +171,6 @@ function App() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Descreva como você está..."
-            style={{ width: "300px", padding: "8px" }}
           />
 
           <br /><br />
@@ -143,12 +179,17 @@ function App() {
             {loading ? "Processando..." : "Falar com IA"}
           </button>
 
-          <br /><br />
+          <h3>📊 Score Total: {scoreTotal}</h3>
 
-          <p><strong>Emoção:</strong> {emocao}</p>
-
-          <p><strong>Resposta:</strong></p>
+          <h3>🧠 Resposta da IA</h3>
           <p>{resposta}</p>
+
+          <h3>📈 Histórico</h3>
+          {historico.map((item, i) => (
+            <div key={i}>
+              <strong>{item.emocao}</strong> ({item.score}) - {item.texto}
+            </div>
+          ))}
         </>
       )}
     </div>

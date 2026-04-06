@@ -7,6 +7,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [texto, setTexto] = useState("");
   const [resposta, setResposta] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     carregarUsuario();
@@ -19,8 +20,15 @@ function App() {
 
   async function enviarTexto() {
     try {
+      setLoading(true);
+
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
+
+      if (!token) {
+        setResposta("⚠️ Usuário não autenticado");
+        return;
+      }
 
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
@@ -31,19 +39,37 @@ function App() {
         body: JSON.stringify({ texto }),
       });
 
+      // 🔥 DEBUG
+      console.log("STATUS:", res.status);
+
+      // ❗ Se não for sucesso
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Erro backend:", text);
+        setResposta("❌ Erro no servidor");
+        return;
+      }
+
       const json = await res.json();
 
-      setResposta(json.resposta || "Sem resposta");
+      console.log("RESPOSTA:", json);
+
+      setResposta(json.resposta || "⚠️ Sem resposta da IA");
+
+      // limpa campo
+      setTexto("");
 
     } catch (err) {
-      console.error(err);
-      setResposta("Erro ao conectar");
+      console.error("ERRO:", err);
+      setResposta("❌ Erro ao conectar com IA");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>NeuroMapa360</h1>
+      <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
         <button onClick={carregarUsuario}>Entrar</button>
@@ -54,10 +80,19 @@ function App() {
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
+            placeholder="Digite como você está se sentindo..."
+            style={{ width: "300px", padding: "8px" }}
           />
 
-          <button onClick={enviarTexto}>Falar com IA</button>
+          <br /><br />
 
+          <button onClick={enviarTexto} disabled={loading}>
+            {loading ? "Processando..." : "Falar com IA"}
+          </button>
+
+          <br /><br />
+
+          <p><strong>Resposta:</strong></p>
           <p>{resposta}</p>
         </>
       )}

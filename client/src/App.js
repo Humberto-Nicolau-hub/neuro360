@@ -39,13 +39,9 @@ function App() {
         body: JSON.stringify({ texto }),
       });
 
-      // 🔥 DEBUG
-      console.log("STATUS:", res.status);
-
-      // ❗ Se não for sucesso
       if (!res.ok) {
-        const text = await res.text();
-        console.error("Erro backend:", text);
+        const erro = await res.text();
+        console.error("Erro backend:", erro);
         setResposta("❌ Erro no servidor");
         return;
       }
@@ -56,7 +52,6 @@ function App() {
 
       setResposta(json.resposta || "⚠️ Sem resposta da IA");
 
-      // limpa campo
       setTexto("");
 
     } catch (err) {

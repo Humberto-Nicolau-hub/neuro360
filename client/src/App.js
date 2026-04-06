@@ -23,14 +23,16 @@ function App() {
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState([]);
-  const [scoreTotal, setScoreTotal] = useState(0);
 
   useEffect(() => {
     verificarUsuario();
   }, []);
 
   useEffect(() => {
-    if (user) carregarHistorico();
+    if (user) {
+      carregarHistorico();
+      garantirUsuario();
+    }
   }, [user]);
 
   async function verificarUsuario() {
@@ -49,13 +51,47 @@ function App() {
   }
 
   async function cadastrar() {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password: senha,
     });
 
-    if (error) alert("Erro ao cadastrar");
-    else alert("Cadastro realizado!");
+    if (error) {
+      alert("Erro ao cadastrar");
+      return;
+    }
+
+    const userId = data.user.id;
+
+    await supabase.from("usuarios").insert([
+      {
+        id: userId,
+        email,
+        plano: "free",
+        limite_diario: 5,
+      },
+    ]);
+
+    alert("Cadastro realizado!");
+  }
+
+  async function garantirUsuario() {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (!data) {
+      await supabase.from("usuarios").insert([
+        {
+          id: user.id,
+          email: user.email,
+          plano: "free",
+          limite_diario: 5,
+        },
+      ]);
+    }
   }
 
   async function logout() {
@@ -78,47 +114,45 @@ function App() {
     const { data } = await supabase
       .from("registros_emocionais")
       .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
+      .eq("user_id", user.id);
 
     setHistorico(data || []);
-
-    const total = (data || []).reduce((acc, item) => acc + item.score, 0);
-    setScoreTotal(total);
   }
 
   async function enviarTexto() {
-    if (!texto.trim()) {
-      setResposta("⚠️ Digite algo antes de enviar");
-      return;
-    }
-
     try {
       setLoading(true);
 
+      const { data: usuario } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      const hoje = new Date().toISOString().split("T")[0];
+
+      const { data: usosHoje } = await supabase
+        .from("registros_emocionais")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", hoje);
+
+      if (
+        usuario?.plano === "free" &&
+        usosHoje.length >= usuario.limite_diario
+      ) {
+        setResposta("🚫 Limite diário atingido.");
+        return;
+      }
+
       const score = SCORE_MAP[emocao] || 0;
-
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token;
-
-      const tendencia =
-        historico.length > 0
-          ? historico.reduce((acc, item) => acc + item.score, 0) /
-            historico.length
-          : 0;
 
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          texto,
-          emocao,
-          score,
-          tendencia,
-        }),
+        body: JSON.stringify({ texto, emocao, score }),
       });
 
       const json = await res.json();
@@ -131,22 +165,10 @@ function App() {
       setTexto("");
 
     } catch (err) {
-      setResposta("Erro ao conectar com IA");
+      setResposta("Erro ao conectar");
     } finally {
       setLoading(false);
     }
-  }
-
-  function gerarGrafico() {
-    return historico.map((item, i) => (
-      <div key={i} style={{
-        width: 10,
-        height: 50 + item.score * 10,
-        background: item.score >= 0 ? "green" : "red",
-        display: "inline-block",
-        marginRight: 5
-      }} />
-    ));
   }
 
   return (
@@ -155,56 +177,38 @@ function App() {
 
       {!user ? (
         <>
-          <h3>Login / Cadastro</h3>
-
           <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-          <br /><br />
-
           <input type="password" placeholder="Senha" onChange={(e) => setSenha(e.target.value)} />
-          <br /><br />
-
           <button onClick={login}>Entrar</button>
           <button onClick={cadastrar}>Cadastrar</button>
         </>
       ) : (
         <>
-          <p><strong>{user.email}</strong></p>
+          <p>{user.email}</p>
           <button onClick={logout}>Sair</button>
 
-          <h3>Como você está se sentindo?</h3>
-
-          <select onChange={(e) => setEmocao(e.target.value)} value={emocao}>
+          <select onChange={(e) => setEmocao(e.target.value)}>
             <option>Motivado</option>
             <option>Feliz</option>
-            <option>Produtivo</option>
             <option>Neutro</option>
             <option>Ansioso</option>
-            <option>Desmotivado</option>
             <option>Triste</option>
-            <option>Cansado</option>
           </select>
-
-          <br /><br />
 
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Descreva como você está..."
           />
 
-          <br /><br />
-
-          <button onClick={enviarTexto} disabled={loading}>
-            {loading ? "Processando..." : "Falar com IA"}
+          <button onClick={enviarTexto}>
+            {loading ? "..." : "Enviar"}
           </button>
 
-          <h3>📊 Score Total: {scoreTotal}</h3>
-
-          <h3>📈 Evolução</h3>
-          {gerarGrafico()}
-
-          <h3>🧠 Resposta da IA</h3>
           <p>{resposta}</p>
+
+          <button onClick={() => alert("Premium em breve 💎")}>
+            Upgrade
+          </button>
         </>
       )}
     </div>

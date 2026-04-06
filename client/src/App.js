@@ -1,184 +1,157 @@
-import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient";
 
-// 🔐 SUPABASE
-const supabase = createClient(
-  "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
-);
-
-// 🎯 SCORE
-function calcularScore(emocao) {
-  switch (emocao) {
-    case "ansioso": return -2;
-    case "desmotivado": return -1;
-    case "triste": return -2;
-    case "confuso": return -1;
-    case "bem": return +2;
-    default: return 0;
-  }
-}
-
-// 🧠 NÍVEL
-function calcularNivel(score) {
-  if (score < 10) return "Instável";
-  if (score < 30) return "Em evolução";
-  if (score < 60) return "Consistente";
-  return "Alta performance";
-}
+const BACKEND_URL = "https://SEU-BACKEND.onrender.com";
 
 function App() {
-  const [usuario, setUsuario] = useState(null);
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-
-  const [emocao, setEmocao] = useState("ansioso");
-  const [mensagem, setMensagem] = useState("");
+  const [user, setUser] = useState(null);
+  const [texto, setTexto] = useState("");
   const [resposta, setResposta] = useState("");
-  const [trilha, setTrilha] = useState([]);
-
+  const [historico, setHistorico] = useState([]);
   const [score, setScore] = useState(0);
+  const [nivel, setNivel] = useState("");
 
-  // LOGIN
-  const login = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha
+  useEffect(() => {
+    carregarUsuario();
+  }, []);
+
+  async function carregarUsuario() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setUser(user);
+
+    if (user) carregarHistorico();
+  }
+
+  async function carregarHistorico() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+
+    const res = await fetch(`${BACKEND_URL}/dados`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    if (error) return alert(error.message);
+    const data = await res.json();
+    setHistorico(data);
+    calcularScore(data);
+  }
 
-    setUsuario(data.user);
-  };
+  function calcularScore(lista) {
+    let total = 0;
 
-  // LOGOUT
-  const sair = async () => {
-    await supabase.auth.signOut();
-    setUsuario(null);
-  };
+    lista.forEach((item) => {
+      const t = item.estado.toLowerCase();
 
-  // SALVAR
-  const salvar = async () => {
-    const novoScore = score + calcularScore(emocao);
-    setScore(novoScore);
+      if (t.includes("ansioso") || t.includes("triste")) total -= 1;
+      else if (t.includes("feliz") || t.includes("motivado")) total += 1;
+    });
 
-    await supabase.from("feedbacks").insert([
-      {
-        usuario: usuario.email,
-        emocao,
-        estado: mensagem,
-        score: novoScore
-      }
-    ]);
+    const media = lista.length ? total / lista.length : 0;
+    setScore(media);
 
-    alert("Salvo com sucesso 🚀");
-  };
+    if (media < -0.5) setNivel("🔴 Instável");
+    else if (media < 0) setNivel("🟡 Em progresso");
+    else if (media < 0.5) setNivel("🟢 Equilíbrio");
+    else setNivel("🔵 Alta performance");
+  }
 
-  // IA + TRILHA
-  const falarComIA = async () => {
+  async function enviarTexto() {
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const token = session?.access_token;
+
+      const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          mensagem,
-          emocao,
-          email: usuario.email
-        })
+        body: JSON.stringify({ texto }),
       });
 
       const data = await res.json();
 
-      setResposta(data.resposta);
-      setTrilha(data.trilha || []);
+      if (data?.resposta) {
+        setResposta(data.resposta);
+      } else {
+        setResposta("⚠️ Nenhuma resposta recebida da IA");
+      }
+
+      setTexto("");
+      carregarHistorico();
 
     } catch (err) {
       console.error(err);
-      alert("Erro ao falar com IA");
+      setResposta("Erro ao conectar com IA");
     }
-  };
+  }
 
-  // LOGIN UI
-  if (!usuario) {
-    return (
-      <div style={{ textAlign: "center", marginTop: 100 }}>
-        <h1>NeuroMapa360</h1>
+  async function login() {
+    const email = prompt("Digite seu email:");
+    if (!email) return;
 
-        <input placeholder="Email" onChange={e => setEmail(e.target.value)} />
-        <br /><br />
+    await supabase.auth.signInWithOtp({ email });
+    alert("Verifique seu email!");
+  }
 
-        <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-        <br /><br />
-
-        <button onClick={login}>Entrar</button>
-      </div>
-    );
+  async function logout() {
+    await supabase.auth.signOut();
+    setUser(null);
   }
 
   return (
-    <div style={{ textAlign: "center", marginTop: 40 }}>
+    <div style={{ padding: 20 }}>
+      <h1>🧠 NeuroMapa360</h1>
 
-      <h1>🚀 NeuroMapa360</h1>
-
-      <p>{usuario.email}</p>
-      <button onClick={sair}>Sair</button>
-
-      <hr />
-
-      <h2>Como você está se sentindo?</h2>
-
-      {/* EMOÇÃO */}
-      <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
-        <option value="ansioso">Ansioso</option>
-        <option value="desmotivado">Desmotivado</option>
-        <option value="triste">Triste</option>
-        <option value="confuso">Confuso</option>
-        <option value="bem">Bem</option>
-      </select>
-
-      <br /><br />
-
-      {/* TEXTO */}
-      <textarea
-        placeholder="Descreva seu estado..."
-        value={mensagem}
-        onChange={(e) => setMensagem(e.target.value)}
-        style={{ width: 300, height: 80 }}
-      />
-
-      <br /><br />
-
-      {/* BOTÕES */}
-      <button onClick={salvar}>Salvar</button>
-      <button onClick={falarComIA}>Falar com IA</button>
-
-      <hr />
-
-      {/* EVOLUÇÃO */}
-      <h2>📊 Evolução</h2>
-      <p>Score: {score}</p>
-      <p>Nível: {calcularNivel(score)}</p>
-
-      <hr />
-
-      {/* IA */}
-      <h2>🤖 Resposta da IA</h2>
-      <p>{resposta}</p>
-
-      <hr />
-
-      {/* TRILHA */}
-      <h2>🧠 Sua trilha de evolução</h2>
-      {trilha.length > 0 ? (
-        trilha.map((passo, i) => (
-          <p key={i}>👉 {passo}</p>
-        ))
+      {!user ? (
+        <button onClick={login}>Entrar</button>
       ) : (
-        <p>Nenhuma trilha ainda</p>
-      )}
+        <>
+          <p>{user.email}</p>
+          <button onClick={logout}>Sair</button>
 
+          <hr />
+
+          <h3>Como você está se sentindo?</h3>
+
+          <input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            style={{ width: "300px" }}
+          />
+
+          <br /><br />
+
+          <button onClick={enviarTexto}>Falar com IA</button>
+
+          <p><strong>Resposta:</strong> {resposta}</p>
+
+          <hr />
+
+          <h2>📊 Evolução</h2>
+          <p>Score: {score.toFixed(2)}</p>
+          <p>Nível: {nivel}</p>
+
+          <h3>📜 Histórico</h3>
+          <ul>
+            {historico.map((item) => (
+              <li key={item.id}>
+                {item.estado} - {new Date(item.created_at).toLocaleString()}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

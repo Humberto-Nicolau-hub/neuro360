@@ -79,7 +79,7 @@ function App() {
       .from("registros_emocionais")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     setHistorico(data || []);
 
@@ -101,6 +101,12 @@ function App() {
       const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
 
+      const tendencia =
+        historico.length > 0
+          ? historico.reduce((acc, item) => acc + item.score, 0) /
+            historico.length
+          : 0;
+
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
         headers: {
@@ -111,6 +117,7 @@ function App() {
           texto,
           emocao,
           score,
+          tendencia,
         }),
       });
 
@@ -128,6 +135,18 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function gerarGrafico() {
+    return historico.map((item, i) => (
+      <div key={i} style={{
+        width: 10,
+        height: 50 + item.score * 10,
+        background: item.score >= 0 ? "green" : "red",
+        display: "inline-block",
+        marginRight: 5
+      }} />
+    ));
   }
 
   return (
@@ -149,7 +168,7 @@ function App() {
         </>
       ) : (
         <>
-          <p>Logado como: {user.email}</p>
+          <p><strong>{user.email}</strong></p>
           <button onClick={logout}>Sair</button>
 
           <h3>Como você está se sentindo?</h3>
@@ -181,15 +200,11 @@ function App() {
 
           <h3>📊 Score Total: {scoreTotal}</h3>
 
+          <h3>📈 Evolução</h3>
+          {gerarGrafico()}
+
           <h3>🧠 Resposta da IA</h3>
           <p>{resposta}</p>
-
-          <h3>📈 Histórico</h3>
-          {historico.map((item, i) => (
-            <div key={i}>
-              <strong>{item.emocao}</strong> ({item.score}) - {item.texto}
-            </div>
-          ))}
         </>
       )}
     </div>

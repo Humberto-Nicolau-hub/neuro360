@@ -1,117 +1,47 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import fetch from "node-fetch";
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-/**
- * 🔐 Middleware de autenticação Supabase
- */
-async function autenticarUsuario(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({ erro: "Token não enviado" });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    const response = await fetch(
-      `${process.env.SUPABASE_URL}/auth/v1/user`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: process.env.SUPABASE_ANON_KEY,
-        },
-      }
-    );
-
-    const user = await response.json();
-
-    if (!user || user.error) {
-      return res.status(401).json({ erro: "Usuário inválido" });
-    }
-
-    req.user = user;
-    next();
-  } catch (err) {
-    console.error("Erro na autenticação:", err);
-    res.status(500).json({ erro: "Erro na autenticação" });
+function gerarResposta(texto, emocao) {
+  if (emocao === "Desmotivado") {
+    return `Entendo como você está se sentindo. Às vezes a falta de motivação é apenas um sinal de que seu corpo e mente precisam de uma pausa. Que tal começar com algo pequeno hoje?`;
   }
+
+  if (emocao === "Ansioso") {
+    return `Respira fundo comigo. A ansiedade pode ser intensa, mas você não precisa resolver tudo agora. Foque em um passo de cada vez.`;
+  }
+
+  if (emocao === "Triste") {
+    return `Sinto muito que você esteja se sentindo assim. Permita-se sentir, mas lembre-se: isso é passageiro. Você não está sozinho.`;
+  }
+
+  if (emocao === "Motivado") {
+    return `Excelente! Aproveite esse momento de energia para avançar em algo importante para você.`;
+  }
+
+  return `Obrigado por compartilhar. Continue observando seus sentimentos e cuidando de si mesmo.`;
 }
 
-/**
- * 🧠 ROTA IA (CORRETA)
- */
-app.post("/ia", autenticarUsuario, async (req, res) => {
+app.post("/ia", async (req, res) => {
   try {
-    console.log("🔥 BATEU NA ROTA /ia");
+    const { texto, emocao } = req.body;
 
-    const { texto } = req.body;
-
-    if (!texto) {
-      return res.status(400).json({ resposta: "Digite algo..." });
-    }
-
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "Você é um assistente terapêutico baseado em PNL, acolhedor e positivo.",
-            },
-            {
-              role: "user",
-              content: texto,
-            },
-          ],
-        }),
-      }
-    );
-
-    const data = await openaiResponse.json();
-
-    console.log("🤖 RESPOSTA OPENAI:", data);
-
-    const resposta =
-      data.choices?.[0]?.message?.content ||
-      "Não consegui gerar resposta.";
+    const resposta = gerarResposta(texto, emocao);
 
     res.json({ resposta });
-  } catch (err) {
-    console.error("❌ ERRO NA IA:", err);
-    res.status(500).json({ resposta: "Erro interno na IA" });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro no servidor");
   }
 });
 
-/**
- * 🌐 ROTA TESTE
- */
-app.get("/", (req, res) => {
-  res.send("Servidor rodando 🚀");
-});
-
-/**
- * 🚀 START SERVER
- */
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando na porta ${PORT}`);
+app.listen(3001, () => {
+  console.log("Servidor rodando na porta 3001");
 });

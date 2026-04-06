@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
-const BACKEND_URL = "https://COLE_SUA_URL_AQUI";
+const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 function App() {
   const [user, setUser] = useState(null);

@@ -1,38 +1,35 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-function gerarResposta(texto, emocao, score) {
+function gerarResposta(texto, emocao, score, tendencia) {
+  if (tendencia < -1) {
+    return "Percebo um padrão recente mais difícil. Vamos focar em pequenas vitórias diárias para inverter essa curva.";
+  }
+
   if (score <= -2) {
-    return "Percebo que você está em um momento mais difícil. Vamos dar um passo pequeno hoje, algo leve, só para começar a mudar esse estado.";
+    return "Você está em um momento sensível. Comece com algo leve hoje, sem pressão.";
   }
 
   if (score === -1) {
-    return "Você parece um pouco sobrecarregado. Que tal desacelerar e focar em uma coisa de cada vez?";
+    return "Respire e desacelere. Você não precisa resolver tudo agora.";
   }
 
-  if (score === 0) {
-    return "Você está em um estado neutro. Esse é um ótimo ponto para escolher uma direção positiva.";
+  if (score >= 1 && tendencia >= 0) {
+    return "Você está evoluindo bem. Continue nesse ritmo — consistência é o segredo.";
   }
 
-  if (score >= 1) {
-    return "Excelente energia! Aproveite esse momento para avançar com força em algo importante.";
-  }
-
-  return "Continue observando seus sentimentos e evoluindo.";
+  return "Continue observando seus sentimentos. Você está no caminho.";
 }
 
 app.post("/ia", (req, res) => {
   try {
-    const { texto, emocao, score } = req.body;
+    const { texto, emocao, score, tendencia } = req.body;
 
-    const resposta = gerarResposta(texto, emocao, score);
+    const resposta = gerarResposta(texto, emocao, score, tendencia);
 
     res.json({ resposta });
 

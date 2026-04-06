@@ -3,10 +3,16 @@ import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
 
-// 🔐 Cliente ADMIN (apenas auth)
+// 🔐 Cliente ADMIN
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -26,7 +32,7 @@ async function autenticarUsuario(req, res, next) {
     return res.status(401).json({ erro: "Token inválido" });
   }
 
-  // 🔥 CLIENTE COM TOKEN DO USUÁRIO (RESPEITA RLS)
+  // Cliente com RLS
   const supabaseUser = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY,
@@ -47,11 +53,15 @@ async function autenticarUsuario(req, res, next) {
 
 // 🚀 Rota IA
 app.post("/ia", autenticarUsuario, async (req, res) => {
-  const { texto } = req.body;
-  const user = req.user;
-  const supabase = req.supabase;
-
   try {
+    const { texto } = req.body;
+    const user = req.user;
+    const supabase = req.supabase;
+
+    if (!texto) {
+      return res.status(400).json({ erro: "Texto não enviado" });
+    }
+
     const resposta = `Entendi que você está se sentindo: ${texto}. Vamos trabalhar isso juntos.`;
 
     const { error } = await supabase
@@ -66,14 +76,34 @@ app.post("/ia", autenticarUsuario, async (req, res) => {
       ]);
 
     if (error) {
-      console.error(error);
+      console.error("Erro Supabase:", error);
       return res.status(500).json({ erro: "Erro ao salvar" });
     }
 
-    res.json({ resposta });
+    return res.json({ resposta });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ erro: "Erro interno" });
+    console.error("Erro geral:", err);
+    return res.status(500).json({ erro: "Erro interno" });
+  }
+});
+
+// 📊 Rota dados
+app.get("/dados", autenticarUsuario, async (req, res) => {
+  try {
+    const { data, error } = await req.supabase
+      .from("feedbacks")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ erro: error.message });
+    }
+
+    return res.json(data);
+
+  } catch (err) {
+    return res.status(500).json({ erro: "Erro ao buscar dados" });
   }
 });
 

@@ -1,38 +1,77 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-function gerarResposta(texto, emocao, score, tendencia) {
-  if (tendencia < -1) {
-    return "Percebo um padrão recente mais difícil. Vamos focar em pequenas vitórias diárias para inverter essa curva.";
-  }
+async function gerarRespostaGPT(texto, emocao, score, tendencia) {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `
+Você é um assistente terapêutico especializado em Programação Neurolinguística (PNL).
+Seu papel é ajudar emocionalmente o usuário com empatia, clareza e orientação prática.
 
-  if (score <= -2) {
-    return "Você está em um momento sensível. Comece com algo leve hoje, sem pressão.";
-  }
+Regras:
+- Seja acolhedor
+- Use linguagem simples
+- Ofereça um pequeno passo prático
+- Nunca seja técnico demais
+`,
+          },
+          {
+            role: "user",
+            content: `
+Emoção atual: ${emocao}
+Score atual: ${score}
+Tendência emocional: ${tendencia}
 
-  if (score === -1) {
-    return "Respire e desacelere. Você não precisa resolver tudo agora.";
-  }
+Usuário disse: ${texto}
 
-  if (score >= 1 && tendencia >= 0) {
-    return "Você está evoluindo bem. Continue nesse ritmo — consistência é o segredo.";
-  }
+Responda de forma personalizada.
+`,
+          },
+        ],
+      }),
+    });
 
-  return "Continue observando seus sentimentos. Você está no caminho.";
+    const data = await response.json();
+
+    return (
+      data.choices?.[0]?.message?.content ||
+      "Não consegui gerar resposta no momento."
+    );
+  } catch (error) {
+    console.error("Erro OpenAI:", error);
+    return "Erro ao conectar com IA.";
+  }
 }
 
-app.post("/ia", (req, res) => {
+app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, score, tendencia } = req.body;
 
-    const resposta = gerarResposta(texto, emocao, score, tendencia);
+    const resposta = await gerarRespostaGPT(
+      texto,
+      emocao,
+      score,
+      tendencia
+    );
 
     res.json({ resposta });
-
   } catch (error) {
     console.error(error);
     res.status(500).send("Erro no servidor");
@@ -40,5 +79,5 @@ app.post("/ia", (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("Servidor rodando");
+  console.log("Servidor rodando com GPT 🚀");
 });

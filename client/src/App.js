@@ -8,7 +8,7 @@ function App() {
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Neutro");
   const [resposta, setResposta] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [historico, setHistorico] = useState([]);
 
   useEffect(() => {
     carregarUsuario();
@@ -17,109 +17,80 @@ function App() {
   async function carregarUsuario() {
     const { data } = await supabase.auth.getUser();
     setUser(data?.user || null);
+    carregarEvolucao();
   }
 
-  async function login() {
-    const email = prompt("Digite seu email:");
-    const senha = prompt("Digite sua senha:");
+  async function carregarEvolucao() {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha,
+    const res = await fetch(`${BACKEND_URL}/evolucao`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (error) {
-      alert("Erro ao logar");
-    } else {
-      carregarUsuario();
-    }
+    const json = await res.json();
+    setHistorico(json);
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setUser(null);
-  }
-
-  function calcularScore(emocao) {
-    switch (emocao) {
-      case "Muito mal":
-        return -2;
-      case "Mal":
-        return -1;
-      case "Neutro":
-        return 0;
-      case "Bem":
-        return 1;
-      case "Muito bem":
-        return 2;
-      default:
-        return 0;
-    }
+  function calcularScore(e) {
+    return {
+      "Muito mal": -2,
+      Mal: -1,
+      Neutro: 0,
+      Bem: 1,
+      "Muito bem": 2,
+    }[e];
   }
 
   async function enviarTexto() {
-    if (!texto.trim()) {
-      setResposta("⚠️ Digite algo");
-      return;
-    }
+    const { data } = await supabase.auth.getSession();
+    const token = data.session.access_token;
 
-    try {
-      setLoading(true);
+    const score = calcularScore(emocao);
 
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token;
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ texto, emocao, score }),
+    });
 
-      const score = calcularScore(emocao);
+    const json = await res.json();
+    setResposta(json.resposta);
+    setTexto("");
 
-      const res = await fetch(`${BACKEND_URL}/ia`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          texto,
-          emocao,
-          score,
-        }),
-      });
-
-      const json = await res.json();
-
-      setResposta(json?.resposta || "Sem resposta");
-      setTexto("");
-
-    } catch (err) {
-      console.error(err);
-      setResposta("Erro ao conectar IA");
-    } finally {
-      setLoading(false);
-    }
+    carregarEvolucao();
   }
 
-  function irParaPagamento() {
-    window.location.href = "https://SEU-LINK-STRIPE-AQUI";
+  function trilha(emocao) {
+    if (emocao === "Muito mal" || emocao === "Mal") {
+      return "Respiração + Escrita emocional";
+    }
+    if (emocao === "Neutro") {
+      return "Clareza mental";
+    }
+    return "Expansão e foco";
+  }
+
+  function pagar() {
+    window.location.href = "https://SEU-LINK-STRIPE";
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "auto" }}>
+    <div style={{ padding: 20 }}>
       <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
-        <button onClick={login}>Entrar</button>
+        <button onClick={() => supabase.auth.signInWithOtp({ email: prompt("Email") })}>
+          Entrar
+        </button>
       ) : (
         <>
-          <p><strong>{user.email}</strong></p>
-          <button onClick={logout}>Sair</button>
+          <p>{user.email}</p>
 
-          <hr />
-
-          <h3>Como você está se sentindo?</h3>
-
-          <select
-            value={emocao}
-            onChange={(e) => setEmocao(e.target.value)}
-          >
+          <select onChange={(e) => setEmocao(e.target.value)}>
             <option>Muito mal</option>
             <option>Mal</option>
             <option>Neutro</option>
@@ -129,31 +100,26 @@ function App() {
 
           <br /><br />
 
-          <textarea
+          <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Descreva como você está se sentindo..."
-            style={{ width: "100%", height: 100 }}
+            placeholder="Como você está?"
           />
 
-          <br /><br />
+          <button onClick={enviarTexto}>Falar com IA</button>
 
-          <button onClick={enviarTexto} disabled={loading}>
-            {loading ? "Processando..." : "Falar com IA"}
-          </button>
+          <button onClick={pagar}>💎 Premium</button>
 
-          <br /><br />
+          <h3>Resposta</h3>
+          <p>{resposta}</p>
 
-          <button onClick={irParaPagamento}>
-            💎 Tornar Premium
-          </button>
+          <h3>Evolução</h3>
+          {historico.map((h, i) => (
+            <p key={i}>{h.score}</p>
+          ))}
 
-          <hr />
-
-          <h3>Resposta da IA</h3>
-          <p style={{ whiteSpace: "pre-line" }}>
-            {resposta || "Sem resposta ainda"}
-          </p>
+          <h3>Trilha sugerida</h3>
+          <p>{trilha(emocao)}</p>
         </>
       )}
     </div>

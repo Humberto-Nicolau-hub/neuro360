@@ -44,7 +44,7 @@ function App() {
   }
 
   function pagar() {
-    window.location.href = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
+    window.location.href = "https://buy.stripe.com/SEU_LINK_REAL";
   }
 
   return (

@@ -8,19 +8,21 @@ function App() {
   const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
-  const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 🔥 NOVO: histórico de mensagens (chat real)
+  const [mensagens, setMensagens] = useState([]);
+
   useEffect(() => {
-    verificarUsuario();
+    carregarUsuario();
   }, []);
 
-  async function verificarUsuario() {
+  async function carregarUsuario() {
     const { data } = await supabase.auth.getUser();
     setUser(data?.user || null);
   }
 
-  async function entrar() {
+  async function handleLogin() {
     if (!email) {
       alert("Digite um email");
       return;
@@ -31,8 +33,8 @@ function App() {
     });
 
     if (error) {
-      console.error(error);
       alert("Erro ao enviar email");
+      console.error(error);
     } else {
       alert("Verifique seu email 📩");
     }
@@ -41,13 +43,11 @@ function App() {
   async function sair() {
     await supabase.auth.signOut();
     setUser(null);
+    setMensagens([]);
   }
 
   async function enviarTexto() {
-    if (!texto.trim()) {
-      setResposta("⚠️ Digite algo");
-      return;
-    }
+    if (!texto.trim()) return;
 
     try {
       setLoading(true);
@@ -68,20 +68,30 @@ function App() {
       });
 
       const json = await res.json();
-      setResposta(json?.resposta || "⚠️ Sem resposta");
+
+      // 🔥 NOVO: adiciona conversa no histórico
+      setMensagens((prev) => [
+        ...prev,
+        { tipo: "user", texto },
+        { tipo: "ia", texto: json?.resposta || "Sem resposta" },
+      ]);
+
       setTexto("");
 
     } catch (err) {
       console.error(err);
-      setResposta("❌ Erro ao conectar IA");
     } finally {
       setLoading(false);
     }
   }
 
   function irParaPagamento() {
-    window.location.href = "SEU_LINK_STRIPE_AQUI";
+    window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
   }
+
+  // 🔥 LÓGICA PREMIUM (SIMPLES)
+  const isPremium =
+    user?.email === "contatobetaofertas@gmail.com"; // 👉 coloque seu email aqui
 
   return (
     <div style={{ padding: 20 }}>
@@ -94,14 +104,14 @@ function App() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
           <br /><br />
-
-          <button onClick={entrar}>Entrar / Cadastrar</button>
+          <button onClick={handleLogin}>
+            Entrar / Cadastrar
+          </button>
         </>
       ) : (
         <>
-          <p>{user.email}</p>
+          <p>👤 {user.email}</p>
 
           <button onClick={sair}>Sair</button>
 
@@ -109,7 +119,10 @@ function App() {
 
           <h3>Como você está se sentindo?</h3>
 
-          <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
+          <select
+            value={emocao}
+            onChange={(e) => setEmocao(e.target.value)}
+          >
             <option>Ansioso</option>
             <option>Triste</option>
             <option>Desmotivado</option>
@@ -135,14 +148,33 @@ function App() {
 
           <br /><br />
 
-          <button onClick={irParaPagamento}>
-            💎 Tornar Premium
-          </button>
+          {!isPremium && (
+            <button onClick={irParaPagamento}>
+              💎 Tornar Premium
+            </button>
+          )}
+
+          {isPremium && (
+            <p style={{ color: "green" }}>
+              🌟 Você é Premium
+            </p>
+          )}
 
           <br /><br />
 
-          <h3>Resposta:</h3>
-          <p>{resposta}</p>
+          <h3>Conversa:</h3>
+
+          {/* 🔥 CHAT */}
+          <div style={{ maxWidth: "500px" }}>
+            {mensagens.map((msg, index) => (
+              <p key={index}>
+                <strong>
+                  {msg.tipo === "user" ? "Você:" : "IA:"}
+                </strong>{" "}
+                {msg.texto}
+              </p>
+            ))}
+          </div>
         </>
       )}
     </div>

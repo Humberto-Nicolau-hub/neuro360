@@ -1,238 +1,131 @@
-import { useState, useEffect } from "react";
-import { supabase } from "./supabaseClient";
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
 
-// 🔥 URL DO BACKEND
-const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+dotenv.config();
 
-// 🔥 SCORE
-const SCORE_MAP = {
-  Motivado: 2,
-  Feliz: 2,
-  Produtivo: 1,
-  Neutro: 0,
-  Ansioso: -1,
-  Desmotivado: -2,
-  Triste: -2,
-  Cansado: -1,
-};
+const app = express();
 
-// 🔥 LANDING PAGE (EMBUTIDA)
-function Landing({ onLogin }) {
-  const irParaPagamento = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/create-checkout-session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: "cliente@teste.com",
-        }),
-      });
+app.use(cors());
+app.use(express.json());
 
-      const data = await res.json();
-      window.location.href = data.url;
-    } catch (err) {
-      alert("Erro ao iniciar pagamento");
+// 🔐 SUPABASE
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// 🔐 MIDDLEWARE AUTENTICAÇÃO
+async function autenticarUsuario(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ erro: "Token não enviado" });
     }
-  };
 
-  return (
-    <div style={{
-      fontFamily: "Arial",
-      padding: "40px",
-      textAlign: "center",
-      background: "#0f172a",
-      color: "white",
-      minHeight: "100vh"
-    }}>
-      <h1 style={{ fontSize: "40px" }}>
-        🧠 Reprograme sua mente. Transforme sua vida.
-      </h1>
+    const token = authHeader.replace("Bearer ", "");
 
-      <p style={{ marginTop: "20px" }}>
-        IA + PNL para reduzir ansiedade, eliminar crenças limitantes
-        e evoluir emocionalmente todos os dias.
-      </p>
+    const { data, error } = await supabase.auth.getUser(token);
 
-      <button
-        onClick={irParaPagamento}
-        style={{
-          marginTop: "30px",
-          padding: "15px 30px",
-          fontSize: "18px",
-          background: "#22c55e",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer"
-        }}
-      >
-        💎 Quero acessar o Premium
-      </button>
+    if (error || !data.user) {
+      return res.status(401).json({ erro: "Token inválido" });
+    }
 
-      <br /><br />
-
-      <button onClick={onLogin}>
-        Já tenho conta
-      </button>
-    </div>
-  );
+    req.user = data.user;
+    next();
+  } catch (err) {
+    console.error("Erro autenticação:", err);
+    res.status(500).json({ erro: "Erro interno auth" });
+  }
 }
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [mostrarLogin, setMostrarLogin] = useState(false);
+// 🧠 ROTA IA TERAPÊUTICA
+app.post("/ia", autenticarUsuario, async (req, res) => {
+  try {
+    const { texto, emocao, score } = req.body;
 
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-
-  const [texto, setTexto] = useState("");
-  const [emocao, setEmocao] = useState("Neutro");
-  const [resposta, setResposta] = useState("");
-
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    verificarUsuario();
-  }, []);
-
-  async function verificarUsuario() {
-    const { data } = await supabase.auth.getUser();
-    setUser(data?.user || null);
-  }
-
-  async function login() {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha,
-    });
-
-    if (error) alert("Erro no login");
-    else verificarUsuario();
-  }
-
-  async function cadastrar() {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-    });
-
-    if (error) {
-      alert("Erro ao cadastrar");
-      return;
+    if (!texto) {
+      return res.status(400).json({ erro: "Texto é obrigatório" });
     }
 
-    await supabase.from("usuarios").insert([
+    const prompt = `
+Você é um terapeuta especializado em Programação Neurolinguística (PNL), neurociência e reprogramação mental.
+
+Seu papel NÃO é dar respostas genéricas.
+
+Você deve:
+
+1. Acolher emocionalmente o usuário
+2. Validar o sentimento dele
+3. Identificar possível padrão mental limitante
+4. Fazer um REFRAME (mudança de percepção)
+5. Fazer 1 ou 2 perguntas poderosas
+6. Sugerir uma ação prática imediata
+7. Finalizar com encorajamento
+
+Contexto do usuário:
+Emoção: ${emocao || "não informado"}
+Score emocional: ${score || 0}
+Relato: "${texto}"
+
+Responda de forma humana, profunda, empática e transformadora.
+
+Evite respostas curtas.
+Evite frases genéricas.
+Seja terapêutico.
+`;
+
+    const respostaIA = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await respostaIA.json();
+
+    const resposta = data.choices?.[0]?.message?.content;
+
+    // 💾 SALVA NO SUPABASE (histórico)
+    await supabase.from("registros").insert([
       {
-        id: data.user.id,
-        email,
-        plano: "free",
-        limite_diario: 5,
+        user_id: req.user.id,
+        emocao,
+        texto,
+        score,
       },
     ]);
 
-    alert("Cadastro realizado!");
+    res.json({ resposta });
+
+  } catch (error) {
+    console.error("Erro IA:", error);
+    res.status(500).json({ erro: "Erro na IA" });
   }
+});
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setUser(null);
-  }
+// 🔥 HEALTH CHECK
+app.get("/", (req, res) => {
+  res.send("🔥 NeuroMapa360 API rodando");
+});
 
-  async function enviarTexto() {
-    if (!texto.trim()) return;
+// 🚀 START SERVER
+const PORT = process.env.PORT || 3001;
 
-    try {
-      setLoading(true);
-
-      const score = SCORE_MAP[emocao] || 0;
-
-      const res = await fetch(`${BACKEND_URL}/ia`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ texto, emocao, score }),
-      });
-
-      const json = await res.json();
-      setResposta(json?.resposta || "Sem resposta");
-
-      setTexto("");
-
-    } catch {
-      setResposta("Erro");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 🔥 LANDING
-  if (!user && !mostrarLogin) {
-    return <Landing onLogin={() => setMostrarLogin(true)} />;
-  }
-
-  // 🔥 LOGIN
-  if (!user) {
-    return (
-      <div style={{ padding: 20 }}>
-        <h2>Login</h2>
-
-        <input
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <br /><br />
-
-        <input
-          type="password"
-          placeholder="Senha"
-          onChange={(e) => setSenha(e.target.value)}
-        />
-        <br /><br />
-
-        <button onClick={login}>Entrar</button>
-        <button onClick={cadastrar}>Cadastrar</button>
-      </div>
-    );
-  }
-
-  // 🔥 APP
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>🧠 NeuroMapa360</h1>
-
-      <p>{user.email}</p>
-      <button onClick={logout}>Sair</button>
-
-      <h3>Como você está se sentindo?</h3>
-
-      <select onChange={(e) => setEmocao(e.target.value)}>
-        <option>Motivado</option>
-        <option>Feliz</option>
-        <option>Neutro</option>
-        <option>Ansioso</option>
-        <option>Triste</option>
-      </select>
-
-      <br /><br />
-
-      <input
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        placeholder="Descreva como você está..."
-      />
-
-      <br /><br />
-
-      <button onClick={enviarTexto}>
-        {loading ? "..." : "Enviar"}
-      </button>
-
-      <h3>Resposta</h3>
-      <p>{resposta}</p>
-    </div>
-  );
-}
-
-export default App;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});

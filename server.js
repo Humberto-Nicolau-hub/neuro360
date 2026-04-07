@@ -1,101 +1,131 @@
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 import dotenv from "dotenv";
-import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
-
-// ⚠️ webhook precisa raw
-app.use("/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// 🔥 SUPABASE
+// 🔐 SUPABASE
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔥 ROTA IA (mantém seu sistema funcionando)
-app.post("/ia", async (req, res) => {
-  const { texto } = req.body;
+// 🔐 AUTH
+async function autenticarUsuario(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
 
-  res.json({
-    resposta: `Resposta simulada da IA para: ${texto}`,
-  });
-});
+  if (!token) return res.status(401).json({ erro: "Sem token" });
 
-// 🔥 STRIPE CHECKOUT
-app.post("/create-checkout-session", async (req, res) => {
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return res.status(401).json({ erro: "Token inválido" });
+  }
+
+  req.user = data.user;
+  next();
+}
+
+// 🧠 IA COM MEMÓRIA
+app.post("/ia", autenticarUsuario, async (req, res) => {
   try {
-    const { email } = req.body;
+    const { texto, emocao, score } = req.body;
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            product_data: {
-              name: "NeuroMapa360 Premium",
-            },
-            unit_amount: 1990,
-          },
-          quantity: 1,
+    // 🔥 BUSCA HISTÓRICO (últimos 5 registros)
+    const { data: historico } = await supabase
+      .from("registros")
+      .select("*")
+      .eq("user_id", req.user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const contextoHistorico = historico
+      ?.map(
+        (r) =>
+          `Emoção: ${r.emocao}, Texto: ${r.texto}, Score: ${r.score}`
+      )
+      .join("\n");
+
+    // 🧠 PROMPT AVANÇADO
+    const prompt = `
+Você é um terapeuta especialista em PNL, reprogramação mental e comportamento emocional.
+
+Seu papel:
+- Acolher profundamente
+- Identificar padrões emocionais
+- Fazer reframe
+- Gerar consciência
+- Criar ação prática
+
+Histórico recente do usuário:
+${contextoHistorico || "Sem histórico"}
+
+Situação atual:
+Emoção: ${emocao}
+Texto: ${texto}
+Score: ${score}
+
+Responda como terapeuta experiente.
+Evite respostas genéricas.
+Seja profundo, humano e transformador.
+`;
+
+    const respostaIA = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-      ],
-      success_url: "https://neuro360-syc6.vercel.app",
-      cancel_url: "https://neuro360-syc6.vercel.app",
-    });
-
-    res.json({ url: session.url });
-
-  } catch (err) {
-    console.error("Erro Stripe:", err);
-    res.status(500).send("Erro ao criar pagamento");
-  }
-});
-
-// 🔥 WEBHOOK (ATIVA PREMIUM AUTOMATICAMENTE)
-app.post("/webhook", async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "system", content: prompt }],
+          temperature: 0.7,
+        }),
+      }
     );
+
+    const data = await respostaIA.json();
+
+    const resposta = data.choices?.[0]?.message?.content;
+
+    // 💾 SALVA
+    await supabase.from("registros").insert([
+      {
+        user_id: req.user.id,
+        emocao,
+        texto,
+        score,
+      },
+    ]);
+
+    res.json({ resposta });
   } catch (err) {
-    console.error("Erro webhook:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error(err);
+    res.status(500).json({ erro: "Erro IA" });
   }
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-
-    const email = session.customer_email;
-
-    console.log("Pagamento confirmado:", email);
-
-    await supabase
-      .from("usuarios")
-      .update({ plano: "premium" })
-      .eq("email", email);
-  }
-
-  res.json({ received: true });
 });
 
-app.listen(3001, () => {
-  console.log("Servidor rodando 🚀");
+// 📊 DASHBOARD
+app.get("/evolucao", autenticarUsuario, async (req, res) => {
+  const { data } = await supabase
+    .from("registros")
+    .select("*")
+    .eq("user_id", req.user.id)
+    .order("created_at", { ascending: true });
+
+  res.json(data);
 });
+
+app.get("/", (req, res) => {
+  res.send("NeuroMapa360 API rodando 🚀");
+});
+
+app.listen(process.env.PORT || 3001);

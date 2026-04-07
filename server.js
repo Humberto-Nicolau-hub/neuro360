@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import fetch from "node-fetch";
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
+import Stripe from "stripe";
 
 dotenv.config();
 
@@ -10,113 +11,130 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔥 SUPABASE
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+/* =========================
+   🔐 VALIDAÇÃO DE AMBIENTE
+========================= */
 
-// 🔐 AUTH MIDDLEWARE
-async function autenticarUsuario(req, res, next) {
-  const token = req.headers.authorization?.replace("Bearer ", "");
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
-  if (!token) {
-    return res.status(401).json({ erro: "Token ausente" });
-  }
-
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data?.user) {
-    return res.status(401).json({ erro: "Usuário inválido" });
-  }
-
-  req.user = data.user;
-  next();
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error("❌ ERRO: SUPABASE não configurado");
+  process.exit(1);
 }
 
-// 🚀 ROTA IA (TERAPÊUTICA REAL)
-app.post("/ia", autenticarUsuario, async (req, res) => {
+if (!OPENAI_API_KEY) {
+  console.error("❌ ERRO: OPENAI_API_KEY não configurada");
+  process.exit(1);
+}
+
+if (!STRIPE_SECRET_KEY) {
+  console.warn("⚠️ Stripe não configurado (modo sem pagamento)");
+}
+
+/* =========================
+   🚀 CLIENTES
+========================= */
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY,
+});
+
+const stripe = STRIPE_SECRET_KEY
+  ? new Stripe(STRIPE_SECRET_KEY)
+  : null;
+
+/* =========================
+   🧠 ROTA IA TERAPÊUTICA
+========================= */
+
+app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao } = req.body;
 
     if (!texto) {
-      return res.json({ resposta: "⚠️ Texto vazio" });
+      return res.status(400).json({ erro: "Texto vazio" });
     }
 
-    const { data: historico } = await supabase
-      .from("registros")
-      .select("*")
-      .eq("user_id", req.user.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    const contexto = historico?.map(h =>
-      `Emoção: ${h.emocao}, Texto: ${h.texto}`
-    ).join("\n");
-
     const prompt = `
-Você é um terapeuta especialista em PNL e inteligência emocional.
+Você é um terapeuta especialista em Programação Neurolinguística (PNL).
 
 Objetivo:
-Ajudar o usuário a sair do estado atual (depressão, ansiedade, medo ou bloqueio).
+Ajudar o usuário a sair de estados como ansiedade, depressão, medo ou crenças limitantes.
 
-Histórico:
-${contexto || "Sem histórico"}
-
-Situação atual:
-Emoção: ${emocao}
+Estado atual do usuário: ${emocao}
 Relato: ${texto}
 
 Responda de forma:
-- Profunda
 - Empática
-- Prática (com pequenos exercícios)
-- Transformadora
+- Profunda
+- Estratégica
+- Com técnicas práticas de PNL
+
+Inclua:
+- Reframe mental
+- Perguntas poderosas
+- Pequena ação prática
+
+Nunca dê respostas genéricas.
 `;
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "system", content: prompt }],
-      }),
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const data = await openaiRes.json();
+    const resposta = completion.choices[0].message.content;
 
-    console.log("OPENAI:", data);
+    return res.json({ resposta });
 
-    const resposta = data?.choices?.[0]?.message?.content;
-
-    if (!resposta) {
-      return res.json({ resposta: "⚠️ IA sem resposta" });
-    }
-
-    await supabase.from("registros").insert([
-      {
-        user_id: req.user.id,
-        emocao,
-        texto,
-        score: 0,
-      },
-    ]);
-
-    res.json({ resposta });
-
-  } catch (err) {
-    console.error("ERRO IA:", err);
-    res.status(500).json({ erro: "Erro interno" });
+  } catch (error) {
+    console.error("❌ ERRO IA:", error);
+    return res.status(500).json({ erro: "Erro IA" });
   }
 });
 
-// HEALTH CHECK
-app.get("/", (req, res) => {
-  res.send("API rodando 🚀");
+/* =========================
+   💰 STRIPE (OPCIONAL)
+========================= */
+
+app.post("/create-checkout", async (req, res) => {
+  if (!stripe) {
+    return res.status(400).json({ erro: "Stripe não configurado" });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "subscription",
+      line_items: [
+        {
+          price: "SEU_PRICE_ID_AQUI", // só se quiser evoluir depois
+          quantity: 1,
+        },
+      ],
+      success_url: "https://neuro360-syc6.vercel.app",
+      cancel_url: "https://neuro360-syc6.vercel.app",
+    });
+
+    res.json({ url: session.url });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro pagamento" });
+  }
 });
 
+/* =========================
+   🚀 START SERVER
+========================= */
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
+
+app.listen(PORT, () => {
+  console.log("🚀 Server rodando na porta", PORT);
+});

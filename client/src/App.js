@@ -75,7 +75,7 @@ function App() {
   }
 
   function pagar() {
-    window.location.href = "https://SEU-LINK-STRIPE";
+    window.location.href = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
   }
 
   return (

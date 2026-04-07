@@ -6,9 +6,9 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 function App() {
   const [user, setUser] = useState(null);
   const [texto, setTexto] = useState("");
-  const [emocao, setEmocao] = useState("Neutro");
+  const [emocao, setEmocao] = useState("ansioso");
   const [resposta, setResposta] = useState("");
-  const [historico, setHistorico] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     carregarUsuario();
@@ -17,36 +17,15 @@ function App() {
   async function carregarUsuario() {
     const { data } = await supabase.auth.getUser();
     setUser(data?.user || null);
-    carregarEvolucao();
-  }
-
-  async function carregarEvolucao() {
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-
-    const res = await fetch(`${BACKEND_URL}/evolucao`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const json = await res.json();
-    setHistorico(json);
-  }
-
-  function calcularScore(e) {
-    return {
-      "Muito mal": -2,
-      Mal: -1,
-      Neutro: 0,
-      Bem: 1,
-      "Muito bem": 2,
-    }[e];
   }
 
   async function enviarTexto() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session.access_token;
+    if (!texto.trim()) return;
 
-    const score = calcularScore(emocao);
+    setLoading(true);
+
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
 
     const res = await fetch(`${BACKEND_URL}/ia`, {
       method: "POST",
@@ -54,28 +33,18 @@ function App() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ texto, emocao, score }),
+      body: JSON.stringify({ texto, emocao }),
     });
 
     const json = await res.json();
-    setResposta(json.resposta);
+
+    setResposta(json.resposta || "Sem resposta");
     setTexto("");
-
-    carregarEvolucao();
-  }
-
-  function trilha(emocao) {
-    if (emocao === "Muito mal" || emocao === "Mal") {
-      return "Respiração + Escrita emocional";
-    }
-    if (emocao === "Neutro") {
-      return "Clareza mental";
-    }
-    return "Expansão e foco";
+    setLoading(false);
   }
 
   function pagar() {
-    window.location.href = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
+    window.location.href = "https://buy.stripe.com/SEU_LINK_AQUI";
   }
 
   return (
@@ -83,19 +52,17 @@ function App() {
       <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
-        <button onClick={() => supabase.auth.signInWithOtp({ email: prompt("Email") })}>
-          Entrar
-        </button>
+        <button onClick={carregarUsuario}>Entrar</button>
       ) : (
         <>
           <p>{user.email}</p>
 
-          <select onChange={(e) => setEmocao(e.target.value)}>
-            <option>Muito mal</option>
-            <option>Mal</option>
-            <option>Neutro</option>
-            <option>Bem</option>
-            <option>Muito bem</option>
+          <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
+            <option value="ansioso">Ansioso</option>
+            <option value="triste">Triste</option>
+            <option value="desmotivado">Desmotivado</option>
+            <option value="cansado">Cansado</option>
+            <option value="produtivo">Produtivo</option>
           </select>
 
           <br /><br />
@@ -103,23 +70,25 @@ function App() {
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Como você está?"
+            placeholder="Descreva como você está..."
           />
 
-          <button onClick={enviarTexto}>Falar com IA</button>
+          <br /><br />
 
-          <button onClick={pagar}>💎 Premium</button>
+          <button onClick={enviarTexto}>
+            {loading ? "Processando..." : "Falar com IA"}
+          </button>
 
-          <h3>Resposta</h3>
+          <br /><br />
+
+          <button onClick={pagar}>
+            💎 Tornar Premium
+          </button>
+
+          <br /><br />
+
+          <p><strong>Resposta:</strong></p>
           <p>{resposta}</p>
-
-          <h3>Evolução</h3>
-          {historico.map((h, i) => (
-            <p key={i}>{h.score}</p>
-          ))}
-
-          <h3>Trilha sugerida</h3>
-          <p>{trilha(emocao)}</p>
         </>
       )}
     </div>

@@ -5,6 +5,7 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
@@ -17,6 +18,30 @@ function App() {
   async function carregarUsuario() {
     const { data } = await supabase.auth.getUser();
     setUser(data?.user || null);
+  }
+
+  async function handleLogin() {
+    console.log("Botão clicado 🚀");
+
+    if (!email) {
+      alert("Digite seu email");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+      });
+
+      if (error) {
+        console.error(error);
+        alert("Erro ao enviar email");
+      } else {
+        alert("Verifique seu email para entrar 📩");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function sair() {
@@ -44,7 +69,7 @@ function App() {
         },
         body: JSON.stringify({
           texto,
-          emocao
+          emocao,
         }),
       });
 
@@ -53,7 +78,6 @@ function App() {
       setResposta(json?.resposta || "⚠️ Sem resposta");
 
       setTexto("");
-
     } catch (err) {
       console.error(err);
       setResposta("❌ Erro ao conectar IA");
@@ -63,7 +87,7 @@ function App() {
   }
 
   function irParaPagamento() {
-    window.location.href = "SEU_LINK_STRIPE_AQUI";
+    window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00"; // ⚠️ coloque seu link real aqui
   }
 
   return (
@@ -71,7 +95,21 @@ function App() {
       <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
-        <button onClick={carregarUsuario}>Entrar</button>
+        <>
+          <input
+            type="email"
+            placeholder="Digite seu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ padding: "8px", width: "250px" }}
+          />
+
+          <br /><br />
+
+          <button onClick={handleLogin}>
+            Entrar
+          </button>
+        </>
       ) : (
         <>
           <p>{user.email}</p>

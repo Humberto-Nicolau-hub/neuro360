@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 app.use(cors());
 
-// ⚠️ IMPORTANTE: webhook precisa raw body
+// ⚠️ webhook precisa raw
 app.use("/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
@@ -21,7 +21,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔥 CHECKOUT
+// 🔥 ROTA IA (mantém seu sistema funcionando)
+app.post("/ia", async (req, res) => {
+  const { texto } = req.body;
+
+  res.json({
+    resposta: `Resposta simulada da IA para: ${texto}`,
+  });
+});
+
+// 🔥 STRIPE CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
   try {
     const { email } = req.body;
@@ -42,19 +51,19 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: "https://neuro360-syc6.vercel.app/sucesso",
-      cancel_url: "https://neuro360-syc6.vercel.app/cancelado",
+      success_url: "https://neuro360-syc6.vercel.app",
+      cancel_url: "https://neuro360-syc6.vercel.app",
     });
 
     res.json({ url: session.url });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Erro Stripe");
+    console.error("Erro Stripe:", err);
+    res.status(500).send("Erro ao criar pagamento");
   }
 });
 
-// 🔥 WEBHOOK
+// 🔥 WEBHOOK (ATIVA PREMIUM AUTOMATICAMENTE)
 app.post("/webhook", async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -71,7 +80,6 @@ app.post("/webhook", async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 🔥 PAGAMENTO CONFIRMADO
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
@@ -79,7 +87,6 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Pagamento confirmado:", email);
 
-    // 🔥 ATUALIZA PARA PREMIUM
     await supabase
       .from("usuarios")
       .update({ plano: "premium" })
@@ -90,5 +97,5 @@ app.post("/webhook", async (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("Servidor rodando com Stripe + Webhook 🚀");
+  console.log("Servidor rodando 🚀");
 });

@@ -6,7 +6,7 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 function App() {
   const [user, setUser] = useState(null);
   const [texto, setTexto] = useState("");
-  const [emocao, setEmocao] = useState("ansioso");
+  const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,32 +19,51 @@ function App() {
     setUser(data?.user || null);
   }
 
-  async function enviarTexto() {
-    if (!texto.trim()) return;
-
-    setLoading(true);
-
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-
-    const res = await fetch(`${BACKEND_URL}/ia`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ texto, emocao }),
-    });
-
-    const json = await res.json();
-
-    setResposta(json.resposta || "Sem resposta");
-    setTexto("");
-    setLoading(false);
+  async function sair() {
+    await supabase.auth.signOut();
+    setUser(null);
   }
 
-  function pagar() {
-    window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
+  async function enviarTexto() {
+    if (!texto.trim()) {
+      setResposta("⚠️ Digite algo");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+
+      const res = await fetch(`${BACKEND_URL}/ia`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          texto,
+          emocao
+        }),
+      });
+
+      const json = await res.json();
+
+      setResposta(json?.resposta || "⚠️ Sem resposta");
+
+      setTexto("");
+
+    } catch (err) {
+      console.error(err);
+      setResposta("❌ Erro ao conectar IA");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function irParaPagamento() {
+    window.location.href = "SEU_LINK_STRIPE_AQUI";
   }
 
   return (
@@ -57,12 +76,19 @@ function App() {
         <>
           <p>{user.email}</p>
 
+          <button onClick={sair}>Sair</button>
+
+          <br /><br />
+
+          <h3>Como você está se sentindo?</h3>
+
           <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
-            <option value="ansioso">Ansioso</option>
-            <option value="triste">Triste</option>
-            <option value="desmotivado">Desmotivado</option>
-            <option value="cansado">Cansado</option>
-            <option value="produtivo">Produtivo</option>
+            <option>Ansioso</option>
+            <option>Triste</option>
+            <option>Desmotivado</option>
+            <option>Cansado</option>
+            <option>Feliz</option>
+            <option>Confuso</option>
           </select>
 
           <br /><br />
@@ -71,23 +97,24 @@ function App() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Descreva como você está..."
+            style={{ width: "300px", padding: "8px" }}
           />
 
           <br /><br />
 
-          <button onClick={enviarTexto}>
+          <button onClick={enviarTexto} disabled={loading}>
             {loading ? "Processando..." : "Falar com IA"}
           </button>
 
           <br /><br />
 
-          <button onClick={pagar}>
+          <button onClick={irParaPagamento}>
             💎 Tornar Premium
           </button>
 
           <br /><br />
 
-          <p><strong>Resposta:</strong></p>
+          <h3>Resposta:</h3>
           <p>{resposta}</p>
         </>
       )}

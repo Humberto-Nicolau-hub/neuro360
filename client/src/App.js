@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
+// 🔥 URL DO BACKEND
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
+// 🔥 SCORE
 const SCORE_MAP = {
   Motivado: 2,
   Feliz: 2,
@@ -14,26 +16,85 @@ const SCORE_MAP = {
   Cansado: -1,
 };
 
+// 🔥 LANDING PAGE (EMBUTIDA)
+function Landing({ onLogin }) {
+  const irParaPagamento = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/create-checkout-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "cliente@teste.com",
+        }),
+      });
+
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch (err) {
+      alert("Erro ao iniciar pagamento");
+    }
+  };
+
+  return (
+    <div style={{
+      fontFamily: "Arial",
+      padding: "40px",
+      textAlign: "center",
+      background: "#0f172a",
+      color: "white",
+      minHeight: "100vh"
+    }}>
+      <h1 style={{ fontSize: "40px" }}>
+        🧠 Reprograme sua mente. Transforme sua vida.
+      </h1>
+
+      <p style={{ marginTop: "20px" }}>
+        IA + PNL para reduzir ansiedade, eliminar crenças limitantes
+        e evoluir emocionalmente todos os dias.
+      </p>
+
+      <button
+        onClick={irParaPagamento}
+        style={{
+          marginTop: "30px",
+          padding: "15px 30px",
+          fontSize: "18px",
+          background: "#22c55e",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer"
+        }}
+      >
+        💎 Quero acessar o Premium
+      </button>
+
+      <br /><br />
+
+      <button onClick={onLogin}>
+        Já tenho conta
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [user, setUser] = useState(null);
+  const [mostrarLogin, setMostrarLogin] = useState(false);
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Neutro");
   const [resposta, setResposta] = useState("");
+
   const [loading, setLoading] = useState(false);
-  const [historico, setHistorico] = useState([]);
 
   useEffect(() => {
     verificarUsuario();
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      carregarHistorico();
-      garantirUsuario();
-    }
-  }, [user]);
 
   async function verificarUsuario() {
     const { data } = await supabase.auth.getUser();
@@ -61,11 +122,9 @@ function App() {
       return;
     }
 
-    const userId = data.user.id;
-
     await supabase.from("usuarios").insert([
       {
-        id: userId,
+        id: data.user.id,
         email,
         plano: "free",
         limite_diario: 5,
@@ -75,80 +134,16 @@ function App() {
     alert("Cadastro realizado!");
   }
 
-  async function garantirUsuario() {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (!data) {
-      await supabase.from("usuarios").insert([
-        {
-          id: user.id,
-          email: user.email,
-          plano: "free",
-          limite_diario: 5,
-        },
-      ]);
-    }
-  }
-
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
   }
 
-  async function salvarRegistro(score) {
-    await supabase.from("registros_emocionais").insert([
-      {
-        user_id: user.id,
-        emocao,
-        texto,
-        score,
-      },
-    ]);
-  }
-
-  async function carregarHistorico() {
-    const { data } = await supabase
-      .from("registros_emocionais")
-      .select("*")
-      .eq("user_id", user.id);
-
-    setHistorico(data || []);
-  }
-
   async function enviarTexto() {
-    if (!texto.trim()) {
-      setResposta("⚠️ Digite algo antes de enviar");
-      return;
-    }
+    if (!texto.trim()) return;
 
     try {
       setLoading(true);
-
-      const { data: usuario } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      const hoje = new Date().toISOString().split("T")[0];
-
-      const { data: usosHoje } = await supabase
-        .from("registros_emocionais")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("created_at", hoje);
-
-      if (
-        usuario?.plano === "free" &&
-        usosHoje.length >= usuario.limite_diario
-      ) {
-        setResposta("🚫 Limite diário atingido. Faça upgrade 💎");
-        return;
-      }
 
       const score = SCORE_MAP[emocao] || 0;
 
@@ -161,106 +156,81 @@ function App() {
       });
 
       const json = await res.json();
-
       setResposta(json?.resposta || "Sem resposta");
-
-      await salvarRegistro(score);
-      await carregarHistorico();
 
       setTexto("");
 
-    } catch (err) {
-      setResposta("Erro ao conectar");
+    } catch {
+      setResposta("Erro");
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔥 STRIPE
-  async function irParaPagamento() {
-    try {
-      const res = await fetch(`${BACKEND_URL}/create-checkout-session`, {
-        method: "POST",
-      });
-
-      const data = await res.json();
-
-      window.location.href = data.url;
-
-    } catch (err) {
-      alert("Erro ao iniciar pagamento");
-    }
+  // 🔥 LANDING
+  if (!user && !mostrarLogin) {
+    return <Landing onLogin={() => setMostrarLogin(true)} />;
   }
 
+  // 🔥 LOGIN
+  if (!user) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h2>Login</h2>
+
+        <input
+          placeholder="Email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <br /><br />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          onChange={(e) => setSenha(e.target.value)}
+        />
+        <br /><br />
+
+        <button onClick={login}>Entrar</button>
+        <button onClick={cadastrar}>Cadastrar</button>
+      </div>
+    );
+  }
+
+  // 🔥 APP
   return (
     <div style={{ padding: 20 }}>
       <h1>🧠 NeuroMapa360</h1>
 
-      {!user ? (
-        <>
-          <h3>Login / Cadastro</h3>
+      <p>{user.email}</p>
+      <button onClick={logout}>Sair</button>
 
-          <input
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <br /><br />
+      <h3>Como você está se sentindo?</h3>
 
-          <input
-            type="password"
-            placeholder="Senha"
-            onChange={(e) => setSenha(e.target.value)}
-          />
-          <br /><br />
+      <select onChange={(e) => setEmocao(e.target.value)}>
+        <option>Motivado</option>
+        <option>Feliz</option>
+        <option>Neutro</option>
+        <option>Ansioso</option>
+        <option>Triste</option>
+      </select>
 
-          <button onClick={login}>Entrar</button>
-          <button onClick={cadastrar}>Cadastrar</button>
-        </>
-      ) : (
-        <>
-          <p><strong>{user.email}</strong></p>
-          <button onClick={logout}>Sair</button>
+      <br /><br />
 
-          <h3>Como você está se sentindo?</h3>
+      <input
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder="Descreva como você está..."
+      />
 
-          <select
-            onChange={(e) => setEmocao(e.target.value)}
-            value={emocao}
-          >
-            <option>Motivado</option>
-            <option>Feliz</option>
-            <option>Produtivo</option>
-            <option>Neutro</option>
-            <option>Ansioso</option>
-            <option>Desmotivado</option>
-            <option>Triste</option>
-            <option>Cansado</option>
-          </select>
+      <br /><br />
 
-          <br /><br />
+      <button onClick={enviarTexto}>
+        {loading ? "..." : "Enviar"}
+      </button>
 
-          <input
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Descreva como você está..."
-          />
-
-          <br /><br />
-
-          <button onClick={enviarTexto} disabled={loading}>
-            {loading ? "Processando..." : "Falar com IA"}
-          </button>
-
-          <br /><br />
-
-          <button onClick={irParaPagamento}>
-            💎 Tornar Premium
-          </button>
-
-          <h3>Resposta</h3>
-          <p>{resposta}</p>
-        </>
-      )}
+      <h3>Resposta</h3>
+      <p>{resposta}</p>
     </div>
   );
 }

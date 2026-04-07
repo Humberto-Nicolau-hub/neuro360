@@ -12,35 +12,29 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    carregarUsuario();
+    verificarUsuario();
   }, []);
 
-  async function carregarUsuario() {
+  async function verificarUsuario() {
     const { data } = await supabase.auth.getUser();
     setUser(data?.user || null);
   }
 
-  async function handleLogin() {
-    console.log("Botão clicado 🚀");
-
+  async function entrar() {
     if (!email) {
-      alert("Digite seu email");
+      alert("Digite um email");
       return;
     }
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
-      });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email,
+    });
 
-      if (error) {
-        console.error(error);
-        alert("Erro ao enviar email");
-      } else {
-        alert("Verifique seu email para entrar 📩");
-      }
-    } catch (err) {
-      console.error(err);
+    if (error) {
+      console.error(error);
+      alert("Erro ao enviar email");
+    } else {
+      alert("Verifique seu email 📩");
     }
   }
 
@@ -74,10 +68,9 @@ function App() {
       });
 
       const json = await res.json();
-
       setResposta(json?.resposta || "⚠️ Sem resposta");
-
       setTexto("");
+
     } catch (err) {
       console.error(err);
       setResposta("❌ Erro ao conectar IA");
@@ -87,7 +80,7 @@ function App() {
   }
 
   function irParaPagamento() {
-    window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00"; // ⚠️ coloque seu link real aqui
+    window.location.href = "SEU_LINK_STRIPE_AQUI";
   }
 
   return (
@@ -97,18 +90,14 @@ function App() {
       {!user ? (
         <>
           <input
-            type="email"
             placeholder="Digite seu email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{ padding: "8px", width: "250px" }}
           />
 
           <br /><br />
 
-          <button onClick={handleLogin}>
-            Entrar
-          </button>
+          <button onClick={entrar}>Entrar / Cadastrar</button>
         </>
       ) : (
         <>

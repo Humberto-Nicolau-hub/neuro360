@@ -5,22 +5,63 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [perfil, setPerfil] = useState(null);
   const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [loading, setLoading] = useState(false);
   const [mensagens, setMensagens] = useState([]);
 
-  // 🔥 NOVO: contador FREE
-  const [contador, setContador] = useState(0);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     carregarUsuario();
   }, []);
 
+  // 🔥 CRIA OU BUSCA PERFIL
+  async function criarOuBuscarPerfil(user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (!data) {
+      await supabase.from("profiles").insert([
+        {
+          id: user.id,
+          email: user.email,
+          plano: "free",
+          interacoes: 0,
+        },
+      ]);
+    }
+  }
+
+  // 🔥 CARREGA PERFIL
+  async function carregarPerfil(user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    setPerfil(data);
+  }
+
+  // 🔥 CARREGA USUÁRIO
   async function carregarUsuario() {
     const { data } = await supabase.auth.getUser();
-    setUser(data?.user || null);
+    const usuario = data?.user || null;
+
+    setUser(usuario);
+
+    if (usuario) {
+      await criarOuBuscarPerfil(usuario);
+      await carregarPerfil(usuario);
+    }
+
+    setCarregando(false);
   }
 
   async function handleLogin() {
@@ -44,26 +85,21 @@ function App() {
   async function sair() {
     await supabase.auth.signOut();
     setUser(null);
+    setPerfil(null);
     setMensagens([]);
-    setContador(0);
   }
 
-  // 🔥 LÓGICA PREMIUM (ATUAL)
-  const ADMIN_EMAILS = [
-  "contatobetaofertas@gmail.com",
-  "ebony66@gmail.com"
-];
+  // 🔥 AGORA O PREMIUM VEM DO BANCO
+  const isPremium = perfil?.plano === "premium";
 
-const isPremium = ADMIN_EMAILS.includes(
-  (user?.email || "").toLowerCase().trim()
-);
-  console.log("EMAIL LOGADO:", user?.email);
+  console.log("EMAIL:", user?.email);
+  console.log("PERFIL:", perfil);
 
   async function enviarTexto() {
     if (!texto.trim()) return;
 
-    // 🔥 BLOQUEIO FREE
-    if (!isPremium && contador >= 3) {
+    // 🔒 BLOQUEIO FREE REAL
+    if (!isPremium && perfil?.interacoes >= 3) {
       alert("🚀 Você iniciou um processo importante.\n\nPara continuar sua evolução emocional sem interrupções, ative o Premium.");
       return;
     }
@@ -96,9 +132,19 @@ const isPremium = ADMIN_EMAILS.includes(
 
       setTexto("");
 
-      // 🔥 incrementa uso FREE
-      if (!isPremium) {
-        setContador((prev) => prev + 1);
+      // 🔥 ATUALIZA BANCO
+      if (!isPremium && perfil) {
+        const novaQtd = perfil.interacoes + 1;
+
+        await supabase
+          .from("profiles")
+          .update({ interacoes: novaQtd })
+          .eq("id", user.id);
+
+        setPerfil({
+          ...perfil,
+          interacoes: novaQtd,
+        });
       }
 
     } catch (err) {
@@ -110,6 +156,11 @@ const isPremium = ADMIN_EMAILS.includes(
 
   function irParaPagamento() {
     window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
+  }
+
+  // 🔥 BLOQUEIA ATÉ CARREGAR
+  if (carregando) {
+    return <p>Carregando...</p>;
   }
 
   return (
@@ -138,7 +189,7 @@ const isPremium = ADMIN_EMAILS.includes(
 
           {!isPremium && (
             <p style={{ color: "orange" }}>
-              🔒 Plano Free: {contador}/3 interações usadas
+              🔒 Plano Free: {perfil?.interacoes || 0}/3 interações usadas
             </p>
           )}
 

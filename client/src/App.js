@@ -49,8 +49,15 @@ function App() {
   }
 
   // 🔥 LÓGICA PREMIUM (ATUAL)
-  const isPremium =
-    user?.email === "contatobetaofertas@gmail.com";
+  const ADMIN_EMAILS = [
+  "contatobetaofertas@gmail.com",
+  "ebony66@gmail.com"
+];
+
+const isPremium = ADMIN_EMAILS.includes(
+  (user?.email || "").toLowerCase().trim()
+);
+  console.log("EMAIL LOGADO:", user?.email);
 
   async function enviarTexto() {
     if (!texto.trim()) return;

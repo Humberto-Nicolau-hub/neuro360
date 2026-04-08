@@ -9,9 +9,10 @@ function App() {
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [loading, setLoading] = useState(false);
-
-  // 🔥 NOVO: histórico de mensagens (chat real)
   const [mensagens, setMensagens] = useState([]);
+
+  // 🔥 NOVO: contador FREE
+  const [contador, setContador] = useState(0);
 
   useEffect(() => {
     carregarUsuario();
@@ -44,10 +45,21 @@ function App() {
     await supabase.auth.signOut();
     setUser(null);
     setMensagens([]);
+    setContador(0);
   }
+
+  // 🔥 LÓGICA PREMIUM (ATUAL)
+  const isPremium =
+    user?.email === "contatobetaofertas@gmail.com";
 
   async function enviarTexto() {
     if (!texto.trim()) return;
+
+    // 🔥 BLOQUEIO FREE
+    if (!isPremium && contador >= 3) {
+      alert("🚀 Você iniciou um processo importante.\n\nPara continuar sua evolução emocional sem interrupções, ative o Premium.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -69,7 +81,6 @@ function App() {
 
       const json = await res.json();
 
-      // 🔥 NOVO: adiciona conversa no histórico
       setMensagens((prev) => [
         ...prev,
         { tipo: "user", texto },
@@ -77,6 +88,11 @@ function App() {
       ]);
 
       setTexto("");
+
+      // 🔥 incrementa uso FREE
+      if (!isPremium) {
+        setContador((prev) => prev + 1);
+      }
 
     } catch (err) {
       console.error(err);
@@ -88,10 +104,6 @@ function App() {
   function irParaPagamento() {
     window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
   }
-
-  // 🔥 LÓGICA PREMIUM (SIMPLES)
-  const isPremium =
-    user?.email === "contatobetaofertas@gmail.com"; // 👉 coloque seu email aqui
 
   return (
     <div style={{ padding: 20 }}>
@@ -116,6 +128,18 @@ function App() {
           <button onClick={sair}>Sair</button>
 
           <br /><br />
+
+          {!isPremium && (
+            <p style={{ color: "orange" }}>
+              🔒 Plano Free: {contador}/3 interações usadas
+            </p>
+          )}
+
+          {isPremium && (
+            <p style={{ color: "green" }}>
+              🌟 Você é Premium (ilimitado)
+            </p>
+          )}
 
           <h3>Como você está se sentindo?</h3>
 
@@ -150,21 +174,14 @@ function App() {
 
           {!isPremium && (
             <button onClick={irParaPagamento}>
-              💎 Tornar Premium
+              🚀 Desbloquear evolução emocional
             </button>
-          )}
-
-          {isPremium && (
-            <p style={{ color: "green" }}>
-              🌟 Você é Premium
-            </p>
           )}
 
           <br /><br />
 
           <h3>Conversa:</h3>
 
-          {/* 🔥 CHAT */}
           <div style={{ maxWidth: "500px" }}>
             {mensagens.map((msg, index) => (
               <p key={index}>

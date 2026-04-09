@@ -12,74 +12,37 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [mensagens, setMensagens] = useState([]);
 
-  const [carregando, setCarregando] = useState(true);
-
   useEffect(() => {
     carregarUsuario();
   }, []);
 
-  // 🔥 CRIA OU BUSCA PERFIL
-  async function criarOuBuscarPerfil(user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+  async function carregarUsuario() {
+    const { data } = await supabase.auth.getUser();
+    const usuario = data?.user || null;
+    setUser(usuario);
 
-    if (!data) {
-      await supabase.from("profiles").insert([
-        {
-          id: user.id,
-          email: user.email,
-          plano: "free",
-          interacoes: 0,
-        },
-      ]);
+    if (usuario) {
+      buscarPerfil(usuario.id);
     }
   }
 
-  // 🔥 CARREGA PERFIL
-  async function carregarPerfil(user) {
+  async function buscarPerfil(userId) {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
 
     setPerfil(data);
   }
 
-  // 🔥 CARREGA USUÁRIO
-  async function carregarUsuario() {
-    const { data } = await supabase.auth.getUser();
-    const usuario = data?.user || null;
-
-    setUser(usuario);
-
-    if (usuario) {
-      await criarOuBuscarPerfil(usuario);
-      await carregarPerfil(usuario);
-    }
-
-    setCarregando(false);
-  }
-
   async function handleLogin() {
-    if (!email) {
-      alert("Digite um email");
-      return;
-    }
+    if (!email) return alert("Digite um email");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email,
-    });
+    const { error } = await supabase.auth.signInWithOtp({ email });
 
-    if (error) {
-      alert("Erro ao enviar email");
-      console.error(error);
-    } else {
-      alert("Verifique seu email 📩");
-    }
+    if (error) alert("Erro ao enviar email");
+    else alert("Verifique seu email 📩");
   }
 
   async function sair() {
@@ -89,18 +52,15 @@ function App() {
     setMensagens([]);
   }
 
-  // 🔥 AGORA O PREMIUM VEM DO BANCO
   const isPremium = perfil?.plano === "premium";
-
-  console.log("EMAIL:", user?.email);
-  console.log("PERFIL:", perfil);
 
   async function enviarTexto() {
     if (!texto.trim()) return;
 
-    // 🔒 BLOQUEIO FREE REAL
     if (!isPremium && perfil?.interacoes >= 3) {
-      alert("🚀 Você iniciou um processo importante.\n\nPara continuar sua evolução emocional sem interrupções, ative o Premium.");
+      alert(
+        "Você iniciou um processo poderoso.\n\nPara continuar sua evolução mental sem limites, desbloqueie o Premium."
+      );
       return;
     }
 
@@ -116,10 +76,7 @@ function App() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          texto,
-          emocao,
-        }),
+        body: JSON.stringify({ texto, emocao }),
       });
 
       const json = await res.json();
@@ -132,21 +89,15 @@ function App() {
 
       setTexto("");
 
-      // 🔥 ATUALIZA BANCO
-      if (!isPremium && perfil) {
-        const novaQtd = perfil.interacoes + 1;
-
+      // 🔥 Atualiza interações
+      if (!isPremium) {
         await supabase
           .from("profiles")
-          .update({ interacoes: novaQtd })
+          .update({ interacoes: (perfil?.interacoes || 0) + 1 })
           .eq("id", user.id);
 
-        setPerfil({
-          ...perfil,
-          interacoes: novaQtd,
-        });
+        buscarPerfil(user.id);
       }
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -155,99 +106,88 @@ function App() {
   }
 
   function irParaPagamento() {
-    window.location.href = "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
-  }
-
-  // 🔥 BLOQUEIA ATÉ CARREGAR
-  if (carregando) {
-    return <p>Carregando...</p>;
+    window.location.href =
+      "https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00";
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🧠 NeuroMapa360</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>🧠 NeuroMapa360</h1>
 
       {!user ? (
-        <>
+        <div style={styles.card}>
           <input
+            style={styles.input}
             placeholder="Digite seu email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <br /><br />
-          <button onClick={handleLogin}>
-            Entrar / Cadastrar
+          <button style={styles.button} onClick={handleLogin}>
+            Entrar / Iniciar jornada
           </button>
-        </>
+        </div>
       ) : (
         <>
-          <p>👤 {user.email}</p>
-
-          <button onClick={sair}>Sair</button>
-
-          <br /><br />
-
-          {!isPremium && (
-            <p style={{ color: "orange" }}>
-              🔒 Plano Free: {perfil?.interacoes || 0}/3 interações usadas
-            </p>
-          )}
-
-          {isPremium && (
-            <p style={{ color: "green" }}>
-              🌟 Você é Premium (ilimitado)
-            </p>
-          )}
-
-          <h3>Como você está se sentindo?</h3>
-
-          <select
-            value={emocao}
-            onChange={(e) => setEmocao(e.target.value)}
-          >
-            <option>Ansioso</option>
-            <option>Triste</option>
-            <option>Desmotivado</option>
-            <option>Cansado</option>
-            <option>Feliz</option>
-            <option>Confuso</option>
-          </select>
-
-          <br /><br />
-
-          <input
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Descreva como você está..."
-            style={{ width: "300px", padding: "8px" }}
-          />
-
-          <br /><br />
-
-          <button onClick={enviarTexto} disabled={loading}>
-            {loading ? "Processando..." : "Falar com IA"}
+          <p style={{ color: "#aaa" }}>👤 {user.email}</p>
+          <button style={styles.logout} onClick={sair}>
+            Sair
           </button>
 
-          <br /><br />
+          <p style={{ marginTop: 10 }}>
+            {isPremium
+              ? "🌟 Modo evolução contínua ativado"
+              : `🔒 Plano Free: ${perfil?.interacoes || 0}/3 sessões usadas`}
+          </p>
+
+          <h3>Como sua mente está agora?</h3>
+
+          <div style={styles.emocoes}>
+            {["Ansioso", "Triste", "Confuso", "Cansado", "Feliz"].map((e) => (
+              <button
+                key={e}
+                style={{
+                  ...styles.emocaoBtn,
+                  background: emocao === e ? "#6c5ce7" : "#222",
+                }}
+                onClick={() => setEmocao(e)}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+
+          <input
+            style={styles.input}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Descreva o que está passando pela sua mente..."
+          />
+
+          <button style={styles.button} onClick={enviarTexto}>
+            {loading ? "Processando..." : "Iniciar exploração mental"}
+          </button>
 
           {!isPremium && (
-            <button onClick={irParaPagamento}>
-              🚀 Desbloquear evolução emocional
+            <button style={styles.premium} onClick={irParaPagamento}>
+              💎 Desbloquear evolução completa
             </button>
           )}
 
-          <br /><br />
-
-          <h3>Conversa:</h3>
-
-          <div style={{ maxWidth: "500px" }}>
-            {mensagens.map((msg, index) => (
-              <p key={index}>
+          <div style={styles.chat}>
+            {mensagens.map((msg, i) => (
+              <div
+                key={i}
+                style={
+                  msg.tipo === "user"
+                    ? styles.userMsg
+                    : styles.iaMsg
+                }
+              >
                 <strong>
                   {msg.tipo === "user" ? "Você:" : "IA:"}
                 </strong>{" "}
                 {msg.texto}
-              </p>
+              </div>
             ))}
           </div>
         </>
@@ -255,5 +195,80 @@ function App() {
     </div>
   );
 }
+
+const styles = {
+  container: {
+    background: "#0f0f1a",
+    color: "#fff",
+    minHeight: "100vh",
+    padding: 20,
+    fontFamily: "sans-serif",
+  },
+  title: {
+    textAlign: "center",
+    color: "#a29bfe",
+  },
+  card: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    maxWidth: 300,
+    margin: "auto",
+  },
+  input: {
+    padding: 10,
+    borderRadius: 8,
+    border: "none",
+  },
+  button: {
+    padding: 12,
+    borderRadius: 10,
+    background: "#6c5ce7",
+    color: "#fff",
+    border: "none",
+    cursor: "pointer",
+  },
+  logout: {
+    marginTop: 10,
+    background: "#333",
+    color: "#fff",
+    padding: 6,
+  },
+  emocoes: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    marginBottom: 10,
+  },
+  emocaoBtn: {
+    padding: 8,
+    borderRadius: 8,
+    border: "none",
+    color: "#fff",
+    cursor: "pointer",
+  },
+  premium: {
+    marginTop: 10,
+    background: "#00cec9",
+    padding: 10,
+    borderRadius: 10,
+    border: "none",
+  },
+  chat: {
+    marginTop: 20,
+  },
+  userMsg: {
+    background: "#2d3436",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  iaMsg: {
+    background: "#6c5ce7",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+};
 
 export default App;

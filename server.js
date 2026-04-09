@@ -54,12 +54,20 @@ const stripe = STRIPE_SECRET_KEY
 
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao } = req.body;
+    const { texto, emocao, user_id } = req.body;
+
+    console.log("📩 RECEBIDO:", { texto, emocao, user_id });
 
     if (!texto) {
       return res.status(400).json({ erro: "Texto vazio" });
     }
 
+    if (!user_id) {
+      console.error("❌ user_id não enviado");
+      return res.status(400).json({ erro: "user_id é obrigatório" });
+    }
+
+    // 🧠 PROMPT TERAPÊUTICO
     const prompt = `
 Você é um terapeuta especialista em Programação Neurolinguística (PNL).
 
@@ -83,6 +91,7 @@ Inclua:
 Nunca dê respostas genéricas.
 `;
 
+    // 🔥 CHAMADA IA
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [{ role: "user", content: prompt }],
@@ -90,10 +99,29 @@ Nunca dê respostas genéricas.
 
     const resposta = completion.choices[0].message.content;
 
+    // 💾 SALVAR NO BANCO
+    const { error } = await supabase
+      .from("registros")
+      .insert([
+        {
+          user_id: user_id,
+          emocao,
+          texto,
+          resposta,
+        },
+      ]);
+
+    if (error) {
+      console.error("❌ ERRO AO SALVAR NO BANCO:", error);
+      return res.status(400).json({ erro: error.message });
+    }
+
+    console.log("✅ SALVO NO BANCO COM SUCESSO");
+
     return res.json({ resposta });
 
   } catch (error) {
-    console.error("❌ ERRO IA:", error);
+    console.error("🔥 ERRO IA:", error);
     return res.status(500).json({ erro: "Erro IA" });
   }
 });
@@ -113,7 +141,7 @@ app.post("/create-checkout", async (req, res) => {
       mode: "subscription",
       line_items: [
         {
-          price: "SEU_PRICE_ID_AQUI", // só se quiser evoluir depois
+          price: "SEU_PRICE_ID_AQUI",
           quantity: 1,
         },
       ],

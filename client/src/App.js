@@ -80,6 +80,15 @@ function App() {
       });
 
       const json = await res.json();
+      // 💾 SALVAR NO BANCO (SUPABASE)
+await supabase.from("registros").insert([
+  {
+    user_id: user.id,
+    emocao: emocao,
+    texto: texto,
+    resposta: json?.resposta || "",
+  },
+]);
 
       setMensagens((prev) => [
         ...prev,

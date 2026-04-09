@@ -3,12 +3,6 @@ import { supabase } from "./supabaseClient";
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
-// 👑 EMAILS ADMIN (SEMPRE PREMIUM)
-const ADMIN_EMAILS = [
-  "contatobetaofertas@gmail.com",
-  "ebony66@gmail.com",
-];
-
 function App() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
@@ -28,13 +22,10 @@ function App() {
   }
 
   async function handleLogin() {
-    if (!email) {
-      alert("Digite um email");
-      return;
-    }
+    if (!email) return alert("Digite um email");
 
     const { error } = await supabase.auth.signInWithOtp({
-      email: email,
+      email,
     });
 
     if (error) {
@@ -52,67 +43,49 @@ function App() {
     setContador(0);
   }
 
-  // 💎 VERIFICA SE É PREMIUM
+  // 🔥 ADMIN / PREMIUM
+  const ADMIN_EMAILS = [
+    "contatobetaofertas@gmail.com",
+    "ebony66@gmail.com",
+  ];
+
   const isPremium = ADMIN_EMAILS.includes(
     (user?.email || "").toLowerCase().trim()
   );
 
-  // 🚀 ENVIO + IA + BANCO
   async function enviarTexto() {
     if (!texto.trim()) return;
 
     // 🔒 BLOQUEIO FREE
     if (!isPremium && contador >= 3) {
-      alert(
-        "🚀 Você iniciou sua transformação.\n\nPara continuar evoluindo sem limites, desbloqueie o Premium."
-      );
+      alert("🔒 Você atingiu o limite gratuito. Torne-se Premium.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const { data } = await supabase.auth.getSession();
-      const session = data?.session;
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
 
-      if (!session?.user) {
-        alert("Usuário não autenticado");
-        return;
-      }
+      console.log("USER ID:", currentUser?.id);
 
-      const userId = session.user.id;
-      console.log("USER ID:", userId);
-
-      // 🤖 CHAMA IA
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           texto,
           emocao,
+          user_id: currentUser?.id, // 🔥 ESSENCIAL
         }),
       });
 
       const json = await res.json();
 
-      // 💾 SALVA NO BANCO
-      const { error } = await supabase.from("registros").insert([
-        {
-          user_id: userId,
-          emocao: emocao,
-          texto: texto,
-          resposta: json?.resposta || "",
-        },
-      ]);
-
-      if (error) {
-        console.error("ERRO AO SALVAR:", error);
-      }
-
-      // 💬 ATUALIZA CHAT
+      // CHAT
       setMensagens((prev) => [
         ...prev,
         { tipo: "user", texto },
@@ -123,7 +96,7 @@ function App() {
       setContador((prev) => prev + 1);
 
     } catch (err) {
-      console.error(err);
+      console.error("ERRO AO ENVIAR:", err);
     } finally {
       setLoading(false);
     }
@@ -135,7 +108,7 @@ function App() {
   }
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
+    <div style={{ padding: 20 }}>
       <h1>🧠 NeuroMapa360</h1>
 
       {!user ? (
@@ -156,19 +129,11 @@ function App() {
 
           <button onClick={sair}>Sair</button>
 
-          <br /><br />
+          <p>
+            🔒 Plano Free: {contador}/3 interações usadas
+          </p>
 
-          {!isPremium && (
-            <p style={{ color: "orange" }}>
-              🔒 Plano Free: {contador}/3 interações usadas
-            </p>
-          )}
-
-          {isPremium && (
-            <p style={{ color: "green" }}>
-              🌟 Você é Premium
-            </p>
-          )}
+          <br />
 
           <h3>Como você está se sentindo?</h3>
 
@@ -203,11 +168,17 @@ function App() {
 
           {!isPremium && (
             <button onClick={irParaPagamento}>
-              💎 Desbloquear evolução emocional
+              💎 Tornar Premium
             </button>
           )}
 
-          <br /><br />
+          {isPremium && (
+            <p style={{ color: "green" }}>
+              🌟 Você é Premium
+            </p>
+          )}
+
+          <br />
 
           <h3>Conversa:</h3>
 

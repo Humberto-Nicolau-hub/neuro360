@@ -56,15 +56,26 @@ app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
-    console.log("📩 RECEBIDO:", { texto, emocao, user_id });
+    console.log("📩 BODY RECEBIDO:", req.body);
 
-    if (!texto) {
-      return res.status(400).json({ erro: "Texto vazio" });
+    // 🔥 VALIDAÇÃO COMPLETA
+    if (!texto || !texto.trim()) {
+      return res.status(400).json({
+        erro: "Texto é obrigatório",
+      });
+    }
+
+    if (!emocao) {
+      return res.status(400).json({
+        erro: "Emoção é obrigatória",
+      });
     }
 
     if (!user_id) {
       console.error("❌ user_id não enviado");
-      return res.status(400).json({ erro: "user_id é obrigatório" });
+      return res.status(400).json({
+        erro: "user_id é obrigatório",
+      });
     }
 
     // 🧠 PROMPT TERAPÊUTICO
@@ -97,32 +108,41 @@ Nunca dê respostas genéricas.
       messages: [{ role: "user", content: prompt }],
     });
 
-    const resposta = completion.choices[0].message.content;
+    const resposta =
+      completion?.choices?.[0]?.message?.content || "Sem resposta da IA";
+
+    console.log("🧠 RESPOSTA IA:", resposta);
 
     // 💾 SALVAR NO BANCO
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("registros")
       .insert([
         {
-          user_id: user_id,
+          user_id,
           emocao,
           texto,
           resposta,
         },
-      ]);
+      ])
+      .select();
 
     if (error) {
-      console.error("❌ ERRO AO SALVAR NO BANCO:", error);
-      return res.status(400).json({ erro: error.message });
+      console.error("❌ ERRO SUPABASE:", error);
+      return res.status(500).json({
+        erro: "Erro ao salvar no banco",
+        detalhes: error.message,
+      });
     }
 
-    console.log("✅ SALVO NO BANCO COM SUCESSO");
+    console.log("✅ SALVO NO BANCO:", data);
 
     return res.json({ resposta });
 
   } catch (error) {
-    console.error("🔥 ERRO IA:", error);
-    return res.status(500).json({ erro: "Erro IA" });
+    console.error("🔥 ERRO GERAL:", error);
+    return res.status(500).json({
+      erro: "Erro interno do servidor",
+    });
   }
 });
 
@@ -152,7 +172,7 @@ app.post("/create-checkout", async (req, res) => {
     res.json({ url: session.url });
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERRO STRIPE:", err);
     res.status(500).json({ erro: "Erro pagamento" });
   }
 });

@@ -17,8 +17,12 @@ function App() {
   }, []);
 
   async function carregarUsuario() {
-    const { data } = await supabase.auth.getUser();
-    setUser(data?.user || null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData?.session?.user || null;
+
+    console.log("SESSION:", sessionData);
+
+    setUser(user);
   }
 
   async function handleLogin() {
@@ -65,11 +69,17 @@ function App() {
     try {
       setLoading(true);
 
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData?.session?.user;
 
+      console.log("SESSION DATA:", sessionData);
       console.log("USER ID:", currentUser?.id);
+
+      // 🔥 PROTEÇÃO CRÍTICA
+      if (!currentUser?.id) {
+        alert("Erro de autenticação. Faça login novamente.");
+        return;
+      }
 
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
@@ -79,11 +89,19 @@ function App() {
         body: JSON.stringify({
           texto,
           emocao,
-          user_id: currentUser?.id, // 🔥 ESSENCIAL
+          user_id: currentUser.id,
         }),
       });
 
       const json = await res.json();
+
+      console.log("RESPOSTA BACKEND:", json);
+
+      if (!res.ok) {
+        alert("Erro no servidor");
+        console.error(json);
+        return;
+      }
 
       // CHAT
       setMensagens((prev) => [
@@ -97,6 +115,7 @@ function App() {
 
     } catch (err) {
       console.error("ERRO AO ENVIAR:", err);
+      alert("Erro ao conectar com o servidor");
     } finally {
       setLoading(false);
     }

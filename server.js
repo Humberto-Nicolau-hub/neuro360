@@ -26,8 +26,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 
 if (!OPENAI_API_KEY) {
-  console.error("❌ ERRO: OPENAI_API_KEY não configurada");
-  process.exit(1);
+  console.warn("⚠️ OPENAI não configurada (modo teste ativo)");
 }
 
 if (!STRIPE_SECRET_KEY) {
@@ -40,16 +39,16 @@ if (!STRIPE_SECRET_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
+const openai = OPENAI_API_KEY
+  ? new OpenAI({ apiKey: OPENAI_API_KEY })
+  : null;
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
   : null;
 
 /* =========================
-   🧠 ROTA IA TERAPÊUTICA
+   🧠 ROTA IA (MODO TESTE)
 ========================= */
 
 app.post("/ia", async (req, res) => {
@@ -58,7 +57,7 @@ app.post("/ia", async (req, res) => {
 
     console.log("📩 BODY RECEBIDO:", req.body);
 
-    // 🔥 VALIDAÇÃO COMPLETA
+    // 🔥 VALIDAÇÃO
     if (!texto || !texto.trim()) {
       return res.status(400).json({
         erro: "Texto é obrigatório",
@@ -78,46 +77,10 @@ app.post("/ia", async (req, res) => {
       });
     }
 
-    // 🧠 PROMPT TERAPÊUTICO
-    const prompt = `
-Você é um terapeuta especialista em Programação Neurolinguística (PNL).
+    // 🧪 RESPOSTA MOCK (SEM OPENAI)
+    const resposta = "Resposta teste funcionando 🚀";
 
-Objetivo:
-Ajudar o usuário a sair de estados como ansiedade, depressão, medo ou crenças limitantes.
-
-Estado atual do usuário: ${emocao}
-Relato: ${texto}
-
-Responda de forma:
-- Empática
-- Profunda
-- Estratégica
-- Com técnicas práticas de PNL
-
-Inclua:
-- Reframe mental
-- Perguntas poderosas
-- Pequena ação prática
-
-Nunca dê respostas genéricas.
-`;
-
-    // 🔥 CHAMADA IA
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    if (!completion || !completion.choices || !completion.choices[0]) {
-  console.error("❌ ERRO NA RESPOSTA DA IA:", completion);
-  return res.status(500).json({
-    erro: "Falha na resposta da IA",
-  });
-}
-
-const resposta = completion.choices[0].message.content;
-
-    console.log("🧠 RESPOSTA IA:", resposta);
+    console.log("🧪 USANDO MODO TESTE (SEM OPENAI)");
 
     // 💾 SALVAR NO BANCO
     const { data, error } = await supabase

@@ -16,8 +16,8 @@ app.use(express.json());
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-console.log("🔍 SUPABASE_URL:", SUPABASE_URL ? "OK" : "MISSING");
-console.log("🔍 SUPABASE_KEY:", SUPABASE_KEY ? "OK" : "MISSING");
+console.log("SUPABASE_URL:", SUPABASE_URL ? "OK" : "MISSING");
+console.log("SUPABASE_KEY:", SUPABASE_KEY ? "OK" : "MISSING");
 
 /* =========================
    🚀 CLIENT
@@ -26,41 +26,37 @@ console.log("🔍 SUPABASE_KEY:", SUPABASE_KEY ? "OK" : "MISSING");
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* =========================
-   🧠 ROTA IA (TESTE BANCO)
+   🧠 ROTA TESTE SIMPLES
 ========================= */
 
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao, user_id } = req.body;
+    console.log("🔥 TESTE SUPABASE");
 
-    console.log("📩 BODY:", req.body);
-
-    // 🔥 TESTE DIRETO
+    // 👉 TESTE FIXO (SEM FRONTEND)
     const { data, error } = await supabase
       .from("registros")
       .insert([
         {
-          user_id,
-          emocao,
-          texto,
+          user_id: "00000000-0000-0000-0000-000000000000",
+          emocao: "teste",
+          texto: "teste",
           resposta: "Teste Supabase OK 🚀",
         },
       ])
       .select();
 
     if (error) {
-      console.error("❌ ERRO DETALHADO SUPABASE:");
-      console.error(error);
+      console.error("❌ ERRO SUPABASE:", error);
       return res.status(500).json({
         erro: error.message,
-        detalhes: error,
       });
     }
 
     console.log("✅ SALVO:", data);
 
     return res.json({
-      resposta: "Salvo no banco 🚀",
+      resposta: "Salvou no banco 🚀",
     });
 
   } catch (err) {

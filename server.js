@@ -104,12 +104,18 @@ Nunca dê respostas genéricas.
 
     // 🔥 CHAMADA IA
     const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
     });
 
-    const resposta =
-      completion?.choices?.[0]?.message?.content || "Sem resposta da IA";
+    if (!completion || !completion.choices || !completion.choices[0]) {
+  console.error("❌ ERRO NA RESPOSTA DA IA:", completion);
+  return res.status(500).json({
+    erro: "Falha na resposta da IA",
+  });
+}
+
+const resposta = completion.choices[0].message.content;
 
     console.log("🧠 RESPOSTA IA:", resposta);
 

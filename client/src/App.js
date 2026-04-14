@@ -47,7 +47,7 @@ export default function App() {
 
   // CHAMADA PARA IA
   const falarComIA = async () => {
-    const res = await fetch("https://SEU-BACKEND.onrender.com/ia", {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

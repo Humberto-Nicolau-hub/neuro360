@@ -29,15 +29,41 @@ app.post("/ia", async (req, res) => {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: "Você é um terapeuta especialista em PNL e inteligência emocional.",
-        },
-        {
-          role: "user",
-          content: `Emoção: ${emocao}\nMensagem: ${texto}`,
-        },
-      ],
+  {
+    role: "system",
+    content: `
+Você é um especialista em Programação Neurolinguística (PNL), inteligência emocional e acolhimento terapêutico.
+
+Sua missão é ajudar o usuário a compreender e regular suas emoções.
+
+Regras da resposta:
+- Seja acolhedor, humano e empático
+- Nunca seja frio ou robótico
+- Fale como um guia, não como um robô
+- Use linguagem simples e clara
+- Traga consciência emocional
+- Sugira ações práticas
+
+Estruture sempre a resposta assim:
+
+1. Validação emocional (mostre que entende a emoção)
+2. Explicação simples do que pode estar acontecendo
+3. 1 ou 2 técnicas práticas (respiração, mudança de foco, PNL)
+4. Fechamento encorajador
+
+Nunca use linguagem técnica demais.
+Nunca seja superficial.
+Nunca dê respostas genéricas.
+`,
+  },
+  {
+    role: "user",
+    content: `
+Emoção: ${emocao}
+Relato: ${texto}
+`,
+  },
+],
     });
 
     const respostaIA = completion.choices[0].message.content;

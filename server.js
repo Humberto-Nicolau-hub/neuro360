@@ -39,13 +39,14 @@ async function getPlano(user_id) {
   return data?.plano || "free";
 }
 
-// 🧠 IA
+// 🧠 IA (OTIMIZADA)
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
     const plano = await getPlano(user_id);
 
+    // 🔁 HISTÓRICO
     const { data: historico } = await supabase
       .from("registros")
       .select("emocao, texto")
@@ -57,19 +58,22 @@ app.post("/ia", async (req, res) => {
       ?.map(h => `Emoção: ${h.emocao} | ${h.texto}`)
       .join("\n");
 
+    // ⚡ OTIMIZAÇÃO DE VELOCIDADE
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: plano === "premium" ? 0.7 : 0.5,
+      max_tokens: 200, // 🔥 acelera resposta
       messages: [
         {
           role: "system",
-          content: "Você é especialista em PNL e inteligência emocional."
+          content:
+            "Você é um especialista em PNL, inteligência emocional e acolhimento humano. Seja direto, empático e prático."
         },
         {
           role: "user",
           content: `
 Histórico:
-${historicoTexto}
+${historicoTexto || "Sem histórico"}
 
 Emoção atual: ${emocao}
 Texto: ${texto}
@@ -80,6 +84,7 @@ Texto: ${texto}
 
     const resposta = completion.choices[0].message.content;
 
+    // 💾 SALVAR
     await supabase.from("registros").insert([
       { user_id, emocao, texto, resposta, plano }
     ]);
@@ -87,12 +92,12 @@ Texto: ${texto}
     return res.json({ resposta, plano });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro IA:", err);
     return res.status(500).json({ erro: "Erro IA" });
   }
 });
 
-// 💳 STRIPE CHECKOUT
+// 💳 STRIPE CHECKOUT (MELHORADO)
 app.post("/create-checkout", async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
@@ -117,26 +122,85 @@ app.post("/create-checkout", async (req, res) => {
     res.json({ url: session.url });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro Stripe:", err);
     res.status(500).json({ erro: "Erro pagamento" });
   }
 });
 
 // 📊 DADOS PARA GRÁFICO
 app.post("/grafico", async (req, res) => {
-  const { user_id } = req.body;
+  try {
+    const { user_id } = req.body;
 
-  const { data } = await supabase
-    .from("registros")
-    .select("emocao, created_at")
-    .eq("user_id", user_id);
+    const { data } = await supabase
+      .from("registros")
+      .select("emocao, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: true });
 
-  return res.json({ data });
+    return res.json({ data });
+
+  } catch (err) {
+    console.error("Erro gráfico:", err);
+    res.status(500).json({ erro: "Erro gráfico" });
+  }
 });
 
-// 📅 CRON (relatório semanal base)
+// 📊 RELATÓRIO EMOCIONAL (NOVO ENDPOINT)
+app.post("/relatorio", async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    const { data } = await supabase
+      .from("registros")
+      .select("emocao, texto, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const resumo = data
+      ?.map(d => `${d.emocao} - ${d.texto}`)
+      .join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 200,
+      messages: [
+        {
+          role: "system",
+          content: "Você é um analista emocional. Gere um resumo semanal do estado emocional do usuário."
+        },
+        {
+          role: "user",
+          content: resumo
+        }
+      ]
+    });
+
+    const relatorio = completion.choices[0].message.content;
+
+    res.json({ relatorio });
+
+  } catch (err) {
+    console.error("Erro relatório:", err);
+    res.status(500).json({ erro: "Erro relatório" });
+  }
+});
+
+// 📅 CRON SEMANAL (BASE PRONTA)
 cron.schedule("0 9 * * 1", async () => {
-  console.log("Relatório semanal rodando...");
+  console.log("📊 Rodando relatório semanal...");
+
+  const { data: usuarios } = await supabase
+    .from("usuarios")
+    .select("id, email")
+    .eq("plano", "premium");
+
+  for (const user of usuarios || []) {
+    console.log(`Gerar relatório para: ${user.email}`);
+
+    // 🔥 AQUI VAMOS PLUGAR EMAIL NO PRÓXIMO PASSO
+  }
 });
 
 const PORT = process.env.PORT || 3000;

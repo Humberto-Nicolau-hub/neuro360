@@ -59,15 +59,15 @@ export default function App() {
         }),
       });
 
-      const data = await res.json();
+      const result = await res.json();
 
-      setResposta(data.resposta);
-      setPlano(data.plano);
+      setResposta(result.resposta);
+      setPlano(result.plano);
 
-      if (data.bloqueado) {
+      if (result.bloqueado) {
         setBloqueado(true);
       } else {
-        carregarDashboard();
+        await carregarDashboard();
       }
 
     } catch (err) {
@@ -78,7 +78,7 @@ export default function App() {
     setLoading(false);
   };
 
-  // 📊 DASHBOARD
+  // 📊 DASHBOARD (SEM DUPLICAÇÃO)
   const carregarDashboard = async () => {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/dashboard", {
@@ -91,8 +91,9 @@ export default function App() {
         }),
       });
 
-      const data = await res.json();
-      setDados(data.dados || []);
+      const result = await res.json();
+      setDados(result.dados || []);
+
     } catch (err) {
       console.error("Erro dashboard:", err);
     }
@@ -107,29 +108,22 @@ export default function App() {
 
       const data = await res.json();
       window.location.href = data.url;
-    } catch (err) {
-      alert("Erro ao iniciar pagamento");
+
+    } catch {
+      alert("Erro no pagamento");
     }
   };
 
-  // 🚀 LANDING (ANTES DO LOGIN)
+  // 🚀 LOGIN SCREEN
   if (!session) {
     return (
-      <div style={styles.landing}>
-        <div style={styles.card}>
-          <h1>NeuroMapa360</h1>
-          <p>Sua mente com IA</p>
-
-          <input
-            placeholder="Seu email"
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-
-          <button onClick={login} style={styles.primary}>
-            Entrar
-          </button>
-        </div>
+      <div style={styles.login}>
+        <h1>NeuroMapa360</h1>
+        <input
+          placeholder="Seu email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <button onClick={login}>Entrar</button>
       </div>
     );
   }
@@ -138,7 +132,6 @@ export default function App() {
   return (
     <div style={styles.container}>
 
-      {/* HERO */}
       <div style={styles.hero}>
         <h2>NeuroMapa360</h2>
         <p>Plano: {plano.toUpperCase()}</p>
@@ -150,19 +143,14 @@ export default function App() {
         )}
       </div>
 
-      {/* BLOQUEIO */}
       {bloqueado && (
-        <p style={styles.bloqueio}>
-          🔒 Limite FREE atingido. Faça upgrade para continuar.
+        <p style={{ color: "red" }}>
+          🔒 Limite FREE atingido. Faça upgrade.
         </p>
       )}
 
-      {/* FORM */}
       <div style={styles.box}>
-        <select
-          onChange={(e) => setEmocao(e.target.value)}
-          style={styles.input}
-        >
+        <select onChange={(e) => setEmocao(e.target.value)}>
           <option>Ansioso</option>
           <option>Triste</option>
           <option>Feliz</option>
@@ -172,33 +160,18 @@ export default function App() {
         <input
           placeholder="Descreva como você está..."
           onChange={(e) => setTexto(e.target.value)}
-          style={styles.input}
         />
 
-        <button
-          onClick={falarComIA}
-          style={styles.primary}
-          disabled={loading || bloqueado}
-        >
+        <button onClick={falarComIA} disabled={loading || bloqueado}>
           {loading ? "Processando..." : "Falar com IA"}
-        </button>
-
-        <button style={styles.secondary}>
-          📊 Gerar Relatório (Premium)
         </button>
       </div>
 
-      {/* RESPOSTA */}
-      {resposta && (
-        <div style={styles.resposta}>
-          <h4>Resposta da IA</h4>
-          <p>{resposta}</p>
-        </div>
-      )}
+      {resposta && <p>{resposta}</p>}
 
-      {/* DASHBOARD */}
+      {/* 📊 DASHBOARD */}
       {dados.length > 0 && (
-        <div style={styles.dashboard}>
+        <>
           <h3>📊 Evolução emocional</h3>
 
           <ResponsiveContainer width="100%" height={250}>
@@ -210,89 +183,35 @@ export default function App() {
               <Line type="monotone" dataKey="score" />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </>
       )}
     </div>
   );
 }
 
-// 🎨 ESTILO PROFISSIONAL
 const styles = {
-  landing: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#0f172a",
-  },
-  card: {
-    background: "#111827",
-    padding: 40,
-    borderRadius: 12,
-    textAlign: "center",
-    color: "#fff",
-    width: 320,
-  },
   container: {
     maxWidth: 500,
     margin: "auto",
     padding: 20,
   },
+  login: {
+    textAlign: "center",
+    marginTop: 100,
+  },
   hero: {
     textAlign: "center",
     marginBottom: 20,
+  },
+  premium: {
+    background: "gold",
+    padding: 10,
+    border: "none",
+    marginTop: 10,
   },
   box: {
     background: "#f1f5f9",
     padding: 20,
     borderRadius: 10,
-  },
-  resposta: {
-    marginTop: 20,
-    background: "#e2e8f0",
-    padding: 15,
-    borderRadius: 10,
-  },
-  dashboard: {
-    marginTop: 20,
-    background: "#f8fafc",
-    padding: 15,
-    borderRadius: 10,
-  },
-  bloqueio: {
-    color: "red",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 6,
-    border: "1px solid #ccc",
-  },
-  primary: {
-    width: "100%",
-    padding: 10,
-    background: "#3b82f6",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  secondary: {
-    width: "100%",
-    padding: 10,
-    background: "#8b5cf6",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-  },
-  premium: {
-    marginTop: 10,
-    background: "gold",
-    padding: 8,
-    border: "none",
-    borderRadius: 6,
   },
 };

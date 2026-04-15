@@ -12,9 +12,8 @@ export default function App() {
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
-  const [plano, setPlano] = useState("free");
-  const [dadosGrafico, setDadosGrafico] = useState([]);
   const [relatorio, setRelatorio] = useState("");
+  const [plano, setPlano] = useState("free");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -43,26 +42,8 @@ export default function App() {
     const data = await res.json();
     setResposta(data.resposta);
     setPlano(data.plano);
-
-    carregarGrafico();
   };
 
-  const carregarGrafico = async () => {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/grafico", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: session?.user?.id,
-      }),
-    });
-
-    const data = await res.json();
-    setDadosGrafico(data.data);
-  };
-
-  // 🔥 RELATÓRIO FUNCIONANDO
   const gerarRelatorio = async () => {
     const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
       method: "POST",
@@ -75,10 +56,7 @@ export default function App() {
     });
 
     const data = await res.json();
-
-    if (data.relatorio) {
-      setRelatorio(data.relatorio);
-    }
+    setRelatorio(data.relatorio);
   };
 
   const irParaPagamento = async () => {
@@ -90,16 +68,18 @@ export default function App() {
     window.location.href = data.url;
   };
 
-  // 🔐 LOGIN
   if (!session) {
     return (
-      <div style={styles.container}>
+      <div style={styles.login}>
         <h1>NeuroMapa360</h1>
         <input
           placeholder="Seu email"
           onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
         />
-        <button onClick={login}>Entrar</button>
+        <button onClick={login} style={styles.button}>
+          Entrar
+        </button>
       </div>
     );
   }
@@ -117,25 +97,22 @@ export default function App() {
         </p>
 
         {plano === "premium" && (
-          <p style={{ color: "#00ffcc" }}>
-            ✨ IA Avançada ativada
-          </p>
+          <p style={{ color: "#00ffcc" }}>✨ IA Avançada ativa</p>
         )}
 
         {plano !== "premium" && (
           <button onClick={irParaPagamento} style={styles.premium}>
-            ⭐ Upgrade para Premium
+            ⭐ Upgrade Premium
           </button>
         )}
       </div>
 
       {/* INPUT */}
       <div style={styles.box}>
-        <h3>Como você está se sentindo?</h3>
-
         <select
-          style={styles.input}
+          value={emocao}
           onChange={(e) => setEmocao(e.target.value)}
+          style={styles.input}
         >
           <option>Ansioso</option>
           <option>Triste</option>
@@ -144,21 +121,22 @@ export default function App() {
         </select>
 
         <input
-          style={styles.input}
-          placeholder="Digite como você está se sentindo..."
+          placeholder="Descreva como você está..."
+          value={texto}
           onChange={(e) => setTexto(e.target.value)}
+          style={styles.input}
         />
 
-        <button style={styles.botaoIA} onClick={falarComIA}>
+        <button onClick={falarComIA} style={styles.botaoIA}>
           Falar com IA
         </button>
 
-        <button style={styles.botaoRelatorio} onClick={gerarRelatorio}>
+        <button onClick={gerarRelatorio} style={styles.botaoRelatorio}>
           📊 Gerar Relatório
         </button>
 
         {plano === "free" && (
-          <p style={{ color: "red", marginTop: 10 }}>
+          <p style={{ color: "red" }}>
             🔒 Relatório completo disponível no Premium
           </p>
         )}
@@ -167,58 +145,40 @@ export default function App() {
       {/* RESPOSTA */}
       {resposta && (
         <div style={styles.box}>
-          <h3>Resposta da IA:</h3>
+          <h3>Resposta da IA</h3>
           <p>{resposta}</p>
         </div>
       )}
 
       {/* RELATÓRIO */}
       {relatorio && (
-        <div style={styles.relatorioBox}>
+        <div style={styles.relatorio}>
           <h3>📊 Relatório Emocional</h3>
           <p>{relatorio}</p>
         </div>
       )}
 
-      {/* DASHBOARD */}
-      <div style={styles.box}>
-        <h3>📈 Evolução emocional</h3>
-
-        {dadosGrafico.map((d, i) => (
-          <div key={i}>
-            {d.emocao} - {new Date(d.created_at).toLocaleDateString()}
-          </div>
-        ))}
-      </div>
-
     </div>
   );
 }
 
-// 🎨 ESTILO MELHORADO
 const styles = {
-  container: {
-    maxWidth: 700,
-    margin: "auto",
-    padding: 20,
-    fontFamily: "Arial",
-  },
+  container: { maxWidth: 600, margin: "auto", padding: 20 },
+  login: { textAlign: "center", marginTop: 100 },
   hero: {
-    background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
+    background: "#0f172a",
     color: "#fff",
     padding: 30,
-    borderRadius: 15,
-    marginBottom: 20,
+    borderRadius: 10,
     textAlign: "center",
+    marginBottom: 20,
   },
   premium: {
-    marginTop: 15,
     background: "gold",
-    padding: 12,
+    padding: 10,
     border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: "bold",
+    borderRadius: 5,
+    marginTop: 10,
   },
   box: {
     background: "#f1f5f9",
@@ -226,39 +186,26 @@ const styles = {
     borderRadius: 10,
     marginBottom: 20,
   },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 5,
-    border: "1px solid #ccc",
-  },
+  input: { width: "100%", padding: 10, marginBottom: 10 },
   botaoIA: {
     width: "100%",
-    marginTop: 10,
     padding: 12,
     background: "#38bdf8",
     border: "none",
-    borderRadius: 8,
     color: "#fff",
-    fontWeight: "bold",
-    cursor: "pointer",
+    marginTop: 10,
   },
   botaoRelatorio: {
     width: "100%",
-    marginTop: 10,
     padding: 12,
     background: "#8b5cf6",
     border: "none",
-    borderRadius: 8,
     color: "#fff",
-    fontWeight: "bold",
-    cursor: "pointer",
+    marginTop: 10,
   },
-  relatorioBox: {
+  relatorio: {
     background: "#eef2ff",
     padding: 20,
     borderRadius: 10,
-    marginBottom: 20,
   },
 };

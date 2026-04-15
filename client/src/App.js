@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// 🔥 CONFIGURAÇÃO CORRETA
 const supabase = createClient(
-  "https://qodzwxgabuadsnplcscl.supabase.co", // CORRIGIDO
+  "https://qodzwxgabuadsnplcscl.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
 );
 
@@ -15,7 +14,6 @@ export default function App() {
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔐 CONTROLE DE SESSÃO
   useEffect(() => {
     const getSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -25,15 +23,12 @@ export default function App() {
     getSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
+      (_event, session) => setSession(session)
     );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🔥 LIMPAR SESSÃO (corrige bug de usuário trocado)
   const limparSessao = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
@@ -41,29 +36,12 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🔐 LOGIN MELHORADO
   const login = async () => {
-    if (!email) {
-      alert("Digite um email válido");
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({ email });
-
-    if (error) {
-      alert("Erro no login: " + error.message);
-    } else {
-      alert("Verifique seu email 📩");
-    }
+    await supabase.auth.signInWithOtp({ email });
+    alert("Verifique seu email 📩");
   };
 
-  // 🤖 IA COM TRATAMENTO DE ERRO
   const falarComIA = async () => {
-    if (!texto) {
-      alert("Digite algo primeiro");
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -72,77 +50,119 @@ export default function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ texto, emocao }),
+        body: JSON.stringify({
+          texto,
+          emocao,
+          user_id: session?.user?.id,
+        }),
       });
 
-      if (!res.ok) {
-        throw new Error("Erro no servidor");
-      }
-
       const data = await res.json();
-
-      setResposta(data.resposta || "Sem resposta da IA");
+      setResposta(data.resposta);
     } catch (err) {
-      console.error(err);
       alert("Erro ao conectar com IA");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔐 TELA LOGIN
+  // LOGIN
   if (!session) {
     return (
-      <div style={{ padding: 40 }}>
-        <h1>NeuroMapa360</h1>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-2xl shadow-md w-96">
+          <h1 className="text-2xl font-bold mb-4 text-center">
+            NeuroMapa360
+          </h1>
 
-        <input
-          placeholder="Seu email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+          <input
+            className="w-full p-2 border rounded mb-4"
+            placeholder="Seu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-        <br /><br />
-
-        <button onClick={login}>Entrar / Cadastrar</button>
+          <button
+            onClick={login}
+            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          >
+            Entrar / Cadastrar
+          </button>
+        </div>
       </div>
     );
   }
 
-  // 🧠 TELA PRINCIPAL
+  // APP
   return (
-    <div style={{ padding: 40 }}>
-      <h1>NeuroMapa360</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
+      
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">NeuroMapa360</h1>
 
-      <p><strong>{session.user.email}</strong></p>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">
+            {session.user.email}
+          </span>
 
-      <button onClick={limparSessao}>Trocar usuário</button>
+          <button
+            onClick={limparSessao}
+            className="text-sm bg-gray-200 px-3 py-1 rounded"
+          >
+            Trocar usuário
+          </button>
+        </div>
+      </div>
 
-      <h3>Como você está se sentindo?</h3>
+      {/* BOTÃO PREMIUM */}
+      <div className="mb-6">
+        <button className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl shadow">
+          ⭐ Upgrade para Premium
+        </button>
+      </div>
 
-      <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
-        <option>Ansioso</option>
-        <option>Triste</option>
-        <option>Feliz</option>
-        <option>Cansado</option>
-      </select>
+      {/* CARD INPUT */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6 max-w-xl">
+        <h3 className="text-lg font-semibold mb-4">
+          Como você está se sentindo?
+        </h3>
 
-      <br /><br />
+        <select
+          value={emocao}
+          onChange={(e) => setEmocao(e.target.value)}
+          className="w-full p-2 border rounded mb-4"
+        >
+          <option>Ansioso</option>
+          <option>Triste</option>
+          <option>Feliz</option>
+          <option>Cansado</option>
+        </select>
 
-      <input
-        placeholder="Descreva como você está"
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-      />
+        <input
+          className="w-full p-2 border rounded mb-4"
+          placeholder="Descreva como você está"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+        />
 
-      <br /><br />
+        <button
+          onClick={falarComIA}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          {loading ? "Processando..." : "Falar com IA"}
+        </button>
+      </div>
 
-      <button onClick={falarComIA}>
-        {loading ? "Processando..." : "Falar com IA"}
-      </button>
-
-      <h3>Resposta:</h3>
-      <p>{resposta}</p>
+      {/* CARD RESPOSTA */}
+      {resposta && (
+        <div className="bg-white p-6 rounded-2xl shadow max-w-xl">
+          <h3 className="text-lg font-semibold mb-2">Resposta:</h3>
+          <p className="text-gray-700 whitespace-pre-line">
+            {resposta}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

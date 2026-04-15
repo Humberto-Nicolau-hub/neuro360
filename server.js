@@ -39,14 +39,13 @@ async function getPlano(user_id) {
   return data?.plano || "free";
 }
 
-// 🧠 IA (OTIMIZADA)
+// 🧠 IA OTIMIZADA
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
     const plano = await getPlano(user_id);
 
-    // 🔁 HISTÓRICO
     const { data: historico } = await supabase
       .from("registros")
       .select("emocao, texto")
@@ -58,16 +57,15 @@ app.post("/ia", async (req, res) => {
       ?.map(h => `Emoção: ${h.emocao} | ${h.texto}`)
       .join("\n");
 
-    // ⚡ OTIMIZAÇÃO DE VELOCIDADE
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: plano === "premium" ? 0.7 : 0.5,
-      max_tokens: 200, // 🔥 acelera resposta
+      max_tokens: 200,
       messages: [
         {
           role: "system",
           content:
-            "Você é um especialista em PNL, inteligência emocional e acolhimento humano. Seja direto, empático e prático."
+            "Você é especialista em PNL e inteligência emocional. Seja direto, empático e prático."
         },
         {
           role: "user",
@@ -84,7 +82,6 @@ Texto: ${texto}
 
     const resposta = completion.choices[0].message.content;
 
-    // 💾 SALVAR
     await supabase.from("registros").insert([
       { user_id, emocao, texto, resposta, plano }
     ]);
@@ -97,7 +94,7 @@ Texto: ${texto}
   }
 });
 
-// 💳 STRIPE CHECKOUT (MELHORADO)
+// 💳 STRIPE
 app.post("/create-checkout", async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
@@ -127,7 +124,7 @@ app.post("/create-checkout", async (req, res) => {
   }
 });
 
-// 📊 DADOS PARA GRÁFICO
+// 📊 GRÁFICO
 app.post("/grafico", async (req, res) => {
   try {
     const { user_id } = req.body;
@@ -146,48 +143,75 @@ app.post("/grafico", async (req, res) => {
   }
 });
 
-// 📊 RELATÓRIO EMOCIONAL (NOVO ENDPOINT)
+// 📊 RELATÓRIO INTELIGENTE (CORRIGIDO E MELHORADO)
 app.post("/relatorio", async (req, res) => {
   try {
     const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ erro: "User ID obrigatório" });
+    }
+
+    const plano = await getPlano(user_id);
+
+    const limite = plano === "premium" ? 20 : 5;
 
     const { data } = await supabase
       .from("registros")
       .select("emocao, texto, created_at")
       .eq("user_id", user_id)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(limite);
 
-    const resumo = data
-      ?.map(d => `${d.emocao} - ${d.texto}`)
+    if (!data || data.length === 0) {
+      return res.json({
+        relatorio: "Ainda não há dados suficientes para gerar um relatório."
+      });
+    }
+
+    const historico = data
+      .map(d =>
+        `Em ${new Date(d.created_at).toLocaleDateString()} você se sentiu ${d.emocao}`
+      )
       .join("\n");
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 200,
+      temperature: plano === "premium" ? 0.7 : 0.5,
+      max_tokens: 300,
       messages: [
         {
           role: "system",
-          content: "Você é um analista emocional. Gere um resumo semanal do estado emocional do usuário."
+          content:
+            "Você é um especialista em inteligência emocional e PNL. Gere um relatório com padrões, causas e recomendações práticas."
         },
         {
           role: "user",
-          content: resumo
+          content: `
+Analise o histórico emocional:
+
+${historico}
+
+Gere:
+1. Padrões emocionais
+2. Possíveis causas
+3. Recomendações práticas
+`
         }
       ]
     });
 
     const relatorio = completion.choices[0].message.content;
 
-    res.json({ relatorio });
+    return res.json({ relatorio });
 
   } catch (err) {
     console.error("Erro relatório:", err);
-    res.status(500).json({ erro: "Erro relatório" });
+    return res.status(500).json({ erro: "Erro relatório" });
   }
 });
 
-// 📅 CRON SEMANAL (BASE PRONTA)
+// 📅 CRON (PRONTO PARA ESCALAR)
 cron.schedule("0 9 * * 1", async () => {
   console.log("📊 Rodando relatório semanal...");
 
@@ -199,7 +223,7 @@ cron.schedule("0 9 * * 1", async () => {
   for (const user of usuarios || []) {
     console.log(`Gerar relatório para: ${user.email}`);
 
-    // 🔥 AQUI VAMOS PLUGAR EMAIL NO PRÓXIMO PASSO
+    // 🔥 PRÓXIMO PASSO: enviar email automático
   }
 });
 

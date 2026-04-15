@@ -13,6 +13,7 @@ export default function App() {
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
   const [loading, setLoading] = useState(false);
+  const [plano, setPlano] = useState("free");
 
   // 🔐 Sessão
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function App() {
     try {
       await supabase.auth.signInWithOtp({ email });
       alert("Verifique seu email 📩");
-    } catch (err) {
+    } catch {
       alert("Erro no login");
     }
   };
@@ -74,6 +75,8 @@ export default function App() {
       }
 
       setResposta(data.resposta);
+      setPlano(data.plano || "free");
+
     } catch (err) {
       alert("Erro ao conectar com IA");
       console.error(err);
@@ -82,7 +85,7 @@ export default function App() {
     }
   };
 
-  // 🔐 LOGIN SCREEN
+  // 🔐 LOGIN
   if (!session) {
     return (
       <div style={{ padding: 40 }}>
@@ -98,47 +101,50 @@ export default function App() {
     );
   }
 
-  // 🚀 APP PRINCIPAL
+  // 🚀 APP
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6 flex justify-center">
 
       <div className="w-full max-w-3xl">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow p-5 mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">NeuroMapa360</h1>
-            <p className="text-sm text-gray-500">{session.user.email}</p>
-          </div>
+        <div className="bg-white rounded-2xl shadow p-5 mb-6">
+          <h1 className="text-2xl font-bold">NeuroMapa360</h1>
+          <p className="text-sm text-gray-500">{session.user.email}</p>
+          <p className="text-sm mt-1">
+            Plano: {plano === "premium" ? "Premium ⭐" : "Free"}
+          </p>
 
           <button
             onClick={limparSessao}
-            className="bg-gray-200 px-4 py-2 rounded-lg text-sm"
+            className="mt-3 bg-gray-200 px-4 py-2 rounded-lg text-sm"
           >
             Trocar usuário
           </button>
         </div>
 
         {/* PREMIUM */}
-        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-6 rounded-2xl shadow mb-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Desbloqueie sua evolução emocional
-            </h2>
-            <p className="text-sm opacity-90">
-              Memória emocional + IA personalizada
-            </p>
-          </div>
+        {plano !== "premium" && (
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-6 rounded-2xl shadow mb-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Desbloqueie sua evolução emocional
+              </h2>
+              <p className="text-sm opacity-90">
+                IA mais profunda + memória emocional
+              </p>
+            </div>
 
-          <button
-            onClick={() =>
-              window.open("https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00", "_blank")
-            }
-            className="bg-white text-black px-4 py-2 rounded-lg font-semibold"
-          >
-            Premium ⭐
-          </button>
-        </div>
+            <button
+              onClick={() =>
+                window.open("https://buy.stripe.com/test_6oU7sKeRr9mzgU22wvfIs00", "_blank")
+              }
+              className="bg-white text-black px-4 py-2 rounded-lg font-semibold"
+            >
+              Premium ⭐
+            </button>
+          </div>
+        )}
 
         {/* INPUT */}
         <div className="bg-white p-6 rounded-2xl shadow mb-6">
@@ -169,7 +175,7 @@ export default function App() {
 
           <button
             onClick={falarComIA}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-3 rounded-xl"
           >
             {loading ? "Processando..." : "Falar com IA"}
           </button>
@@ -181,7 +187,7 @@ export default function App() {
             <h3 className="text-lg font-semibold mb-3">
               Sua análise:
             </h3>
-            <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+            <p className="text-gray-700 whitespace-pre-line">
               {resposta}
             </p>
           </div>

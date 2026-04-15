@@ -19,7 +19,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🔥 FUNÇÃO: verificar plano do usuário
+// 🔥 VERIFICAR PLANO
 async function getPlano(user_id) {
   if (!user_id) return "free";
 
@@ -32,82 +32,114 @@ async function getPlano(user_id) {
   return data?.plano || "free";
 }
 
+// 🧠 IA PRINCIPAL
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
-    console.log("BODY:", req.body);
-
-    // 🔎 PLANO
     const plano = await getPlano(user_id);
-
-    // 🧠 HISTÓRICO (diferente por plano)
-    let historicoTexto = "";
-    let limite = plano === "premium" ? 10 : 3;
 
     const { data: historico } = await supabase
       .from("registros")
       .select("emocao, texto")
       .eq("user_id", user_id)
       .order("created_at", { ascending: false })
-      .limit(limite);
+      .limit(plano === "premium" ? 10 : 3);
 
-    if (historico) {
-      historicoTexto = historico
-        .map(h => `Emoção: ${h.emocao} | Texto: ${h.texto}`)
-        .join("\n");
-    }
+    const historicoTexto = historico
+      ?.map(h => `Emoção: ${h.emocao} | ${h.texto}`)
+      .join("\n");
 
-    // 🎯 PROMPT DIFERENCIADO
-    const prompt = `
-Você é um especialista em inteligência emocional, PNL e desenvolvimento pessoal.
-
-Plano do usuário: ${plano}
-
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: plano === "premium" ? 0.7 : 0.5,
+      messages: [
+        {
+          role: "system",
+          content: "Você é especialista em PNL e inteligência emocional."
+        },
+        {
+          role: "user",
+          content: `
 Histórico:
 ${historicoTexto}
 
-Situação atual:
-Emoção: ${emocao}
+Emoção atual: ${emocao}
 Texto: ${texto}
-
-${
-  plano === "premium"
-    ? "Responda com máxima profundidade, análise emocional e orientação prática detalhada."
-    : "Responda de forma útil e acolhedora."
-}
-`;
-
-    // 🤖 IA COM DIFERENCIAÇÃO REAL
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: plano === "premium" ? 0.7 : 0.5,
+`
+        }
+      ]
     });
 
     const resposta = completion.choices[0].message.content;
 
-    // 💾 SALVAR
     await supabase.from("registros").insert([
-      {
-        user_id,
-        emocao,
-        texto,
-        resposta,
-        plano,
-      },
+      { user_id, emocao, texto, resposta, plano }
     ]);
 
     return res.json({ resposta, plano });
 
   } catch (err) {
-    console.error("ERRO:", err);
-    return res.status(500).json({ erro: "Erro na IA" });
+    console.error(err);
+    return res.status(500).json({ erro: "Erro IA" });
+  }
+});
+
+// 📊 RELATÓRIO
+app.post("/relatorio", async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    const { data: historico } = await supabase
+      .from("registros")
+      .select("emocao, texto")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (!historico || historico.length === 0) {
+      return res.json({ relatorio: "Sem dados suficientes." });
+    }
+
+    const textoHistorico = historico
+      .map(h => `Emoção: ${h.emocao} | ${h.texto}`)
+      .join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.7,
+      messages: [
+        {
+          role: "system",
+          content: `
+Você é especialista em análise emocional.
+
+Gere um relatório com:
+- padrão emocional
+- dificuldades
+- pontos positivos
+- sugestão prática
+`
+        },
+        {
+          role: "user",
+          content: textoHistorico
+        }
+      ]
+    });
+
+    const relatorio = completion.choices[0].message.content;
+
+    return res.json({ relatorio });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: "Erro relatório" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server rodando na porta", PORT);
+  console.log("Servidor rodando 🚀");
 });

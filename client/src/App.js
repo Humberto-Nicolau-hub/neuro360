@@ -12,10 +12,8 @@ export default function App() {
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
-  const [relatorio, setRelatorio] = useState("");
-  const [score, setScore] = useState(0);
   const [plano, setPlano] = useState("free");
-  const [loading, setLoading] = useState(false);
+  const [dadosGrafico, setDadosGrafico] = useState([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -25,41 +23,30 @@ export default function App() {
 
   const login = async () => {
     await supabase.auth.signInWithOtp({ email });
-    alert("Verifique seu email 📩");
+    alert("Verifique email");
   };
 
   const falarComIA = async () => {
-    setLoading(true);
+    const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session?.user?.id,
+      }),
+    });
 
-    try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          texto,
-          emocao,
-          user_id: session?.user?.id,
-        }),
-      });
-
-      const data = await res.json();
-
-      setResposta(data.resposta);
-      setPlano(data.plano);
-
-      calcularScore();
-
-    } catch (err) {
-      alert("Erro ao conectar com IA");
-    }
-
-    setLoading(false);
+    const data = await res.json();
+    setResposta(data.resposta);
+    setPlano(data.plano);
+    carregarGrafico();
   };
 
-  const gerarRelatorio = async () => {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+  const carregarGrafico = async () => {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/grafico", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,159 +57,88 @@ export default function App() {
     });
 
     const data = await res.json();
-    setRelatorio(data.relatorio);
+    setDadosGrafico(data.data);
   };
 
-  const calcularScore = async () => {
-    const { data } = await supabase
-      .from("registros")
-      .select("emocao")
-      .eq("user_id", session?.user?.id);
-
-    let total = 0;
-
-    data?.forEach(e => {
-      if (e.emocao === "Feliz") total += 2;
-      if (e.emocao === "Triste") total -= 1;
-      if (e.emocao === "Ansioso") total -= 2;
+  const irParaPagamento = async () => {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
+      method: "POST",
     });
 
-    setScore(total);
+    const data = await res.json();
+    window.location.href = data.url;
   };
 
-  // LOGIN
   if (!session) {
     return (
       <div style={styles.container}>
         <h1>NeuroMapa360</h1>
-        <input
-          placeholder="Seu email"
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={login} style={styles.button}>
-          Entrar
-        </button>
+        <input onChange={(e) => setEmail(e.target.value)} />
+        <button onClick={login}>Entrar</button>
       </div>
     );
   }
 
-  // APP
   return (
     <div style={styles.container}>
-      
-      {/* HEADER */}
-      <div style={styles.header}>
+
+      {/* HERO */}
+      <div style={styles.hero}>
         <h1>NeuroMapa360</h1>
-        <p>{session.user.email}</p>
+        <p>Sua mente com IA</p>
 
-        <div style={styles.badges}>
-          <span>Plano: {plano}</span>
-          <span>Score: {score}</span>
-        </div>
-
-        {/* BOTÃO PREMIUM */}
         {plano !== "premium" && (
-          <button style={styles.premium}>
-            ⭐ Upgrade para Premium
+          <button onClick={irParaPagamento} style={styles.premium}>
+            ⭐ Upgrade Premium
           </button>
         )}
       </div>
 
       {/* INPUT */}
-      <div style={styles.box}>
-        <h3>Como você está se sentindo?</h3>
+      <select onChange={(e) => setEmocao(e.target.value)}>
+        <option>Ansioso</option>
+        <option>Triste</option>
+        <option>Feliz</option>
+      </select>
 
-        <select
-          value={emocao}
-          onChange={(e) => setEmocao(e.target.value)}
-          style={styles.input}
-        >
-          <option>Ansioso</option>
-          <option>Triste</option>
-          <option>Feliz</option>
-        </select>
+      <input onChange={(e) => setTexto(e.target.value)} />
 
-        <input
-          placeholder="Descreva..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          style={styles.input}
-        />
+      <button onClick={falarComIA}>Falar com IA</button>
 
-        <button onClick={falarComIA} style={styles.button}>
-          {loading ? "Processando..." : "Falar com IA"}
-        </button>
-      </div>
+      <p>{resposta}</p>
 
-      {/* RESPOSTA */}
-      {resposta && (
-        <div style={styles.box}>
-          <h3>Resposta da IA</h3>
-          <p>{resposta}</p>
+      {/* DASHBOARD */}
+      <h3>📊 Evolução emocional</h3>
+
+      {dadosGrafico.map((d, i) => (
+        <div key={i}>
+          {d.emocao} - {new Date(d.created_at).toLocaleDateString()}
         </div>
-      )}
-
-      {/* RELATÓRIO */}
-      <div style={styles.box}>
-        <button onClick={gerarRelatorio} style={styles.button}>
-          Gerar Relatório 🧠
-        </button>
-
-        {relatorio && (
-          <>
-            <h3>Relatório Emocional</h3>
-            <p>{relatorio}</p>
-          </>
-        )}
-      </div>
+      ))}
 
     </div>
   );
 }
 
-// 🎨 ESTILO PROFISSIONAL
 const styles = {
   container: {
     maxWidth: 600,
     margin: "auto",
     padding: 20,
-    fontFamily: "Arial",
   },
-  header: {
-    marginBottom: 30,
-  },
-  badges: {
-    display: "flex",
-    gap: 10,
-    marginTop: 10,
-  },
-  box: {
-    background: "#f5f5f5",
-    padding: 20,
+  hero: {
+    background: "#0f172a",
+    color: "#fff",
+    padding: 30,
     borderRadius: 10,
     marginBottom: 20,
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginTop: 10,
-  },
-  button: {
-    marginTop: 15,
-    padding: 10,
-    width: "100%",
-    background: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: 5,
+    textAlign: "center",
   },
   premium: {
     marginTop: 15,
-    padding: 10,
     background: "gold",
+    padding: 10,
     border: "none",
     borderRadius: 5,
-    cursor: "pointer",
   },
 };

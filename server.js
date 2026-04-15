@@ -25,68 +25,68 @@ app.post("/ia", async (req, res) => {
 
     console.log("BODY:", req.body);
 
-    // 🔥 CHAMADA REAL DA IA
+    // 🧠 BUSCAR HISTÓRICO
+    let historicoTexto = "";
+
+    if (user_id) {
+      const { data: historico } = await supabase
+        .from("registros")
+        .select("emocao, texto")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (historico) {
+        historicoTexto = historico
+          .map(h => `Emoção: ${h.emocao} | Texto: ${h.texto}`)
+          .join("\n");
+      }
+    }
+
+    // 🤖 PROMPT INTELIGENTE
+    const prompt = `
+Você é um especialista em inteligência emocional, PNL e desenvolvimento pessoal.
+
+Histórico recente do usuário:
+${historicoTexto}
+
+Situação atual:
+Emoção: ${emocao}
+Texto: ${texto}
+
+Responda de forma:
+- acolhedora
+- profunda
+- prática
+- personalizada com base no histórico
+
+Evite respostas genéricas.
+`;
+
+    // 🤖 IA REAL
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-  {
-    role: "system",
-    content: `
-Você é um especialista em Programação Neurolinguística (PNL), inteligência emocional e acolhimento terapêutico.
-
-Sua missão é ajudar o usuário a compreender e regular suas emoções.
-
-Regras da resposta:
-- Seja acolhedor, humano e empático
-- Nunca seja frio ou robótico
-- Fale como um guia, não como um robô
-- Use linguagem simples e clara
-- Traga consciência emocional
-- Sugira ações práticas
-
-Estruture sempre a resposta assim:
-
-1. Validação emocional (mostre que entende a emoção)
-2. Explicação simples do que pode estar acontecendo
-3. 1 ou 2 técnicas práticas (respiração, mudança de foco, PNL)
-4. Fechamento encorajador
-
-Nunca use linguagem técnica demais.
-Nunca seja superficial.
-Nunca dê respostas genéricas.
-`,
-  },
-  {
-    role: "user",
-    content: `
-Emoção: ${emocao}
-Relato: ${texto}
-`,
-  },
-],
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.5, // padrão free
     });
 
-    const respostaIA = completion.choices[0].message.content;
+    const resposta = completion.choices[0].message.content;
 
-    // 🔥 SALVA NO BANCO
-    const { error } = await supabase.from("registros").insert([
+    // 💾 SALVAR
+    await supabase.from("registros").insert([
       {
-        user_id: user_id || null,
+        user_id,
         emocao,
         texto,
-        resposta: respostaIA,
+        resposta,
       },
     ]);
 
-    if (error) {
-      console.error("SUPABASE ERROR:", error);
-    }
-
-    return res.json({ resposta: respostaIA });
+    return res.json({ resposta });
 
   } catch (err) {
     console.error("ERRO:", err);
-    return res.status(500).json({ erro: "Erro interno" });
+    return res.status(500).json({ erro: "Erro na IA" });
   }
 });
 

@@ -14,7 +14,7 @@ export default function App() {
   const [resposta, setResposta] = useState("");
   const [plano, setPlano] = useState("free");
   const [dadosGrafico, setDadosGrafico] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [relatorio, setRelatorio] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -24,37 +24,27 @@ export default function App() {
 
   const login = async () => {
     await supabase.auth.signInWithOtp({ email });
-    alert("Verifique seu email para login");
+    alert("Verifique seu email");
   };
 
   const falarComIA = async () => {
-    setLoading(true);
+    const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session?.user?.id,
+      }),
+    });
 
-    try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          texto,
-          emocao,
-          user_id: session?.user?.id,
-        }),
-      });
+    const data = await res.json();
+    setResposta(data.resposta);
+    setPlano(data.plano);
 
-      const data = await res.json();
-
-      setResposta(data.resposta);
-      setPlano(data.plano);
-
-      carregarGrafico();
-    } catch (err) {
-      console.error(err);
-      setResposta("Erro ao conectar com IA.");
-    }
-
-    setLoading(false);
+    carregarGrafico();
   };
 
   const carregarGrafico = async () => {
@@ -69,7 +59,26 @@ export default function App() {
     });
 
     const data = await res.json();
-    setDadosGrafico(data.data || []);
+    setDadosGrafico(data.data);
+  };
+
+  // 🔥 RELATÓRIO FUNCIONANDO
+  const gerarRelatorio = async () => {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: session?.user?.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.relatorio) {
+      setRelatorio(data.relatorio);
+    }
   };
 
   const irParaPagamento = async () => {
@@ -81,23 +90,16 @@ export default function App() {
     window.location.href = data.url;
   };
 
-  const gerarRelatorio = async () => {
-    alert("Relatório emocional gerado com sucesso 🚀");
-  };
-
-  // LOGIN
+  // 🔐 LOGIN
   if (!session) {
     return (
-      <div style={styles.login}>
+      <div style={styles.container}>
         <h1>NeuroMapa360</h1>
         <input
-          placeholder="Digite seu email"
+          placeholder="Seu email"
           onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
         />
-        <button onClick={login} style={styles.button}>
-          Entrar
-        </button>
+        <button onClick={login}>Entrar</button>
       </div>
     );
   }
@@ -105,10 +107,20 @@ export default function App() {
   return (
     <div style={styles.container}>
 
-      {/* HERO COM VISUAL FORTE */}
+      {/* HERO */}
       <div style={styles.hero}>
         <h1>NeuroMapa360</h1>
         <p>Sua mente com IA</p>
+
+        <p>
+          Plano: <b>{plano.toUpperCase()}</b>
+        </p>
+
+        {plano === "premium" && (
+          <p style={{ color: "#00ffcc" }}>
+            ✨ IA Avançada ativada
+          </p>
+        )}
 
         {plano !== "premium" && (
           <button onClick={irParaPagamento} style={styles.premium}>
@@ -117,15 +129,13 @@ export default function App() {
         )}
       </div>
 
-      {/* CARD PRINCIPAL */}
-      <div style={styles.card}>
-
+      {/* INPUT */}
+      <div style={styles.box}>
         <h3>Como você está se sentindo?</h3>
 
         <select
-          value={emocao}
-          onChange={(e) => setEmocao(e.target.value)}
           style={styles.input}
+          onChange={(e) => setEmocao(e.target.value)}
         >
           <option>Ansioso</option>
           <option>Triste</option>
@@ -134,35 +144,45 @@ export default function App() {
         </select>
 
         <input
-          placeholder="Descreva seu sentimento..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
           style={styles.input}
+          placeholder="Digite como você está se sentindo..."
+          onChange={(e) => setTexto(e.target.value)}
         />
 
-        <button onClick={falarComIA} style={styles.primary}>
-          {loading ? "Pensando..." : "Falar com IA"}
+        <button style={styles.botaoIA} onClick={falarComIA}>
+          Falar com IA
         </button>
 
-        {/* BOTÃO RELATÓRIO */}
-        <button onClick={gerarRelatorio} style={styles.relatorio}>
+        <button style={styles.botaoRelatorio} onClick={gerarRelatorio}>
           📊 Gerar Relatório
         </button>
 
-        {/* RESPOSTA */}
-        {resposta && (
-          <div style={styles.resposta}>
-            <h4>Resposta da IA:</h4>
-            <p>{resposta}</p>
-          </div>
+        {plano === "free" && (
+          <p style={{ color: "red", marginTop: 10 }}>
+            🔒 Relatório completo disponível no Premium
+          </p>
         )}
       </div>
 
-      {/* DASHBOARD */}
-      <div style={styles.card}>
-        <h3>📈 Evolução emocional</h3>
+      {/* RESPOSTA */}
+      {resposta && (
+        <div style={styles.box}>
+          <h3>Resposta da IA:</h3>
+          <p>{resposta}</p>
+        </div>
+      )}
 
-        {dadosGrafico.length === 0 && <p>Sem dados ainda</p>}
+      {/* RELATÓRIO */}
+      {relatorio && (
+        <div style={styles.relatorioBox}>
+          <h3>📊 Relatório Emocional</h3>
+          <p>{relatorio}</p>
+        </div>
+      )}
+
+      {/* DASHBOARD */}
+      <div style={styles.box}>
+        <h3>📈 Evolução emocional</h3>
 
         {dadosGrafico.map((d, i) => (
           <div key={i}>
@@ -170,89 +190,75 @@ export default function App() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }
 
+// 🎨 ESTILO MELHORADO
 const styles = {
   container: {
-    background: "#f4f6f9",
-    minHeight: "100vh",
-    paddingBottom: 40,
+    maxWidth: 700,
+    margin: "auto",
+    padding: 20,
+    fontFamily: "Arial",
   },
-
-  login: {
-    maxWidth: 400,
-    margin: "100px auto",
-    textAlign: "center",
-  },
-
   hero: {
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+    background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
     color: "#fff",
-    padding: 40,
+    padding: 30,
+    borderRadius: 15,
+    marginBottom: 20,
     textAlign: "center",
-    borderRadius: "0 0 20px 20px",
   },
-
   premium: {
     marginTop: 15,
-    background: "#f1c40f",
+    background: "gold",
     padding: 12,
     border: "none",
     borderRadius: 8,
-    fontWeight: "bold",
     cursor: "pointer",
+    fontWeight: "bold",
   },
-
-  card: {
-    maxWidth: 600,
-    margin: "20px auto",
-    background: "#fff",
+  box: {
+    background: "#f1f5f9",
     padding: 20,
-    borderRadius: 12,
-    boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+    borderRadius: 10,
+    marginBottom: 20,
   },
-
   input: {
     width: "100%",
     padding: 10,
-    marginBottom: 10,
+    marginTop: 10,
+    borderRadius: 5,
+    border: "1px solid #ccc",
   },
-
-  primary: {
-    width: "100%",
-    padding: 12,
-    background: "#3498db",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-
-  relatorio: {
+  botaoIA: {
     width: "100%",
     marginTop: 10,
     padding: 12,
-    background: "#8e44ad",
-    color: "#fff",
+    background: "#38bdf8",
     border: "none",
     borderRadius: 8,
+    color: "#fff",
+    fontWeight: "bold",
     cursor: "pointer",
   },
-
-  button: {
-    padding: 10,
-    background: "#3498db",
-    color: "#fff",
+  botaoRelatorio: {
+    width: "100%",
+    marginTop: 10,
+    padding: 12,
+    background: "#8b5cf6",
     border: "none",
-    borderRadius: 5,
+    borderRadius: 8,
+    color: "#fff",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
-
-  resposta: {
-    marginTop: 20,
-    background: "#ecf0f1",
-    padding: 15,
+  relatorioBox: {
+    background: "#eef2ff",
+    padding: 20,
     borderRadius: 10,
+    marginBottom: 20,
   },
 };

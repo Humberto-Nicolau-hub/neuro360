@@ -19,55 +19,70 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// 🔥 FUNÇÃO: verificar plano do usuário
+async function getPlano(user_id) {
+  if (!user_id) return "free";
+
+  const { data } = await supabase
+    .from("usuarios")
+    .select("plano")
+    .eq("id", user_id)
+    .single();
+
+  return data?.plano || "free";
+}
+
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
     console.log("BODY:", req.body);
 
-    // 🧠 BUSCAR HISTÓRICO
+    // 🔎 PLANO
+    const plano = await getPlano(user_id);
+
+    // 🧠 HISTÓRICO (diferente por plano)
     let historicoTexto = "";
+    let limite = plano === "premium" ? 10 : 3;
 
-    if (user_id) {
-      const { data: historico } = await supabase
-        .from("registros")
-        .select("emocao, texto")
-        .eq("user_id", user_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
+    const { data: historico } = await supabase
+      .from("registros")
+      .select("emocao, texto")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(limite);
 
-      if (historico) {
-        historicoTexto = historico
-          .map(h => `Emoção: ${h.emocao} | Texto: ${h.texto}`)
-          .join("\n");
-      }
+    if (historico) {
+      historicoTexto = historico
+        .map(h => `Emoção: ${h.emocao} | Texto: ${h.texto}`)
+        .join("\n");
     }
 
-    // 🤖 PROMPT INTELIGENTE
+    // 🎯 PROMPT DIFERENCIADO
     const prompt = `
 Você é um especialista em inteligência emocional, PNL e desenvolvimento pessoal.
 
-Histórico recente do usuário:
+Plano do usuário: ${plano}
+
+Histórico:
 ${historicoTexto}
 
 Situação atual:
 Emoção: ${emocao}
 Texto: ${texto}
 
-Responda de forma:
-- acolhedora
-- profunda
-- prática
-- personalizada com base no histórico
-
-Evite respostas genéricas.
+${
+  plano === "premium"
+    ? "Responda com máxima profundidade, análise emocional e orientação prática detalhada."
+    : "Responda de forma útil e acolhedora."
+}
 `;
 
-    // 🤖 IA REAL
+    // 🤖 IA COM DIFERENCIAÇÃO REAL
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.5, // padrão free
+      temperature: plano === "premium" ? 0.7 : 0.5,
     });
 
     const resposta = completion.choices[0].message.content;
@@ -79,10 +94,11 @@ Evite respostas genéricas.
         emocao,
         texto,
         resposta,
+        plano,
       },
     ]);
 
-    return res.json({ resposta });
+    return res.json({ resposta, plano });
 
   } catch (err) {
     console.error("ERRO:", err);

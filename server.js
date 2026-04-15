@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import Stripe from "stripe";
+import cron from "node-cron";
 
 dotenv.config();
 
@@ -10,14 +12,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 🔗 SUPABASE
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// 🤖 OPENAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// 💳 STRIPE
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // 🔥 VERIFICAR PLANO
 async function getPlano(user_id) {
@@ -32,7 +39,7 @@ async function getPlano(user_id) {
   return data?.plano || "free";
 }
 
-// 🧠 IA PRINCIPAL
+// 🧠 IA
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
@@ -85,57 +92,51 @@ Texto: ${texto}
   }
 });
 
-// 📊 RELATÓRIO
-app.post("/relatorio", async (req, res) => {
+// 💳 STRIPE CHECKOUT
+app.post("/create-checkout", async (req, res) => {
   try {
-    const { user_id } = req.body;
-
-    const { data: historico } = await supabase
-      .from("registros")
-      .select("emocao, texto")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (!historico || historico.length === 0) {
-      return res.json({ relatorio: "Sem dados suficientes." });
-    }
-
-    const textoHistorico = historico
-      .map(h => `Emoção: ${h.emocao} | ${h.texto}`)
-      .join("\n");
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      messages: [
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
         {
-          role: "system",
-          content: `
-Você é especialista em análise emocional.
-
-Gere um relatório com:
-- padrão emocional
-- dificuldades
-- pontos positivos
-- sugestão prática
-`
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: "NeuroMapa360 Premium",
+            },
+            unit_amount: 1990,
+          },
+          quantity: 1,
         },
-        {
-          role: "user",
-          content: textoHistorico
-        }
-      ]
+      ],
+      success_url: "https://neuro360.vercel.app?success=true",
+      cancel_url: "https://neuro360.vercel.app",
     });
 
-    const relatorio = completion.choices[0].message.content;
-
-    return res.json({ relatorio });
+    res.json({ url: session.url });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ erro: "Erro relatório" });
+    res.status(500).json({ erro: "Erro pagamento" });
   }
+});
+
+// 📊 DADOS PARA GRÁFICO
+app.post("/grafico", async (req, res) => {
+  const { user_id } = req.body;
+
+  const { data } = await supabase
+    .from("registros")
+    .select("emocao, created_at")
+    .eq("user_id", user_id);
+
+  return res.json({ data });
+});
+
+// 📅 CRON (relatório semanal base)
+cron.schedule("0 9 * * 1", async () => {
+  console.log("Relatório semanal rodando...");
 });
 
 const PORT = process.env.PORT || 3000;

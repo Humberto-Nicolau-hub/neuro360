@@ -15,6 +15,7 @@ export default function App() {
   const [relatorio, setRelatorio] = useState("");
   const [score, setScore] = useState(0);
   const [plano, setPlano] = useState("free");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -24,26 +25,37 @@ export default function App() {
 
   const login = async () => {
     await supabase.auth.signInWithOtp({ email });
-    alert("Verifique email");
+    alert("Verifique seu email 📩");
   };
 
   const falarComIA = async () => {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        texto,
-        emocao,
-        user_id: session?.user?.id,
-      }),
-    });
+    setLoading(true);
 
-    const data = await res.json();
-    setResposta(data.resposta);
-    setPlano(data.plano);
-    calcularScore();
+    try {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          texto,
+          emocao,
+          user_id: session?.user?.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      setResposta(data.resposta);
+      setPlano(data.plano);
+
+      calcularScore();
+
+    } catch (err) {
+      alert("Erro ao conectar com IA");
+    }
+
+    setLoading(false);
   };
 
   const gerarRelatorio = async () => {
@@ -78,52 +90,139 @@ export default function App() {
     setScore(total);
   };
 
+  // LOGIN
   if (!session) {
     return (
-      <div>
-        <input onChange={(e) => setEmail(e.target.value)} />
-        <button onClick={login}>Entrar</button>
+      <div style={styles.container}>
+        <h1>NeuroMapa360</h1>
+        <input
+          placeholder="Seu email"
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
+        <button onClick={login} style={styles.button}>
+          Entrar
+        </button>
       </div>
     );
   }
 
+  // APP
   return (
-    <div style={{ padding: 20 }}>
-      <h1>NeuroMapa360</h1>
+    <div style={styles.container}>
+      
+      {/* HEADER */}
+      <div style={styles.header}>
+        <h1>NeuroMapa360</h1>
+        <p>{session.user.email}</p>
 
-      <p>{session.user.email}</p>
-      <p>Plano: {plano}</p>
-      <p>Score emocional: {score}</p>
+        <div style={styles.badges}>
+          <span>Plano: {plano}</span>
+          <span>Score: {score}</span>
+        </div>
 
-      <button onClick={gerarRelatorio}>
-        Gerar Relatório 🧠
-      </button>
+        {/* BOTÃO PREMIUM */}
+        {plano !== "premium" && (
+          <button style={styles.premium}>
+            ⭐ Upgrade para Premium
+          </button>
+        )}
+      </div>
 
-      {relatorio && (
-        <div>
-          <h3>Relatório</h3>
-          <p>{relatorio}</p>
+      {/* INPUT */}
+      <div style={styles.box}>
+        <h3>Como você está se sentindo?</h3>
+
+        <select
+          value={emocao}
+          onChange={(e) => setEmocao(e.target.value)}
+          style={styles.input}
+        >
+          <option>Ansioso</option>
+          <option>Triste</option>
+          <option>Feliz</option>
+        </select>
+
+        <input
+          placeholder="Descreva..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          style={styles.input}
+        />
+
+        <button onClick={falarComIA} style={styles.button}>
+          {loading ? "Processando..." : "Falar com IA"}
+        </button>
+      </div>
+
+      {/* RESPOSTA */}
+      {resposta && (
+        <div style={styles.box}>
+          <h3>Resposta da IA</h3>
+          <p>{resposta}</p>
         </div>
       )}
 
-      <br />
+      {/* RELATÓRIO */}
+      <div style={styles.box}>
+        <button onClick={gerarRelatorio} style={styles.button}>
+          Gerar Relatório 🧠
+        </button>
 
-      <select onChange={(e) => setEmocao(e.target.value)}>
-        <option>Ansioso</option>
-        <option>Triste</option>
-        <option>Feliz</option>
-      </select>
+        {relatorio && (
+          <>
+            <h3>Relatório Emocional</h3>
+            <p>{relatorio}</p>
+          </>
+        )}
+      </div>
 
-      <input
-        placeholder="Digite..."
-        onChange={(e) => setTexto(e.target.value)}
-      />
-
-      <button onClick={falarComIA}>
-        Enviar
-      </button>
-
-      <p>{resposta}</p>
     </div>
   );
 }
+
+// 🎨 ESTILO PROFISSIONAL
+const styles = {
+  container: {
+    maxWidth: 600,
+    margin: "auto",
+    padding: 20,
+    fontFamily: "Arial",
+  },
+  header: {
+    marginBottom: 30,
+  },
+  badges: {
+    display: "flex",
+    gap: 10,
+    marginTop: 10,
+  },
+  box: {
+    background: "#f5f5f5",
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  input: {
+    width: "100%",
+    padding: 10,
+    marginTop: 10,
+  },
+  button: {
+    marginTop: 15,
+    padding: 10,
+    width: "100%",
+    background: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: 5,
+  },
+  premium: {
+    marginTop: 15,
+    padding: 10,
+    background: "gold",
+    border: "none",
+    borderRadius: 5,
+    cursor: "pointer",
+  },
+};

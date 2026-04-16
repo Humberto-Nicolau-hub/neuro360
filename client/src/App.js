@@ -1,3 +1,4 @@
+```javascript
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -27,6 +28,7 @@ export default function App() {
   const [bloqueado, setBloqueado] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // 🔐 Sessão
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -36,6 +38,7 @@ export default function App() {
   // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite um email válido");
+
     await supabase.auth.signInWithOtp({ email });
     alert("Verifique seu email 📩");
   };
@@ -78,7 +81,7 @@ export default function App() {
     setLoading(false);
   };
 
-  // 📊 DASHBOARD (SEM DUPLICAÇÃO)
+  // 📊 DASHBOARD
   const carregarDashboard = async () => {
     try {
       const res = await fetch("https://neuro360-tkyx.onrender.com/dashboard", {
@@ -169,7 +172,6 @@ export default function App() {
 
       {resposta && <p>{resposta}</p>}
 
-      {/* 📊 DASHBOARD */}
       {dados.length > 0 && (
         <>
           <h3>📊 Evolução emocional</h3>
@@ -189,6 +191,7 @@ export default function App() {
   );
 }
 
+// 🎨 ESTILO
 const styles = {
   container: {
     maxWidth: 500,
@@ -215,3 +218,4 @@ const styles = {
     borderRadius: 10,
   },
 };
+```

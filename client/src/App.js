@@ -1,56 +1,31 @@
-```javascript
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer
-} from "recharts";
-
-// 🔐 SUPABASE
-const supabase = createClient(
-  "https://qodzwxgabuadsnplcscl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
-);
+import React, { useState, useEffect } from "react";
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
-  const [emocao, setEmocao] = useState("Ansioso");
+  const [emocao, setEmocao] = useState("");
   const [resposta, setResposta] = useState("");
-  const [plano, setPlano] = useState("free");
   const [dados, setDados] = useState([]);
-  const [bloqueado, setBloqueado] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [bloqueado, setBloqueado] = useState(false);
 
-  // 🔐 Sessão
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-    });
-  }, []);
+  const API_URL = "https://neuro360-tkyx.onrender.com";
 
-  // 🔐 LOGIN
-  const login = async () => {
-    if (!email) return alert("Digite um email válido");
+  // 🔹 LOGIN SIMPLES
+  const [email, setEmail] = useState("");
+  const [session, setSession] = useState(false);
 
-    await supabase.auth.signInWithOtp({ email });
-    alert("Verifique seu email 📩");
+  const login = () => {
+    if (email) {
+      setSession(true);
+    }
   };
 
-  // 🤖 IA
+  // 🔹 CHAMAR IA (CORRIGIDO)
   const falarComIA = async () => {
-    if (!texto) return alert("Descreva como você está");
-
-    setLoading(true);
-
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+      setLoading(true);
+
+      const res = await fetch(`${API_URL}/ia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,164 +33,162 @@ export default function App() {
         body: JSON.stringify({
           texto,
           emocao,
-          user_id: session?.user?.id,
+          user_id: email,
         }),
       });
 
       const result = await res.json();
 
-      setResposta(result.resposta);
-      setPlano(result.plano);
-
-      if (result.bloqueado) {
-        setBloqueado(true);
-      } else {
-        await carregarDashboard();
+      if (!res.ok) {
+        throw new Error(result.error || "Erro na IA");
       }
 
+      setResposta(result.resposta);
     } catch (err) {
       console.error(err);
-      alert("Erro ao conectar com IA");
+      alert("Erro ao chamar IA");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  // 📊 DASHBOARD
+  // 🔹 DASHBOARD (CORRIGIDO)
   const carregarDashboard = async () => {
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/dashboard", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: session?.user?.id,
-        }),
-      });
-
+      const res = await fetch(`${API_URL}/dashboard?user_id=${email}`);
       const result = await res.json();
-      setDados(result.dados || []);
 
+      setDados(result.dados || []);
     } catch (err) {
       console.error("Erro dashboard:", err);
     }
   };
 
-  // 💳 PAGAMENTO
-  const irParaPagamento = async () => {
+  // 🔹 VERIFICAR BLOQUEIO
+  const verificarBloqueio = async () => {
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
-        method: "POST",
-      });
+      const res = await fetch(`${API_URL}/verificar?user_id=${email}`);
+      const result = await res.json();
 
-      const data = await res.json();
-      window.location.href = data.url;
-
-    } catch {
-      alert("Erro no pagamento");
+      if (result.bloqueado) {
+        setBloqueado(true);
+      } else {
+        setBloqueado(false);
+        await carregarDashboard();
+      }
+    } catch (err) {
+      console.error("Erro verificação:", err);
     }
   };
 
-  // 🚀 LOGIN SCREEN
+  useEffect(() => {
+    if (session) {
+      verificarBloqueio();
+    }
+  }, [session]);
+
+  // 🔹 TELA LOGIN
   if (!session) {
     return (
-      <div style={styles.login}>
-        <h1>NeuroMapa360</h1>
+      <div style={styles.container}>
+        <h2>NeuroMapa360</h2>
         <input
           placeholder="Seu email"
           onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
         />
-        <button onClick={login}>Entrar</button>
+        <button onClick={login} style={styles.button}>
+          Entrar
+        </button>
       </div>
     );
   }
 
-  // 🚀 APP
+  // 🔹 APP PRINCIPAL
   return (
     <div style={styles.container}>
+      <h2>NeuroMapa360</h2>
 
-      <div style={styles.hero}>
-        <h2>NeuroMapa360</h2>
-        <p>Plano: {plano.toUpperCase()}</p>
-
-        {plano !== "premium" && (
-          <button onClick={irParaPagamento} style={styles.premium}>
-            ⭐ Upgrade Premium
-          </button>
-        )}
-      </div>
-
+      {/* BLOQUEIO */}
       {bloqueado && (
         <p style={{ color: "red" }}>
           🔒 Limite FREE atingido. Faça upgrade.
         </p>
       )}
 
-      <div style={styles.box}>
-        <select onChange={(e) => setEmocao(e.target.value)}>
-          <option>Ansioso</option>
-          <option>Triste</option>
-          <option>Feliz</option>
-          <option>Cansado</option>
-        </select>
+      {/* FORM */}
+      <select
+        onChange={(e) => setEmocao(e.target.value)}
+        style={styles.input}
+      >
+        <option value="">Selecione emoção</option>
+        <option>Ansioso</option>
+        <option>Triste</option>
+        <option>Confuso</option>
+        <option>Motivado</option>
+      </select>
 
-        <input
-          placeholder="Descreva como você está..."
-          onChange={(e) => setTexto(e.target.value)}
-        />
+      <input
+        placeholder="Digite seu pensamento"
+        onChange={(e) => setTexto(e.target.value)}
+        style={styles.input}
+      />
 
-        <button onClick={falarComIA} disabled={loading || bloqueado}>
-          {loading ? "Processando..." : "Falar com IA"}
-        </button>
-      </div>
+      <button
+        onClick={falarComIA}
+        style={styles.button}
+        disabled={loading || bloqueado}
+      >
+        {loading ? "Processando..." : "Falar com IA"}
+      </button>
 
-      {resposta && <p>{resposta}</p>}
+      {/* RESPOSTA */}
+      {resposta && (
+        <div style={styles.box}>
+          <h4>Resposta da IA</h4>
+          <p>{resposta}</p>
+        </div>
+      )}
 
+      {/* DASHBOARD */}
       {dados.length > 0 && (
-        <>
-          <h3>📊 Evolução emocional</h3>
-
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={dados}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="data" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="score" />
-            </LineChart>
-          </ResponsiveContainer>
-        </>
+        <div style={styles.box}>
+          <h4>Evolução emocional</h4>
+          {dados.map((d, i) => (
+            <p key={i}>
+              {d.emocao} - {d.score}
+            </p>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-// 🎨 ESTILO
+// 🔹 ESTILO
 const styles = {
   container: {
-    maxWidth: 500,
+    maxWidth: 400,
     margin: "auto",
     padding: 20,
-  },
-  login: {
     textAlign: "center",
-    marginTop: 100,
   },
-  hero: {
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  premium: {
-    background: "gold",
+  input: {
+    width: "100%",
     padding: 10,
+    margin: "10px 0",
+  },
+  button: {
+    padding: 10,
+    width: "100%",
+    background: "#4CAF50",
+    color: "#fff",
     border: "none",
-    marginTop: 10,
+    cursor: "pointer",
   },
   box: {
-    background: "#f1f5f9",
-    padding: 20,
-    borderRadius: 10,
+    marginTop: 20,
+    padding: 15,
+    border: "1px solid #ddd",
   },
 };
-```

@@ -11,17 +11,39 @@ dotenv.config();
 
 const app = express();
 
-// ⚠️ IMPORTANTE (Stripe webhook precisa vir antes do JSON)
-app.use("/webhook-stripe", express.raw({ type: "application/json" }));
+// ⚠️ WEBHOOK ANTES DO JSON
+app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      req.headers["stripe-signature"],
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const email = session.customer_details.email;
+
+      await supabase
+        .from("usuarios")
+        .update({ plano: "premium" })
+        .eq("email", email);
+
+      console.log("💰 Premium liberado:", email);
+    }
+
+    res.json({ received: true });
+
+  } catch (err) {
+    console.log("❌ Webhook erro:", err.message);
+    res.status(400).send("Erro webhook");
+  }
+});
 
 app.use(cors());
 app.use(express.json());
-
-// 🔍 LOG GLOBAL (DEBUG)
-app.use((req, res, next) => {
-  console.log(`➡️ ${req.method} ${req.url}`);
-  next();
-});
 
 // 🔗 SUPABASE
 const supabase = createClient(
@@ -46,300 +68,112 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 🧠 SCORE
-const mapaScore = {
-  Feliz: 3,
-  Ansioso: 1,
-  Triste: 0,
-  Cansado: 1,
-};
-
-// 🔎 HEALTH CHECK
+// 🔥 ROTA BASE (IMPORTANTE)
 app.get("/", (req, res) => {
-  res.send("API Neuro360 rodando 🚀");
+  res.send("API NeuroMapa360 rodando 🚀");
 });
 
-// 🔥 GET PLANO
+// 🔥 PLANO
 async function getPlano(user_id) {
-  try {
-    if (!user_id) return "free";
+  if (!user_id) return "free";
 
-    const { data, error } = await supabase
-      .from("usuarios")
-      .select("plano")
-      .eq("id", user_id)
-      .single();
+  const { data } = await supabase
+    .from("usuarios")
+    .select("plano")
+    .eq("id", user_id)
+    .single();
 
-    if (error) {
-      console.error("Erro plano:", error);
-      return "free";
-    }
-
-    return data?.plano || "free";
-  } catch (err) {
-    console.error("Erro getPlano:", err);
-    return "free";
-  }
+  return data?.plano || "free";
 }
 
-// ==========================
-// 🤖 IA
-// ==========================
+// 🧠 IA
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao, user_id } = req.body || {};
-
-    if (!texto || !emocao) {
-      return res.status(400).json({
-        erro: "Texto e emoção são obrigatórios",
-      });
-    }
+    const { texto, emocao, user_id } = req.body;
 
     const plano = await getPlano(user_id);
 
-    // 🔒 LIMITADOR FREE
-    if (plano !== "premium") {
-      const hoje = new Date().toISOString().split("T")[0];
-
-      const { count, error } = await supabase
-        .from("registros")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user_id)
-        .gte("created_at", hoje);
-
-      if (error) {
-        console.error("Erro contagem:", error);
-      }
-
-      if ((count || 0) >= 5) {
-        return res.json({
-          resposta: "🔒 Limite FREE atingido. Faça upgrade.",
-          plano,
-          bloqueado: true,
-        });
-      }
-    }
-
-    // 🤖 IA
-    let resposta = "Não consegui gerar resposta.";
-
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: plano === "premium" ? 0.7 : 0.5,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Você é especialista em PNL, inteligência emocional e comportamento humano.",
-          },
-          {
-            role: "user",
-            content: `Emoção: ${emocao}\nTexto: ${texto}`,
-          },
-        ],
-      });
-
-      resposta =
-        completion.choices?.[0]?.message?.content || resposta;
-
-    } catch (err) {
-      console.error("Erro OpenAI:", err);
-    }
-
-    // 📊 SCORE
-    const score = mapaScore[emocao] ?? 1;
-
-    try {
-      await supabase.from("registros").insert([
-        { user_id, emocao, texto, resposta, score, plano },
-      ]);
-    } catch (err) {
-      console.error("Erro salvar registro:", err);
-    }
-
-    return res.json({ resposta, plano });
-
-  } catch (err) {
-    console.error("ERRO /ia:", err);
-    return res.status(500).json({ erro: "Erro interno IA" });
-  }
-});
-
-// ==========================
-// 📊 DASHBOARD
-// ==========================
-app.post("/dashboard", async (req, res) => {
-  try {
-    const { user_id } = req.body || {};
-
-    if (!user_id) {
-      return res.status(400).json({ erro: "user_id obrigatório" });
-    }
-
-    const { data, error } = await supabase
+    const { data: historico } = await supabase
       .from("registros")
-      .select("emocao, score, created_at")
+      .select("texto")
       .eq("user_id", user_id)
-      .order("created_at", { ascending: true });
+      .limit(plano === "premium" ? 10 : 3);
 
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ erro: "Erro dashboard" });
-    }
-
-    return res.json({ dados: data || [] });
-
-  } catch (err) {
-    console.error("ERRO /dashboard:", err);
-    res.status(500).json({ erro: "Erro interno" });
-  }
-});
-
-// ==========================
-// 📊 RELATÓRIO
-// ==========================
-app.post("/relatorio", async (req, res) => {
-  try {
-    const { user_id } = req.body || {};
-
-    const { data: registros } = await supabase
-      .from("registros")
-      .select("emocao, texto")
-      .eq("user_id", user_id)
-      .limit(10);
-
-    const resumo =
-      registros?.map(r => `${r.emocao}: ${r.texto}`).join("\n") || "";
+    const contexto = historico?.map(h => h.texto).join("\n");
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "Analise emocional com PNL." },
-        { role: "user", content: resumo },
-      ],
+        { role: "system", content: "Especialista em PNL" },
+        { role: "user", content: `${contexto}\n${texto}` }
+      ]
     });
 
-    return res.json({
-      relatorio: completion.choices[0].message.content,
-    });
+    const resposta = completion.choices[0].message.content;
+
+    await supabase.from("registros").insert([
+      { user_id, emocao, texto, resposta, plano }
+    ]);
+
+    res.json({ resposta, plano });
 
   } catch (err) {
-    console.error("ERRO /relatorio:", err);
+    console.error(err);
+    res.status(500).json({ erro: "Erro IA" });
+  }
+});
+
+// 📊 RELATÓRIO
+app.post("/relatorio", async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    const { data } = await supabase
+      .from("registros")
+      .select("texto")
+      .eq("user_id", user_id)
+      .limit(10);
+
+    const resumo = data?.map(d => d.texto).join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Gerar relatório emocional" },
+        { role: "user", content: resumo }
+      ]
+    });
+
+    res.json({ relatorio: completion.choices[0].message.content });
+
+  } catch {
     res.status(500).json({ erro: "Erro relatório" });
   }
 });
 
-// ==========================
-// 💳 STRIPE
-// ==========================
+// 💳 CHECKOUT
 app.post("/create-checkout", async (req, res) => {
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            product_data: { name: "NeuroMapa360 Premium" },
-            unit_amount: 1990,
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: "https://neuro360.vercel.app?success=true",
-      cancel_url: "https://neuro360.vercel.app",
-    });
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items: [{
+      price_data: {
+        currency: "brl",
+        product_data: { name: "Premium NeuroMapa360" },
+        unit_amount: 1990,
+      },
+      quantity: 1,
+    }],
+    success_url: "https://neuro360.vercel.app",
+    cancel_url: "https://neuro360.vercel.app",
+  });
 
-    res.json({ url: session.url });
-
-  } catch (err) {
-    console.error("Erro Stripe:", err);
-    res.status(500).json({ erro: "Erro pagamento" });
-  }
+  res.json({ url: session.url });
 });
 
-// ==========================
-// 🔥 WEBHOOK
-// ==========================
-app.post("/webhook-stripe", async (req, res) => {
-  try {
-    const sig = req.headers["stripe-signature"];
-
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-
-      await supabase
-        .from("usuarios")
-        .update({ plano: "premium" })
-        .eq("email", session.customer_details.email);
-    }
-
-    res.json({ received: true });
-
-  } catch (err) {
-    console.error("Erro webhook:", err);
-    res.status(400).send("Webhook error");
-  }
-});
-
-// ==========================
-// 📅 CRON
-// ==========================
-cron.schedule("0 9 * * 1", async () => {
-  console.log("📅 Relatório semanal");
-
-  const { data: usuarios } = await supabase
-    .from("usuarios")
-    .select("id, email, plano");
-
-  for (const user of usuarios || []) {
-    try {
-      const { data: registros } = await supabase
-        .from("registros")
-        .select("emocao, texto")
-        .eq("user_id", user.id)
-        .limit(10);
-
-      if (!registros?.length) continue;
-
-      const resumo = registros
-        .map(r => `${r.emocao}: ${r.texto}`)
-        .join("\n");
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Resumo emocional semanal." },
-          { role: "user", content: resumo },
-        ],
-      });
-
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject: "📊 Seu Relatório Semanal",
-        text: completion.choices[0].message.content,
-      });
-
-    } catch (err) {
-      console.error("Erro cron:", err);
-    }
-  }
-});
-
-// ==========================
-// 🚀 START
-// ==========================
-const PORT = process.env.PORT || 10000;
+// 🚀 PORTA DINÂMICA (ESSENCIAL)
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log("🚀 Server rodando na porta", PORT);
 });

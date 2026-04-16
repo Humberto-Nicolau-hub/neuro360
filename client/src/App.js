@@ -1,59 +1,125 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
-function App() {
-  const [logado, setLogado] = useState(false);
+const supabase = createClient(
+  "https://qodzwxgabuadsnplcscl.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
+);
+
+export default function App() {
+  const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
-  const [emocao, setEmocao] = useState("Ansioso");
   const [texto, setTexto] = useState("");
+  const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
+  const [relatorio, setRelatorio] = useState("");
+  const [plano, setPlano] = useState("free");
+  const [loading, setLoading] = useState(false);
 
-  const [progresso, setProgresso] = useState(0);
-  const [sequencia, setSequencia] = useState(0);
-  const [completadoHoje, setCompletadoHoje] = useState(false);
+  // 🔐 SESSION
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
 
-  const handleLogin = () => {
-    if (email.trim() !== "") {
-      setLogado(true);
-    }
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // 🔐 LOGIN
+  const login = async () => {
+    if (!email) return alert("Digite um email");
+
+    await supabase.auth.signInWithOtp({ email });
+    alert("📩 Verifique seu email para entrar");
   };
 
-  const falarComIA = () => {
-    let respostaGerada = `
-Sentir-se ${emocao.toLowerCase()} é algo comum.
+  // 🤖 IA
+  const falarComIA = async () => {
+    if (!texto) return alert("Descreva o que está sentindo");
 
-1. Respire profundamente
-2. Observe seus pensamentos
-3. Escreva o que está sentindo
-4. Divida seus problemas em partes menores
-5. Pratique atenção no presente
-`;
+    setLoading(true);
 
-    setResposta(respostaGerada);
+    try {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          texto,
+          emocao,
+          user_id: session?.user?.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      setResposta(data.resposta);
+      setPlano(data.plano);
+    } catch {
+      alert("Erro ao chamar IA");
+    }
+
+    setLoading(false);
   };
 
-  const completarHoje = () => {
-    if (!completadoHoje) {
-      setProgresso(progresso + 1);
-      setSequencia(sequencia + 1);
-      setCompletadoHoje(true);
+  // 📊 RELATÓRIO
+  const gerarRelatorio = async () => {
+    setLoading(true);
+
+    try {
+      const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: session?.user?.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (plano === "free") {
+        alert("🔒 Liberado apenas no Premium");
+      }
+
+      setRelatorio(data.relatorio);
+    } catch {
+      alert("Erro ao gerar relatório");
     }
+
+    setLoading(false);
+  };
+
+  // 💳 PAGAMENTO
+  const irParaPagamento = async () => {
+    const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
+      method: "POST",
+    });
+
+    const data = await res.json();
+
+    window.location.href = data.url;
   };
 
   // 🔐 TELA LOGIN
-  if (!logado) {
+  if (!session) {
     return (
-      <div style={styles.container}>
+      <div style={styles.login}>
         <h1>NeuroMapa360</h1>
 
         <input
-          type="email"
           placeholder="Seu email"
-          value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
         />
 
-        <button onClick={handleLogin} style={styles.button}>
+        <button onClick={login} style={styles.button}>
           Entrar
         </button>
       </div>
@@ -63,111 +129,136 @@ Sentir-se ${emocao.toLowerCase()} é algo comum.
   // 🚀 TELA PRINCIPAL
   return (
     <div style={styles.container}>
-      <h1>NeuroMapa360</h1>
 
-      <div style={styles.badge}>⭐ Premium Ativo</div>
+      {/* HEADER */}
+      <div style={styles.hero}>
+        <h1>NeuroMapa360</h1>
+        <p>Sua mente com IA</p>
 
-      <h2>Como você está se sentindo?</h2>
+        <p>
+          Plano: <b>{plano.toUpperCase()}</b>
+        </p>
 
-      <select
-        value={emocao}
-        onChange={(e) => setEmocao(e.target.value)}
-        style={styles.input}
-      >
-        <option>Ansioso</option>
-        <option>Procrastinando</option>
-        <option>Triste</option>
-        <option>Desmotivado</option>
-      </select>
-
-      <textarea
-        placeholder="Descreva como está se sentindo..."
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        style={styles.textarea}
-      />
-
-      <button onClick={falarComIA} style={styles.button}>
-        Falar com IA
-      </button>
-
-      {/* META */}
-      <div style={styles.card}>
-        <h3>🎯 Meta</h3>
-        <p>Observar emoções por 3 dias</p>
-
-        <p>📊 Progresso: {progresso}/3</p>
-
-        <button onClick={completarHoje} style={styles.smallButton}>
-          ✅ Completei hoje
-        </button>
-
-        <p>🔥 Sequência: {sequencia} dias</p>
+        {plano === "premium" ? (
+          <p style={{ color: "#00ffcc" }}>✨ IA Avançada ativa</p>
+        ) : (
+          <button onClick={irParaPagamento} style={styles.premium}>
+            ⭐ Upgrade Premium
+          </button>
+        )}
       </div>
 
-      {/* TRILHA */}
-      <div style={styles.card}>
-        <h3>🚀 Trilha</h3>
-        <p>Autoconhecimento</p>
+      {/* INPUT */}
+      <div style={styles.box}>
+        <select
+          value={emocao}
+          onChange={(e) => setEmocao(e.target.value)}
+          style={styles.input}
+        >
+          <option>Ansioso</option>
+          <option>Triste</option>
+          <option>Feliz</option>
+          <option>Cansado</option>
+        </select>
+
+        <input
+          placeholder="Descreva como você está..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          style={styles.input}
+        />
+
+        <button onClick={falarComIA} style={styles.botaoIA}>
+          {loading ? "Pensando..." : "Falar com IA"}
+        </button>
+
+        <button onClick={gerarRelatorio} style={styles.botaoRelatorio}>
+          📊 Gerar Relatório
+        </button>
+
+        {plano === "free" && (
+          <p style={{ color: "red" }}>
+            🔒 Recursos completos disponíveis no Premium
+          </p>
+        )}
       </div>
 
       {/* RESPOSTA */}
       {resposta && (
-        <div style={styles.card}>
-          <h3>🤖 Resposta da IA</h3>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{resposta}</pre>
+        <div style={styles.box}>
+          <h3>Resposta da IA</h3>
+          <p>{resposta}</p>
         </div>
       )}
+
+      {/* RELATÓRIO */}
+      {relatorio && (
+        <div style={styles.relatorio}>
+          <h3>📊 Relatório Emocional</h3>
+          <p>{relatorio}</p>
+        </div>
+      )}
+
     </div>
   );
 }
 
 // 🎨 ESTILO
 const styles = {
-  container: {
-    maxWidth: 500,
-    margin: "50px auto",
+  container: { maxWidth: 600, margin: "auto", padding: 20 },
+  login: { textAlign: "center", marginTop: 100 },
+  hero: {
+    background: "#0f172a",
+    color: "#fff",
+    padding: 30,
+    borderRadius: 10,
     textAlign: "center",
-    fontFamily: "Arial",
+    marginBottom: 20,
   },
-  input: {
-    width: "100%",
+  premium: {
+    background: "gold",
     padding: 10,
-    margin: "10px 0",
+    border: "none",
+    borderRadius: 5,
+    marginTop: 10,
+    cursor: "pointer",
   },
-  textarea: {
-    width: "100%",
-    padding: 10,
-    height: 100,
-    margin: "10px 0",
+  box: {
+    background: "#f1f5f9",
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
   },
+  input: { width: "100%", padding: 10, marginBottom: 10 },
   button: {
     width: "100%",
     padding: 12,
-    backgroundColor: "green",
-    color: "white",
+    background: "green",
+    color: "#fff",
     border: "none",
+    cursor: "pointer",
+  },
+  botaoIA: {
+    width: "100%",
+    padding: 12,
+    background: "#38bdf8",
+    border: "none",
+    color: "#fff",
     marginTop: 10,
     cursor: "pointer",
   },
-  smallButton: {
-    padding: 8,
+  botaoRelatorio: {
+    width: "100%",
+    padding: 12,
+    background: "#8b5cf6",
+    border: "none",
+    color: "#fff",
     marginTop: 10,
     cursor: "pointer",
   },
-  badge: {
-    backgroundColor: "orange",
-    color: "white",
-    padding: "5px 10px",
-    display: "inline-block",
-    marginBottom: 20,
-  },
-  card: {
-    border: "1px solid #ccc",
-    padding: 15,
-    marginTop: 20,
+  relatorio: {
+    background: "#eef2ff",
+    padding: 20,
     borderRadius: 10,
   },
 };
-
-export default App;

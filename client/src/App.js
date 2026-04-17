@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  "https://qdodzxgabaudsnplccl.supabase.co",
+  "https://qodznxgabuaabnsplcsl.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
 );
 
@@ -12,9 +12,11 @@ export default function App() {
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [relatorio, setRelatorio] = useState("");
   const [plano, setPlano] = useState("free");
+  const [loading, setLoading] = useState(false);
 
+  // 🔐 sessão
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -29,15 +31,16 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // LOGIN
+  // 🚀 LOGIN MÁGICO
   const login = async () => {
     if (!email) return alert("Digite um email");
 
     await supabase.auth.signInWithOtp({ email });
-    alert("Verifique seu email");
+
+    alert("📩 Verifique seu email para entrar");
   };
 
-  // IA
+  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
 
@@ -47,60 +50,83 @@ export default function App() {
       const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           texto,
           emocao,
-          user_id: session?.user?.id
-        })
+          user_id: session?.user?.id,
+        }),
       });
 
       const data = await res.json();
 
       setResposta(data.resposta);
       setPlano(data.plano);
-
     } catch (err) {
-      alert("Erro na IA");
+      alert("Erro ao conectar IA");
     }
 
     setLoading(false);
   };
 
-  // PAGAMENTO
-  const upgrade = async () => {
+  // 📊 RELATÓRIO
+  const gerarRelatorio = async () => {
+    if (plano !== "premium") {
+      return alert("🔒 Liberado apenas no Premium");
+    }
+
+    const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: session?.user?.id,
+      }),
+    });
+
+    const data = await res.json();
+    setRelatorio(data.relatorio);
+  };
+
+  // 💳 STRIPE
+  const irParaPagamento = async () => {
     const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
-      method: "POST"
+      method: "POST",
     });
 
     const data = await res.json();
     window.location.href = data.url;
   };
 
-  // LOGIN SCREEN
+  // 🔐 LOGIN SCREEN
   if (!session) {
     return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginCard}>
+      <div style={styles.container}>
+        <div style={styles.card}>
           
-          <img
-            src="https://images.unsplash.com/photo-1581090700227-1e8e2b3f6c8c"
-            alt="Cérebro IA"
-            style={styles.image}
-          />
+          {/* 🧠 CABEÇALHO COM ÍCONE */}
+          <div style={{ marginBottom: 10 }}>
+            <span style={{ fontSize: 28 }}>🧠</span>
+            <span style={{ marginLeft: 8, color: "#94a3b8" }}>
+              Cérebro IA
+            </span>
+          </div>
 
           <h1 style={styles.title}>NeuroMapa360</h1>
-          <p style={styles.subtitle}>Sua mente com Inteligência Artificial</p>
+          <p style={styles.subtitle}>
+            Sua mente com Inteligência Artificial
+          </p>
 
           <input
+            style={styles.input}
             placeholder="Seu email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
           />
 
-          <button onClick={login} style={styles.button}>
+          <button style={styles.button} onClick={login}>
             Entrar
           </button>
         </div>
@@ -108,52 +134,56 @@ export default function App() {
     );
   }
 
-  // DASHBOARD
+  // 🚀 APP
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
-
+      <div style={styles.appBox}>
         <h1>NeuroMapa360</h1>
-        <p>Sua mente com IA</p>
-
-        <h3>Plano: {plano.toUpperCase()}</h3>
+        <p>Plano: {plano.toUpperCase()}</p>
 
         {plano === "free" && (
-          <button onClick={upgrade} style={styles.upgrade}>
+          <button style={styles.upgrade} onClick={irParaPagamento}>
             Upgrade Premium
           </button>
         )}
 
         <select
+          style={styles.input}
           value={emocao}
           onChange={(e) => setEmocao(e.target.value)}
-          style={styles.input}
         >
           <option>Ansioso</option>
           <option>Triste</option>
-          <option>Motivado</option>
-          <option>Confuso</option>
+          <option>Feliz</option>
+          <option>Estressado</option>
         </select>
 
-        <textarea
-          placeholder="Descreva como você está..."
+        <input
+          style={styles.input}
+          placeholder="Descreva como você está"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          style={styles.textarea}
         />
 
-        <button onClick={falarComIA} style={styles.iaButton}>
+        <button style={styles.button} onClick={falarComIA}>
           {loading ? "Pensando..." : "Falar com IA"}
         </button>
 
-        <button style={styles.reportButton}>
+        <button style={styles.secondary} onClick={gerarRelatorio}>
           Gerar Relatório
         </button>
 
         {resposta && (
-          <div style={styles.response}>
+          <div style={styles.responseBox}>
             <h3>Resposta da IA</h3>
             <p>{resposta}</p>
+          </div>
+        )}
+
+        {relatorio && (
+          <div style={styles.responseBox}>
+            <h3>Relatório</h3>
+            <p>{relatorio}</p>
           </div>
         )}
       </div>
@@ -161,98 +191,69 @@ export default function App() {
   );
 }
 
-// 🎨 ESTILO PROFISSIONAL
+// 🎨 ESTILO
 const styles = {
   container: {
-    minHeight: "100vh",
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  loginContainer: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #020617, #1e293b)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  loginCard: {
-    background: "#0f172a",
-    padding: 30,
-    borderRadius: 20,
-    width: 350,
-    textAlign: "center",
-    boxShadow: "0 0 40px rgba(0,0,0,0.5)"
-  },
-  image: {
-    width: "100%",
-    borderRadius: 12,
-    marginBottom: 20
-  },
-  title: {
-    color: "#fff"
-  },
-  subtitle: {
-    color: "#94a3b8"
   },
   card: {
-    background: "#fff",
-    padding: 30,
-    borderRadius: 20,
-    width: 400
+    background: "#0f172a",
+    padding: 40,
+    borderRadius: 12,
+    textAlign: "center",
+    color: "white",
+  },
+  title: {
+    fontSize: 28,
+  },
+  subtitle: {
+    color: "#94a3b8",
+    marginBottom: 20,
   },
   input: {
-    width: "100%",
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc"
-  },
-  textarea: {
-    width: "100%",
-    height: 100,
-    marginTop: 10,
-    padding: 10
+    padding: 12,
+    width: 250,
+    marginBottom: 10,
+    borderRadius: 6,
+    border: "none",
   },
   button: {
+    padding: 12,
     width: "100%",
-    marginTop: 15,
-    padding: 10,
     background: "#22c55e",
-    color: "#fff",
     border: "none",
-    borderRadius: 8
+    color: "white",
+    borderRadius: 6,
+    cursor: "pointer",
   },
-  iaButton: {
-    width: "100%",
-    marginTop: 15,
-    padding: 12,
-    background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8
-  },
-  reportButton: {
-    width: "100%",
+  secondary: {
     marginTop: 10,
-    padding: 12,
-    background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
-    color: "#fff",
+    padding: 10,
+    width: "100%",
+    background: "#3b82f6",
     border: "none",
-    borderRadius: 8
+    color: "white",
+    borderRadius: 6,
   },
   upgrade: {
-    marginTop: 10,
+    background: "gold",
     padding: 10,
-    background: "#f59e0b",
+    marginBottom: 10,
     border: "none",
-    borderRadius: 8
+    borderRadius: 6,
   },
-  response: {
+  appBox: {
+    background: "white",
+    padding: 30,
+    borderRadius: 12,
+    width: 400,
+  },
+  responseBox: {
     marginTop: 20,
-    padding: 15,
-    background: "#f1f5f9",
-    borderRadius: 10
-  }
+    textAlign: "left",
+  },
 };

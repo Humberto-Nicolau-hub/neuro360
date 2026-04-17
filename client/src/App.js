@@ -31,13 +31,30 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🚀 LOGIN MÁGICO
+  // 🔑 LOGIN PROFISSIONAL (sem email mágico)
   const login = async () => {
     if (!email) return alert("Digite um email");
 
-    await supabase.auth.signInWithOtp({ email });
+    const password = "123456"; // padrão MVP
 
-    alert("📩 Verifique seu email para entrar");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      // cria conta automaticamente
+      const { error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signupError) {
+        return alert("Erro ao criar conta");
+      }
+
+      alert("Conta criada! Clique novamente em entrar.");
+    }
   };
 
   // 🤖 IA
@@ -106,7 +123,7 @@ export default function App() {
       <div style={styles.container}>
         <div style={styles.card}>
           
-          {/* 🧠 CABEÇALHO COM ÍCONE */}
+          {/* 🧠 HEADER */}
           <div style={{ marginBottom: 10 }}>
             <span style={{ fontSize: 28 }}>🧠</span>
             <span style={{ marginLeft: 8, color: "#94a3b8" }}>
@@ -134,7 +151,7 @@ export default function App() {
     );
   }
 
-  // 🚀 APP
+  // 🚀 APP PRINCIPAL
   return (
     <div style={styles.container}>
       <div style={styles.appBox}>

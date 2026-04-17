@@ -19,61 +19,78 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      if (data.session) {
+        carregarPerfil(data.session.user);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
+        if (session) {
+          carregarPerfil(session.user);
+        }
       }
     );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🔐 LOGIN INTELIGENTE (VERSÃO PRODUÇÃO)
+  // 🔥 CARREGAR PERFIL REAL DO BANCO
+  const carregarPerfil = async (user) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (error || !data) {
+      await supabase.from("profiles").insert({
+        id: user.id,
+        email: user.email,
+        plano: "free",
+      });
+
+      setPlano("free");
+    } else {
+      setPlano(data.plano);
+    }
+  };
+
+  // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite um email");
 
     const password = "123456";
 
-    // tenta login
     let { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (!error && data.session) {
-      return;
-    }
+    if (!error && data.session) return;
 
-    // se falhou, tenta criar conta
-    const { data: signupData, error: signupError } =
-      await supabase.auth.signUp({
-        email,
-        password,
-      });
+    const { error: signupError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
     if (signupError) {
-      // 👇 AQUI ESTÁ A CORREÇÃO PRINCIPAL
       if (signupError.message.includes("already registered")) {
-        // usuário já existe → tenta login de novo
         const { error: retryError } =
           await supabase.auth.signInWithPassword({
             email,
             password,
           });
 
-        if (retryError) {
-          return alert("Erro ao entrar. Tente novamente.");
-        }
-
+        if (retryError) return alert("Erro ao entrar");
         return;
       }
 
       return alert("Erro ao criar conta");
     }
 
-    alert("Conta criada! Entrando...");
+    alert("Conta criada!");
   };
 
   // 🤖 IA
@@ -97,7 +114,16 @@ export default function App() {
 
       const data = await res.json();
       setResposta(data.resposta);
-      setPlano(data.plano);
+
+      // 🔥 ATUALIZA PLANO DO BANCO
+      if (data.plano) {
+        setPlano(data.plano);
+
+        await supabase
+          .from("profiles")
+          .update({ plano: data.plano })
+          .eq("id", session.user.id);
+      }
     } catch {
       alert("Erro ao conectar IA");
     }
@@ -138,17 +164,7 @@ export default function App() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={{ marginBottom: 10 }}>
-            <span style={{ fontSize: 28 }}>🧠</span>
-            <span style={{ marginLeft: 8, color: "#94a3b8" }}>
-              Cérebro IA
-            </span>
-          </div>
-
           <h1 style={styles.title}>NeuroMapa360</h1>
-          <p style={styles.subtitle}>
-            Sua mente com Inteligência Artificial
-          </p>
 
           <input
             style={styles.input}
@@ -170,7 +186,8 @@ export default function App() {
     <div style={styles.container}>
       <div style={styles.appBox}>
         <h1>NeuroMapa360</h1>
-        <p>Plano: {plano.toUpperCase()}</p>
+
+        <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
 
         {plano === "free" && (
           <button style={styles.upgrade} onClick={irParaPagamento}>
@@ -238,7 +255,6 @@ const styles = {
     color: "white",
   },
   title: { fontSize: 28 },
-  subtitle: { color: "#94a3b8", marginBottom: 20 },
   input: {
     padding: 12,
     width: 250,
@@ -253,7 +269,6 @@ const styles = {
     border: "none",
     color: "white",
     borderRadius: 6,
-    cursor: "pointer",
   },
   secondary: {
     marginTop: 10,

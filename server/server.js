@@ -4,18 +4,24 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import Stripe from "stripe";
-import cron from "node-cron";
 import nodemailer from "nodemailer";
 
 dotenv.config();
 
 const app = express();
 
-// ⚠️ WEBHOOK ANTES DO JSON
+// 🔗 SUPABASE
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// 💳 STRIPE
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// ⚠️ WEBHOOK (ANTES DO JSON)
 app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (req, res) => {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
     const event = stripe.webhooks.constructEvent(
       req.body,
       req.headers["stripe-signature"],
@@ -24,14 +30,15 @@ app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (re
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-      const email = session.customer_details.email;
+
+      const user_id = session.metadata.user_id;
 
       await supabase
-        .from("usuarios")
+        .from("profiles")
         .update({ plano: "premium" })
-        .eq("email", email);
+        .eq("id", user_id);
 
-      console.log("💰 Premium liberado:", email);
+      console.log("💰 Premium liberado para:", user_id);
     }
 
     res.json({ received: true });
@@ -45,19 +52,10 @@ app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (re
 app.use(cors());
 app.use(express.json());
 
-// 🔗 SUPABASE
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 // 🤖 OPENAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-// 💳 STRIPE
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // 📧 EMAIL
 const transporter = nodemailer.createTransport({
@@ -68,17 +66,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 🔥 ROTA BASE (IMPORTANTE)
+// 🔥 ROTA BASE
 app.get("/", (req, res) => {
   res.send("API NeuroMapa360 rodando 🚀");
 });
 
-// 🔥 PLANO
+// 🔥 PEGAR PLANO
 async function getPlano(user_id) {
   if (!user_id) return "free";
 
   const { data } = await supabase
-    .from("usuarios")
+    .from("profiles")
     .select("plano")
     .eq("id", user_id)
     .single();
@@ -151,19 +149,26 @@ app.post("/relatorio", async (req, res) => {
   }
 });
 
-// 💳 CHECKOUT
+// 💳 CHECKOUT (AGORA CORRETO)
 app.post("/create-checkout", async (req, res) => {
+  const { user_id } = req.body;
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
-    line_items: [{
-      price_data: {
-        currency: "brl",
-        product_data: { name: "Premium NeuroMapa360" },
-        unit_amount: 1990,
+    line_items: [
+      {
+        price_data: {
+          currency: "brl",
+          product_data: { name: "Premium NeuroMapa360" },
+          unit_amount: 1990,
+        },
+        quantity: 1,
       },
-      quantity: 1,
-    }],
+    ],
+    metadata: {
+      user_id: user_id, // 🔥 ESSENCIAL
+    },
     success_url: "https://neuro360.vercel.app",
     cancel_url: "https://neuro360.vercel.app",
   });
@@ -171,7 +176,7 @@ app.post("/create-checkout", async (req, res) => {
   res.json({ url: session.url });
 });
 
-// 🚀 PORTA DINÂMICA (ESSENCIAL)
+// 🚀 PORTA
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

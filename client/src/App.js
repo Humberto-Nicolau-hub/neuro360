@@ -16,7 +16,6 @@ export default function App() {
   const [plano, setPlano] = useState("free");
   const [loading, setLoading] = useState(false);
 
-  // 🔐 sessão
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -31,30 +30,50 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🔑 LOGIN PROFISSIONAL (sem email mágico)
+  // 🔐 LOGIN INTELIGENTE (VERSÃO PRODUÇÃO)
   const login = async () => {
     if (!email) return alert("Digite um email");
 
-    const password = "123456"; // padrão MVP
+    const password = "123456";
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // tenta login
+    let { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      // cria conta automaticamente
-      const { error: signupError } = await supabase.auth.signUp({
+    if (!error && data.session) {
+      return;
+    }
+
+    // se falhou, tenta criar conta
+    const { data: signupData, error: signupError } =
+      await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (signupError) {
-        return alert("Erro ao criar conta");
+    if (signupError) {
+      // 👇 AQUI ESTÁ A CORREÇÃO PRINCIPAL
+      if (signupError.message.includes("already registered")) {
+        // usuário já existe → tenta login de novo
+        const { error: retryError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (retryError) {
+          return alert("Erro ao entrar. Tente novamente.");
+        }
+
+        return;
       }
 
-      alert("Conta criada! Clique novamente em entrar.");
+      return alert("Erro ao criar conta");
     }
+
+    alert("Conta criada! Entrando...");
   };
 
   // 🤖 IA
@@ -77,17 +96,15 @@ export default function App() {
       });
 
       const data = await res.json();
-
       setResposta(data.resposta);
       setPlano(data.plano);
-    } catch (err) {
+    } catch {
       alert("Erro ao conectar IA");
     }
 
     setLoading(false);
   };
 
-  // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
       return alert("🔒 Liberado apenas no Premium");
@@ -107,7 +124,6 @@ export default function App() {
     setRelatorio(data.relatorio);
   };
 
-  // 💳 STRIPE
   const irParaPagamento = async () => {
     const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
       method: "POST",
@@ -117,13 +133,11 @@ export default function App() {
     window.location.href = data.url;
   };
 
-  // 🔐 LOGIN SCREEN
+  // 🔐 LOGIN UI
   if (!session) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          
-          {/* 🧠 HEADER */}
           <div style={{ marginBottom: 10 }}>
             <span style={{ fontSize: 28 }}>🧠</span>
             <span style={{ marginLeft: 8, color: "#94a3b8" }}>
@@ -151,7 +165,7 @@ export default function App() {
     );
   }
 
-  // 🚀 APP PRINCIPAL
+  // 🚀 APP
   return (
     <div style={styles.container}>
       <div style={styles.appBox}>
@@ -208,7 +222,6 @@ export default function App() {
   );
 }
 
-// 🎨 ESTILO
 const styles = {
   container: {
     height: "100vh",
@@ -224,13 +237,8 @@ const styles = {
     textAlign: "center",
     color: "white",
   },
-  title: {
-    fontSize: 28,
-  },
-  subtitle: {
-    color: "#94a3b8",
-    marginBottom: 20,
-  },
+  title: { fontSize: 28 },
+  subtitle: { color: "#94a3b8", marginBottom: 20 },
   input: {
     padding: 12,
     width: 250,

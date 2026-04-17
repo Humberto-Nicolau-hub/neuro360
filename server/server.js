@@ -20,25 +20,43 @@ const supabase = createClient(
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // ⚠️ WEBHOOK (ANTES DO JSON)
-app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (req, res) => {
+app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
+    const sig = req.headers["stripe-signature"];
+
     const event = stripe.webhooks.constructEvent(
       req.body,
-      req.headers["stripe-signature"],
+      sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+
+    console.log("📩 Evento recebido:", event.type);
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
 
-      const user_id = session.metadata.user_id;
+      const user_id = session?.metadata?.user_id;
 
-      await supabase
+      console.log("🧾 Metadata recebido:", session.metadata);
+      console.log("👤 User ID:", user_id);
+
+      if (!user_id) {
+        console.log("❌ ERRO: user_id não veio no metadata");
+        return res.status(400).send("user_id ausente");
+      }
+
+      const { data, error } = await supabase
         .from("profiles")
         .update({ plano: "premium" })
-        .eq("id", user_id);
+        .eq("id", user_id)
+        .select();
 
-      console.log("💰 Premium liberado para:", user_id);
+      if (error) {
+        console.log("❌ Erro ao atualizar plano:", error);
+        return res.status(500).send("Erro ao atualizar usuário");
+      }
+
+      console.log("💰 Premium liberado com sucesso:", data);
     }
 
     res.json({ received: true });
@@ -57,7 +75,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 📧 EMAIL
+// 📧 EMAIL (preparado para uso futuro)
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -75,11 +93,16 @@ app.get("/", (req, res) => {
 async function getPlano(user_id) {
   if (!user_id) return "free";
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("plano")
     .eq("id", user_id)
     .single();
+
+  if (error) {
+    console.log("Erro ao buscar plano:", error);
+    return "free";
+  }
 
   return data?.plano || "free";
 }
@@ -90,6 +113,8 @@ app.post("/ia", async (req, res) => {
     const { texto, emocao, user_id } = req.body;
 
     const plano = await getPlano(user_id);
+
+    console.log("🧠 Plano do usuário:", plano);
 
     const { data: historico } = await supabase
       .from("registros")
@@ -116,7 +141,7 @@ app.post("/ia", async (req, res) => {
     res.json({ resposta, plano });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erro IA:", err);
     res.status(500).json({ erro: "Erro IA" });
   }
 });
@@ -125,6 +150,12 @@ app.post("/ia", async (req, res) => {
 app.post("/relatorio", async (req, res) => {
   try {
     const { user_id } = req.body;
+
+    const plano = await getPlano(user_id);
+
+    if (plano !== "premium") {
+      return res.status(403).json({ erro: "Apenas premium" });
+    }
 
     const { data } = await supabase
       .from("registros")
@@ -144,36 +175,49 @@ app.post("/relatorio", async (req, res) => {
 
     res.json({ relatorio: completion.choices[0].message.content });
 
-  } catch {
+  } catch (err) {
+    console.error("Erro relatório:", err);
     res.status(500).json({ erro: "Erro relatório" });
   }
 });
 
-// 💳 CHECKOUT (AGORA CORRETO)
+// 💳 CHECKOUT
 app.post("/create-checkout", async (req, res) => {
-  const { user_id } = req.body;
+  try {
+    const { user_id } = req.body;
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    mode: "payment",
-    line_items: [
-      {
-        price_data: {
-          currency: "brl",
-          product_data: { name: "Premium NeuroMapa360" },
-          unit_amount: 1990,
+    if (!user_id) {
+      return res.status(400).json({ erro: "user_id obrigatório" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: { name: "Premium NeuroMapa360" },
+            unit_amount: 1990,
+          },
+          quantity: 1,
         },
-        quantity: 1,
+      ],
+      metadata: {
+        user_id: user_id,
       },
-    ],
-    metadata: {
-      user_id: user_id, // 🔥 ESSENCIAL
-    },
-    success_url: "https://neuro360.vercel.app",
-    cancel_url: "https://neuro360.vercel.app",
-  });
+      success_url: "https://neuro360.vercel.app",
+      cancel_url: "https://neuro360.vercel.app",
+    });
 
-  res.json({ url: session.url });
+    console.log("💳 Checkout criado para:", user_id);
+
+    res.json({ url: session.url });
+
+  } catch (err) {
+    console.error("Erro checkout:", err);
+    res.status(500).json({ erro: "Erro ao criar checkout" });
+  }
 });
 
 // 🚀 PORTA

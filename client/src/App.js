@@ -16,34 +16,20 @@ export default function App() {
   const [plano, setPlano] = useState("free");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) {
-        carregarPerfil(data.session.user);
-      }
-    });
+  // 🔥 BUSCAR PLANO SEMPRE ATUALIZADO
+  const buscarPlano = async (user_id) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("plano")
+      .eq("id", user_id)
+      .single();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (session) {
-          carregarPerfil(session.user);
-        }
-      }
-    );
+    if (error || !data) return "free";
 
-    return () => listener.subscription.unsubscribe();
-  }, []);
+    return data.plano || "free";
+  };
 
-  // 🔥 ATUALIZA PLANO AO VOLTAR DO STRIPE
-  useEffect(() => {
-    if (session?.user) {
-      carregarPerfil(session.user);
-    }
-  }, [session]);
-
-  // 🔥 PERFIL
+  // 🔥 CARREGAR PERFIL
   const carregarPerfil = async (user) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -63,6 +49,38 @@ export default function App() {
       setPlano(data.plano);
     }
   };
+
+  // 🔥 INIT
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session);
+
+      if (data.session?.user) {
+        const planoAtual = await buscarPlano(data.session.user.id);
+        setPlano(planoAtual);
+      }
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+
+        if (session?.user) {
+          const planoAtual = await buscarPlano(session.user.id);
+          setPlano(planoAtual);
+        }
+      }
+    );
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // 🔥 ATUALIZA AO VOLTAR DO STRIPE
+  useEffect(() => {
+    if (session?.user) {
+      buscarPlano(session.user.id).then(setPlano);
+    }
+  }, [session]);
 
   // 🔐 LOGIN
   const login = async () => {
@@ -122,6 +140,7 @@ export default function App() {
       const data = await res.json();
       setResposta(data.resposta);
 
+      // 🔥 Atualiza plano vindo do backend também
       if (data.plano) {
         setPlano(data.plano);
       }
@@ -152,7 +171,7 @@ export default function App() {
     setRelatorio(data.relatorio);
   };
 
-  // 💳 CHECKOUT (🔥 CORRIGIDO)
+  // 💳 CHECKOUT
   const irParaPagamento = async () => {
     const res = await fetch(
       "https://neuro360-tkyx.onrender.com/create-checkout",
@@ -162,7 +181,7 @@ export default function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_id: session.user.id, // 🔥 ESSENCIAL
+          user_id: session.user.id,
         }),
       }
     );

@@ -36,7 +36,14 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🔥 CARREGAR PERFIL REAL DO BANCO
+  // 🔥 ATUALIZA PLANO AO VOLTAR DO STRIPE
+  useEffect(() => {
+    if (session?.user) {
+      carregarPerfil(session.user);
+    }
+  }, [session]);
+
+  // 🔥 PERFIL
   const carregarPerfil = async (user) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -115,14 +122,8 @@ export default function App() {
       const data = await res.json();
       setResposta(data.resposta);
 
-      // 🔥 ATUALIZA PLANO DO BANCO
       if (data.plano) {
         setPlano(data.plano);
-
-        await supabase
-          .from("profiles")
-          .update({ plano: data.plano })
-          .eq("id", session.user.id);
       }
     } catch {
       alert("Erro ao conectar IA");
@@ -131,6 +132,7 @@ export default function App() {
     setLoading(false);
   };
 
+  // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
       return alert("🔒 Liberado apenas no Premium");
@@ -150,10 +152,20 @@ export default function App() {
     setRelatorio(data.relatorio);
   };
 
+  // 💳 CHECKOUT (🔥 CORRIGIDO)
   const irParaPagamento = async () => {
-    const res = await fetch("https://neuro360-tkyx.onrender.com/create-checkout", {
-      method: "POST",
-    });
+    const res = await fetch(
+      "https://neuro360-tkyx.onrender.com/create-checkout",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: session.user.id, // 🔥 ESSENCIAL
+        }),
+      }
+    );
 
     const data = await res.json();
     window.location.href = data.url;

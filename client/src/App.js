@@ -23,7 +23,7 @@ export default function App() {
   const topRef = useRef(null);
 
   const scrollTop = () => {
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // 🔥 BUSCAR PLANO
@@ -42,7 +42,7 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
-      setGrafico(data);
+      setGrafico(Array.isArray(data) ? data : []);
     } catch {
       setGrafico([]);
     }
@@ -50,20 +50,23 @@ export default function App() {
 
   // 🔄 INIT
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionData = data.session;
 
-      if (data.session?.user) {
-        const user_id = data.session.user.id;
+      setSession(sessionData);
 
-        localStorage.setItem("user_id", user_id);
+      if (sessionData?.user) {
+        const user_id = sessionData.user.id;
 
         const planoAtual = await buscarPlano(user_id);
         setPlano(planoAtual);
 
-        carregarGrafico(user_id);
+        await carregarGrafico(user_id);
       }
-    });
+    };
+
+    init();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
@@ -72,17 +75,17 @@ export default function App() {
         if (session?.user) {
           const user_id = session.user.id;
 
-          localStorage.setItem("user_id", user_id);
-
           const planoAtual = await buscarPlano(user_id);
           setPlano(planoAtual);
 
-          carregarGrafico(user_id);
+          await carregarGrafico(user_id);
         }
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   // 🔐 LOGIN
@@ -108,7 +111,7 @@ export default function App() {
     await supabase.auth.signOut();
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = "/";
+    window.location.reload();
   };
 
   // 🤖 IA
@@ -120,9 +123,7 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           texto,
           emocao,
@@ -132,7 +133,7 @@ export default function App() {
 
       const data = await res.json();
 
-      setResposta(data.resposta);
+      setResposta(data.resposta || "");
 
       if (data.plano) setPlano(data.plano);
 
@@ -152,40 +153,44 @@ export default function App() {
       return alert("🔒 Premium apenas");
     }
 
-    const res = await fetch(`${BACKEND_URL}/relatorio`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: session?.user?.id,
-      }),
-    });
+    try {
+      const res = await fetch(`${BACKEND_URL}/relatorio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: session?.user?.id,
+        }),
+      });
 
-    const data = await res.json();
-    setRelatorio(data.relatorio);
+      const data = await res.json();
+      setRelatorio(data.relatorio || "");
 
-    scrollTop();
+      scrollTop();
+    } catch {
+      alert("Erro relatório");
+    }
   };
 
   // 💳 PAGAMENTO
   const irParaPagamento = async () => {
-    const res = await fetch(`${BACKEND_URL}/create-checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: session.user.id,
-      }),
-    });
+    try {
+      const res = await fetch(`${BACKEND_URL}/create-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: session.user.id,
+        }),
+      });
 
-    const data = await res.json();
-    window.location.href = data.url;
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch {
+      alert("Erro pagamento");
+    }
   };
 
-  // 🔥 ADMIN
-  const isAdmin = session?.user?.email === "SEUEMAIL@gmail.com";
+  // 🔥 ADMIN (SEGURANÇA)
+  const isAdmin = session?.user?.email === "contatobetaoofertas@gmail.com";
 
   // 🔐 LOGIN UI
   if (!session) {
@@ -209,9 +214,9 @@ export default function App() {
     );
   }
 
-  // 🚀 APP
+  // 🚀 APP UI
   return (
-    <div style={{ height: "100vh", overflowY: "auto" }}>
+    <div style={{ minHeight: "100vh", overflowY: "auto" }}>
       <div ref={topRef}></div>
 
       <div style={styles.container}>
@@ -224,14 +229,10 @@ export default function App() {
             Sair
           </button>
 
-          {/* 🔥 ADMIN */}
           {isAdmin && (
-            <button
-              style={styles.admin}
-              onClick={() => window.location.href = "/admin"}
-            >
-              📊 Dashboard Admin
-            </button>
+            <div style={styles.adminBox}>
+              🔐 Admin ativo
+            </div>
           )}
 
           {plano === "free" && (
@@ -280,7 +281,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 📈 GRÁFICO */}
           {grafico.length > 0 && (
             <div style={styles.responseBox}>
               <h3>Evolução Emocional</h3>
@@ -349,13 +349,12 @@ const styles = {
     borderRadius: 6,
     color: "white",
   },
-  admin: {
+  adminBox: {
     background: "#111",
     color: "#fff",
     padding: 8,
     marginBottom: 10,
     borderRadius: 6,
-    border: "none",
   },
   appBox: {
     background: "white",

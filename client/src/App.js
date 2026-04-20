@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
+import EvolucaoChart from "./EvolucaoChart";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
@@ -17,6 +18,7 @@ export default function App() {
   const [relatorio, setRelatorio] = useState("");
   const [plano, setPlano] = useState("free");
   const [loading, setLoading] = useState(false);
+  const [grafico, setGrafico] = useState([]);
 
   const topRef = useRef(null);
 
@@ -24,7 +26,7 @@ export default function App() {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 🔥 BUSCAR PLANO PELO BACKEND (CORRETO)
+  // 🔥 BUSCAR PLANO
   const buscarPlano = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
@@ -35,16 +37,31 @@ export default function App() {
     }
   };
 
-  // 🔥 INIT
+  // 🔥 CARREGAR GRÁFICO
+  const carregarGrafico = async (user_id) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
+      const data = await res.json();
+      setGrafico(data);
+    } catch {
+      setGrafico([]);
+    }
+  };
+
+  // 🔥 INIT COMPLETO
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
 
       if (data.session?.user) {
-        localStorage.setItem("user_id", data.session.user.id);
+        const user_id = data.session.user.id;
 
-        const planoAtual = await buscarPlano(data.session.user.id);
+        localStorage.setItem("user_id", user_id);
+
+        const planoAtual = await buscarPlano(user_id);
         setPlano(planoAtual);
+
+        carregarGrafico(user_id);
       }
     });
 
@@ -53,10 +70,14 @@ export default function App() {
         setSession(session);
 
         if (session?.user) {
-          localStorage.setItem("user_id", session.user.id);
+          const user_id = session.user.id;
 
-          const planoAtual = await buscarPlano(session.user.id);
+          localStorage.setItem("user_id", user_id);
+
+          const planoAtual = await buscarPlano(user_id);
           setPlano(planoAtual);
+
+          carregarGrafico(user_id);
         }
       }
     );
@@ -82,7 +103,7 @@ export default function App() {
     alert("Conta criada ou logada!");
   };
 
-  // 🚪 LOGOUT REAL (AGORA PERFEITO)
+  // 🚪 LOGOUT REAL
   const logout = async () => {
     await supabase.auth.signOut();
 
@@ -116,6 +137,8 @@ export default function App() {
       setResposta(data.resposta);
 
       if (data.plano) setPlano(data.plano);
+
+      await carregarGrafico(session.user.id);
 
       scrollTop();
     } catch {
@@ -245,6 +268,15 @@ export default function App() {
               <p>{relatorio}</p>
             </div>
           )}
+
+          {/* 🔥 GRÁFICO */}
+          {grafico.length > 0 && (
+            <div style={styles.responseBox}>
+              <h3>Evolução Emocional</h3>
+              <EvolucaoChart data={grafico} />
+            </div>
+          )}
+
         </div>
       </div>
     </div>

@@ -17,8 +17,8 @@ export default function App() {
   const [resposta, setResposta] = useState("");
   const [relatorio, setRelatorio] = useState("");
   const [plano, setPlano] = useState("free");
-  const [loading, setLoading] = useState(false);
   const [grafico, setGrafico] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const topRef = useRef(null);
 
@@ -37,7 +37,7 @@ export default function App() {
     }
   };
 
-  // 🔥 CARREGAR GRÁFICO
+  // 📈 CARREGAR GRÁFICO
   const carregarGrafico = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
@@ -48,7 +48,7 @@ export default function App() {
     }
   };
 
-  // 🔥 INIT COMPLETO
+  // 🔄 INIT
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
@@ -106,10 +106,8 @@ export default function App() {
   // 🚪 LOGOUT REAL
   const logout = async () => {
     await supabase.auth.signOut();
-
     localStorage.clear();
     sessionStorage.clear();
-
     window.location.href = "/";
   };
 
@@ -170,7 +168,7 @@ export default function App() {
     scrollTop();
   };
 
-  // 💳 CHECKOUT
+  // 💳 PAGAMENTO
   const irParaPagamento = async () => {
     const res = await fetch(`${BACKEND_URL}/create-checkout`, {
       method: "POST",
@@ -185,6 +183,9 @@ export default function App() {
     const data = await res.json();
     window.location.href = data.url;
   };
+
+  // 🔥 ADMIN
+  const isAdmin = session?.user?.email === "SEUEMAIL@gmail.com";
 
   // 🔐 LOGIN UI
   if (!session) {
@@ -222,6 +223,16 @@ export default function App() {
           <button style={styles.logout} onClick={logout}>
             Sair
           </button>
+
+          {/* 🔥 ADMIN */}
+          {isAdmin && (
+            <button
+              style={styles.admin}
+              onClick={() => window.location.href = "/admin"}
+            >
+              📊 Dashboard Admin
+            </button>
+          )}
 
           {plano === "free" && (
             <button style={styles.upgrade} onClick={irParaPagamento}>
@@ -269,14 +280,13 @@ export default function App() {
             </div>
           )}
 
-          {/* 🔥 GRÁFICO */}
+          {/* 📈 GRÁFICO */}
           {grafico.length > 0 && (
             <div style={styles.responseBox}>
               <h3>Evolução Emocional</h3>
               <EvolucaoChart data={grafico} />
             </div>
           )}
-
         </div>
       </div>
     </div>
@@ -338,6 +348,14 @@ const styles = {
     border: "none",
     borderRadius: 6,
     color: "white",
+  },
+  admin: {
+    background: "#111",
+    color: "#fff",
+    padding: 8,
+    marginBottom: 10,
+    borderRadius: 6,
+    border: "none",
   },
   appBox: {
     background: "white",

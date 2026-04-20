@@ -6,6 +6,8 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
 );
 
+const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
@@ -18,20 +20,19 @@ export default function App() {
 
   const topRef = useRef(null);
 
-  // 🔝 SCROLL TOPO
   const scrollTop = () => {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 🔥 BUSCAR PLANO
+  // 🔥 BUSCAR PLANO PELO BACKEND (CORRETO)
   const buscarPlano = async (user_id) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("plano")
-      .eq("id", user_id)
-      .single();
-
-    return data?.plano || "free";
+    try {
+      const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
+      const data = await res.json();
+      return data.plano || "free";
+    } catch {
+      return "free";
+    }
   };
 
   // 🔥 INIT
@@ -40,6 +41,8 @@ export default function App() {
       setSession(data.session);
 
       if (data.session?.user) {
+        localStorage.setItem("user_id", data.session.user.id);
+
         const planoAtual = await buscarPlano(data.session.user.id);
         setPlano(planoAtual);
       }
@@ -50,6 +53,8 @@ export default function App() {
         setSession(session);
 
         if (session?.user) {
+          localStorage.setItem("user_id", session.user.id);
+
           const planoAtual = await buscarPlano(session.user.id);
           setPlano(planoAtual);
         }
@@ -77,25 +82,15 @@ export default function App() {
     alert("Conta criada ou logada!");
   };
 
-  // 🚪 LOGOUT REAL
+  // 🚪 LOGOUT REAL (AGORA PERFEITO)
   const logout = async () => {
-  await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-  // 🔥 LIMPA TUDO
-  localStorage.clear();
-  sessionStorage.clear();
+    localStorage.clear();
+    sessionStorage.clear();
 
-  // 🔥 RESET ESTADOS
-  setSession(null);
-  setPlano("free");
-  setTexto("");
-  setResposta("");
-  setRelatorio("");
-  setEmail("");
-
-  // 🔥 FORÇA RESET TOTAL DO APP
-  window.location.href = "/";
-};
+    window.location.href = "/";
+  };
 
   // 🤖 IA
   const falarComIA = async () => {
@@ -104,7 +99,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://neuro360-tkyx.onrender.com/ia", {
+      const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,6 +112,7 @@ export default function App() {
       });
 
       const data = await res.json();
+
       setResposta(data.resposta);
 
       if (data.plano) setPlano(data.plano);
@@ -135,7 +131,7 @@ export default function App() {
       return alert("🔒 Premium apenas");
     }
 
-    const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
+    const res = await fetch(`${BACKEND_URL}/relatorio`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -153,18 +149,15 @@ export default function App() {
 
   // 💳 CHECKOUT
   const irParaPagamento = async () => {
-    const res = await fetch(
-      "https://neuro360-tkyx.onrender.com/create-checkout",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: session.user.id,
-        }),
-      }
-    );
+    const res = await fetch(`${BACKEND_URL}/create-checkout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: session.user.id,
+      }),
+    });
 
     const data = await res.json();
     window.location.href = data.url;
@@ -203,7 +196,6 @@ export default function App() {
 
           <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
 
-          {/* 🔥 LOGOUT */}
           <button style={styles.logout} onClick={logout}>
             Sair
           </button>

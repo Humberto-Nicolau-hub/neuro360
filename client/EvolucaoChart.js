@@ -15,7 +15,7 @@ export default function EvolucaoChart({ data }) {
         <XAxis dataKey="data" />
         <YAxis />
         <Tooltip />
-        <Line type="monotone" dataKey="valor" />
+        <Line type="monotone" dataKey="valor" stroke="#22c55e" />
       </LineChart>
     </ResponsiveContainer>
   );

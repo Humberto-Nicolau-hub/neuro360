@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -16,38 +16,22 @@ export default function App() {
   const [plano, setPlano] = useState("free");
   const [loading, setLoading] = useState(false);
 
-  // 🔥 BUSCAR PLANO SEMPRE ATUALIZADO
+  const topRef = useRef(null);
+
+  // 🔝 SCROLL TOPO
+  const scrollTop = () => {
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // 🔥 BUSCAR PLANO
   const buscarPlano = async (user_id) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("plano")
       .eq("id", user_id)
       .single();
 
-    if (error || !data) return "free";
-
-    return data.plano || "free";
-  };
-
-  // 🔥 CARREGAR PERFIL
-  const carregarPerfil = async (user) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (error || !data) {
-      await supabase.from("profiles").insert({
-        id: user.id,
-        email: user.email,
-        plano: "free",
-      });
-
-      setPlano("free");
-    } else {
-      setPlano(data.plano);
-    }
+    return data?.plano || "free";
   };
 
   // 🔥 INIT
@@ -62,7 +46,7 @@ export default function App() {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_, session) => {
         setSession(session);
 
         if (session?.user) {
@@ -74,13 +58,6 @@ export default function App() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
-
-  // 🔥 ATUALIZA AO VOLTAR DO STRIPE
-  useEffect(() => {
-    if (session?.user) {
-      buscarPlano(session.user.id).then(setPlano);
-    }
-  }, [session]);
 
   // 🔐 LOGIN
   const login = async () => {
@@ -95,27 +72,21 @@ export default function App() {
 
     if (!error && data.session) return;
 
-    const { error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    await supabase.auth.signUp({ email, password });
 
-    if (signupError) {
-      if (signupError.message.includes("already registered")) {
-        const { error: retryError } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+    alert("Conta criada ou logada!");
+  };
 
-        if (retryError) return alert("Erro ao entrar");
-        return;
-      }
+  // 🚪 LOGOUT REAL
+  const logout = async () => {
+    await supabase.auth.signOut();
 
-      return alert("Erro ao criar conta");
-    }
-
-    alert("Conta criada!");
+    setSession(null);
+    setPlano("free");
+    setTexto("");
+    setResposta("");
+    setRelatorio("");
+    setEmail("");
   };
 
   // 🤖 IA
@@ -140,12 +111,11 @@ export default function App() {
       const data = await res.json();
       setResposta(data.resposta);
 
-      // 🔥 Atualiza plano vindo do backend também
-      if (data.plano) {
-        setPlano(data.plano);
-      }
+      if (data.plano) setPlano(data.plano);
+
+      scrollTop();
     } catch {
-      alert("Erro ao conectar IA");
+      alert("Erro IA");
     }
 
     setLoading(false);
@@ -154,7 +124,7 @@ export default function App() {
   // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
-      return alert("🔒 Liberado apenas no Premium");
+      return alert("🔒 Premium apenas");
     }
 
     const res = await fetch("https://neuro360-tkyx.onrender.com/relatorio", {
@@ -169,6 +139,8 @@ export default function App() {
 
     const data = await res.json();
     setRelatorio(data.relatorio);
+
+    scrollTop();
   };
 
   // 💳 CHECKOUT
@@ -214,57 +186,66 @@ export default function App() {
 
   // 🚀 APP
   return (
-    <div style={styles.container}>
-      <div style={styles.appBox}>
-        <h1>NeuroMapa360</h1>
+    <div style={{ height: "100vh", overflowY: "auto" }}>
+      <div ref={topRef}></div>
 
-        <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
+      <div style={styles.container}>
+        <div style={styles.appBox}>
+          <h1>NeuroMapa360</h1>
 
-        {plano === "free" && (
-          <button style={styles.upgrade} onClick={irParaPagamento}>
-            Upgrade Premium
+          <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
+
+          {/* 🔥 LOGOUT */}
+          <button style={styles.logout} onClick={logout}>
+            Sair
           </button>
-        )}
 
-        <select
-          style={styles.input}
-          value={emocao}
-          onChange={(e) => setEmocao(e.target.value)}
-        >
-          <option>Ansioso</option>
-          <option>Triste</option>
-          <option>Feliz</option>
-          <option>Estressado</option>
-        </select>
+          {plano === "free" && (
+            <button style={styles.upgrade} onClick={irParaPagamento}>
+              Upgrade Premium
+            </button>
+          )}
 
-        <input
-          style={styles.input}
-          placeholder="Descreva como você está"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
+          <select
+            style={styles.input}
+            value={emocao}
+            onChange={(e) => setEmocao(e.target.value)}
+          >
+            <option>Ansioso</option>
+            <option>Triste</option>
+            <option>Feliz</option>
+            <option>Estressado</option>
+          </select>
 
-        <button style={styles.button} onClick={falarComIA}>
-          {loading ? "Pensando..." : "Falar com IA"}
-        </button>
+          <input
+            style={styles.input}
+            placeholder="Descreva como você está"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+          />
 
-        <button style={styles.secondary} onClick={gerarRelatorio}>
-          Gerar Relatório
-        </button>
+          <button style={styles.button} onClick={falarComIA}>
+            {loading ? "Pensando..." : "Falar com IA"}
+          </button>
 
-        {resposta && (
-          <div style={styles.responseBox}>
-            <h3>Resposta da IA</h3>
-            <p>{resposta}</p>
-          </div>
-        )}
+          <button style={styles.secondary} onClick={gerarRelatorio}>
+            Gerar Relatório
+          </button>
 
-        {relatorio && (
-          <div style={styles.responseBox}>
-            <h3>Relatório</h3>
-            <p>{relatorio}</p>
-          </div>
-        )}
+          {resposta && (
+            <div style={styles.responseBox}>
+              <h3>Resposta da IA</h3>
+              <p>{resposta}</p>
+            </div>
+          )}
+
+          {relatorio && (
+            <div style={styles.responseBox}>
+              <h3>Relatório</h3>
+              <p>{relatorio}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -272,11 +253,12 @@ export default function App() {
 
 const styles = {
   container: {
-    height: "100vh",
+    minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start",
     background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
+    paddingTop: 40,
   },
   card: {
     background: "#0f172a",
@@ -316,6 +298,14 @@ const styles = {
     marginBottom: 10,
     border: "none",
     borderRadius: 6,
+  },
+  logout: {
+    background: "red",
+    padding: 8,
+    marginBottom: 10,
+    border: "none",
+    borderRadius: 6,
+    color: "white",
   },
   appBox: {
     background: "white",

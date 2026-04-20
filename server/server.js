@@ -19,7 +19,7 @@ const supabase = createClient(
 // 💳 STRIPE
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ⚠️ WEBHOOK (ANTES DO JSON)
+// ⚠️ WEBHOOK
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const sig = req.headers["stripe-signature"];
@@ -30,39 +30,22 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
       process.env.STRIPE_WEBHOOK_SECRET
     );
 
-    console.log("📩 Evento recebido:", event.type);
-
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-
       const user_id = session?.metadata?.user_id;
 
-      console.log("🧾 Metadata:", session.metadata);
-      console.log("👤 User ID:", user_id);
+      if (!user_id) return res.status(400).send("user_id ausente");
 
-      if (!user_id) {
-        console.log("❌ ERRO: user_id não veio no metadata");
-        return res.status(400).send("user_id ausente");
-      }
-
-      const { data, error } = await supabase
+      await supabase
         .from("profiles")
         .update({ plano: "premium" })
-        .eq("id", user_id)
-        .select();
-
-      if (error) {
-        console.log("❌ Erro ao atualizar plano:", error);
-        return res.status(500).send("Erro ao atualizar usuário");
-      }
-
-      console.log("💰 Premium liberado:", data);
+        .eq("id", user_id);
     }
 
     res.json({ received: true });
 
   } catch (err) {
-    console.log("❌ Webhook erro:", err.message);
+    console.log("Erro webhook:", err.message);
     res.status(400).send("Erro webhook");
   }
 });
@@ -75,69 +58,62 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 📧 EMAIL (pronto pra usar depois)
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// 🔥 ROTA BASE
-app.get("/", (req, res) => {
-  res.send("API NeuroMapa360 rodando 🚀");
-});
-
-// 🔥 🔥 NOVA ROTA (CRÍTICA PARA PREMIUM FUNCIONAR)
+// 🔥 PLANO
 app.get("/plano/:user_id", async (req, res) => {
-  try {
-    const { user_id } = req.params;
+  const { user_id } = req.params;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("plano")
-      .eq("id", user_id)
-      .single();
-
-    if (error) {
-      console.log("Erro ao buscar plano:", error);
-      return res.json({ plano: "free" });
-    }
-
-    console.log("📊 Plano consultado:", data?.plano);
-
-    res.json({ plano: data?.plano || "free" });
-
-  } catch (err) {
-    console.log("Erro rota plano:", err);
-    res.json({ plano: "free" });
-  }
-});
-
-// 🔥 FUNÇÃO PLANO
-async function getPlano(user_id) {
-  if (!user_id) return "free";
-
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("plano")
     .eq("id", user_id)
     .single();
 
-  if (error) return "free";
+  res.json({ plano: data?.plano || "free" });
+});
 
-  return data?.plano || "free";
-}
+// 🔥 EVOLUÇÃO (NOVO)
+app.get("/evolucao/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const { data } = await supabase
+      .from("registros")
+      .select("emocao, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: true })
+      .limit(30);
+
+    const mapa = {
+      Ansioso: 2,
+      Triste: 1,
+      Estressado: 3,
+      Feliz: 5
+    };
+
+    const evolucao = data.map(item => ({
+      data: new Date(item.created_at).toLocaleDateString(),
+      valor: mapa[item.emocao] || 3
+    }));
+
+    res.json(evolucao);
+
+  } catch {
+    res.status(500).json({ erro: "Erro evolução" });
+  }
+});
 
 // 🧠 IA
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
-    const plano = await getPlano(user_id);
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("plano")
+      .eq("id", user_id)
+      .single();
 
-    console.log("🧠 Plano usuário:", plano);
+    const plano = perfil?.plano || "free";
 
     const { data: historico } = await supabase
       .from("registros")
@@ -163,89 +139,56 @@ app.post("/ia", async (req, res) => {
 
     res.json({ resposta, plano });
 
-  } catch (err) {
-    console.error("Erro IA:", err);
+  } catch {
     res.status(500).json({ erro: "Erro IA" });
   }
 });
 
 // 📊 RELATÓRIO
 app.post("/relatorio", async (req, res) => {
-  try {
-    const { user_id } = req.body;
+  const { user_id } = req.body;
 
-    const plano = await getPlano(user_id);
+  const { data } = await supabase
+    .from("registros")
+    .select("texto")
+    .eq("user_id", user_id)
+    .limit(10);
 
-    if (plano !== "premium") {
-      return res.status(403).json({ erro: "Apenas premium" });
-    }
+  const resumo = data?.map(d => d.texto).join("\n");
 
-    const { data } = await supabase
-      .from("registros")
-      .select("texto")
-      .eq("user_id", user_id)
-      .limit(10);
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: "Gerar relatório emocional" },
+      { role: "user", content: resumo }
+    ]
+  });
 
-    const resumo = data?.map(d => d.texto).join("\n");
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Gerar relatório emocional" },
-        { role: "user", content: resumo }
-      ]
-    });
-
-    res.json({ relatorio: completion.choices[0].message.content });
-
-  } catch (err) {
-    console.error("Erro relatório:", err);
-    res.status(500).json({ erro: "Erro relatório" });
-  }
+  res.json({ relatorio: completion.choices[0].message.content });
 });
 
 // 💳 CHECKOUT
 app.post("/create-checkout", async (req, res) => {
-  try {
-    const { user_id } = req.body;
+  const { user_id } = req.body;
 
-    if (!user_id) {
-      return res.status(400).json({ erro: "user_id obrigatório" });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            product_data: { name: "Premium NeuroMapa360" },
-            unit_amount: 1990,
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        user_id: user_id,
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items: [{
+      price_data: {
+        currency: "brl",
+        product_data: { name: "Premium NeuroMapa360" },
+        unit_amount: 1990,
       },
-      success_url: "https://neuro360.vercel.app",
-      cancel_url: "https://neuro360.vercel.app",
-    });
+      quantity: 1,
+    }],
+    metadata: { user_id },
+    success_url: "https://neuro360.vercel.app",
+    cancel_url: "https://neuro360.vercel.app",
+  });
 
-    console.log("💳 Checkout criado:", user_id);
-
-    res.json({ url: session.url });
-
-  } catch (err) {
-    console.error("Erro checkout:", err);
-    res.status(500).json({ erro: "Erro ao criar checkout" });
-  }
+  res.json({ url: session.url });
 });
 
-// 🚀 PORTA
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🚀 Server rodando na porta", PORT);
-});
+app.listen(PORT, () => console.log("🚀 Server rodando"));

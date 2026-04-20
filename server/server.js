@@ -37,7 +37,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
 
       const user_id = session?.metadata?.user_id;
 
-      console.log("🧾 Metadata recebido:", session.metadata);
+      console.log("🧾 Metadata:", session.metadata);
       console.log("👤 User ID:", user_id);
 
       if (!user_id) {
@@ -56,7 +56,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
         return res.status(500).send("Erro ao atualizar usuário");
       }
 
-      console.log("💰 Premium liberado com sucesso:", data);
+      console.log("💰 Premium liberado:", data);
     }
 
     res.json({ received: true });
@@ -75,7 +75,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 📧 EMAIL (preparado para uso futuro)
+// 📧 EMAIL (pronto pra usar depois)
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -89,7 +89,33 @@ app.get("/", (req, res) => {
   res.send("API NeuroMapa360 rodando 🚀");
 });
 
-// 🔥 PEGAR PLANO
+// 🔥 🔥 NOVA ROTA (CRÍTICA PARA PREMIUM FUNCIONAR)
+app.get("/plano/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("plano")
+      .eq("id", user_id)
+      .single();
+
+    if (error) {
+      console.log("Erro ao buscar plano:", error);
+      return res.json({ plano: "free" });
+    }
+
+    console.log("📊 Plano consultado:", data?.plano);
+
+    res.json({ plano: data?.plano || "free" });
+
+  } catch (err) {
+    console.log("Erro rota plano:", err);
+    res.json({ plano: "free" });
+  }
+});
+
+// 🔥 FUNÇÃO PLANO
 async function getPlano(user_id) {
   if (!user_id) return "free";
 
@@ -99,10 +125,7 @@ async function getPlano(user_id) {
     .eq("id", user_id)
     .single();
 
-  if (error) {
-    console.log("Erro ao buscar plano:", error);
-    return "free";
-  }
+  if (error) return "free";
 
   return data?.plano || "free";
 }
@@ -114,7 +137,7 @@ app.post("/ia", async (req, res) => {
 
     const plano = await getPlano(user_id);
 
-    console.log("🧠 Plano do usuário:", plano);
+    console.log("🧠 Plano usuário:", plano);
 
     const { data: historico } = await supabase
       .from("registros")
@@ -210,7 +233,7 @@ app.post("/create-checkout", async (req, res) => {
       cancel_url: "https://neuro360.vercel.app",
     });
 
-    console.log("💳 Checkout criado para:", user_id);
+    console.log("💳 Checkout criado:", user_id);
 
     res.json({ url: session.url });
 

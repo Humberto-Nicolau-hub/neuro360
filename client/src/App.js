@@ -79,15 +79,23 @@ export default function App() {
 
   // 🚪 LOGOUT REAL
   const logout = async () => {
-    await supabase.auth.signOut();
+  await supabase.auth.signOut();
 
-    setSession(null);
-    setPlano("free");
-    setTexto("");
-    setResposta("");
-    setRelatorio("");
-    setEmail("");
-  };
+  // 🔥 LIMPA TUDO
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // 🔥 RESET ESTADOS
+  setSession(null);
+  setPlano("free");
+  setTexto("");
+  setResposta("");
+  setRelatorio("");
+  setEmail("");
+
+  // 🔥 FORÇA RESET TOTAL DO APP
+  window.location.href = "/";
+};
 
   // 🤖 IA
   const falarComIA = async () => {

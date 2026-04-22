@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import EvolucaoChart from "./EvolucaoChart";
+
+// 🔥 IMPORT BLINDADO (resolve problema do Vercel)
+import EvolucaoChart from "./EvolucaoChart.js";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
@@ -26,7 +28,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🔥 BUSCAR PLANO
   const buscarPlano = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
@@ -37,18 +38,22 @@ export default function App() {
     }
   };
 
-  // 📈 CARREGAR GRÁFICO
   const carregarGrafico = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
-      setGrafico(Array.isArray(data) ? data : []);
+
+      // 🔒 proteção
+      if (Array.isArray(data)) {
+        setGrafico(data);
+      } else {
+        setGrafico([]);
+      }
     } catch {
       setGrafico([]);
     }
   };
 
-  // 🔄 INIT
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
@@ -88,7 +93,6 @@ export default function App() {
     };
   }, []);
 
-  // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite um email");
 
@@ -106,7 +110,6 @@ export default function App() {
     alert("Conta criada ou logada!");
   };
 
-  // 🚪 LOGOUT REAL
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
@@ -114,7 +117,6 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
 
@@ -137,7 +139,9 @@ export default function App() {
 
       if (data.plano) setPlano(data.plano);
 
-      await carregarGrafico(session.user.id);
+      if (session?.user?.id) {
+        await carregarGrafico(session.user.id);
+      }
 
       scrollTop();
     } catch {
@@ -147,7 +151,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
       return alert("🔒 Premium apenas");
@@ -171,7 +174,6 @@ export default function App() {
     }
   };
 
-  // 💳 PAGAMENTO
   const irParaPagamento = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/create-checkout`, {
@@ -189,10 +191,9 @@ export default function App() {
     }
   };
 
-  // 🔥 ADMIN (SEGURANÇA)
-  const isAdmin = session?.user?.email === "contatobetaoofertas@gmail.com";
+  const isAdmin =
+    session?.user?.email === "contatobetaoofertas@gmail.com";
 
-  // 🔐 LOGIN UI
   if (!session) {
     return (
       <div style={styles.container}>
@@ -214,9 +215,8 @@ export default function App() {
     );
   }
 
-  // 🚀 APP UI
   return (
-    <div style={{ minHeight: "100vh", overflowY: "auto" }}>
+    <div style={{ minHeight: "100vh" }}>
       <div ref={topRef}></div>
 
       <div style={styles.container}>

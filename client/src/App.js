@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-
-// 🔥 IMPORT BLINDADO (resolve problema do Vercel)
-import EvolucaoChart from "./EvolucaoChart.js";
+import EvolucaoChart from "./EvolucaoChart";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
@@ -25,7 +23,7 @@ export default function App() {
   const topRef = useRef(null);
 
   const scrollTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const buscarPlano = async (user_id) => {
@@ -42,13 +40,7 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
-
-      // 🔒 proteção
-      if (Array.isArray(data)) {
-        setGrafico(data);
-      } else {
-        setGrafico([]);
-      }
+      setGrafico(Array.isArray(data) ? data : []);
     } catch {
       setGrafico([]);
     }
@@ -229,11 +221,7 @@ export default function App() {
             Sair
           </button>
 
-          {isAdmin && (
-            <div style={styles.adminBox}>
-              🔐 Admin ativo
-            </div>
-          )}
+          {isAdmin && <div style={styles.adminBox}>🔐 Admin ativo</div>}
 
           {plano === "free" && (
             <button style={styles.upgrade} onClick={irParaPagamento}>
@@ -292,78 +280,3 @@ export default function App() {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
-    paddingTop: 40,
-  },
-  card: {
-    background: "#0f172a",
-    padding: 40,
-    borderRadius: 12,
-    textAlign: "center",
-    color: "white",
-  },
-  title: { fontSize: 28 },
-  input: {
-    padding: 12,
-    width: 250,
-    marginBottom: 10,
-    borderRadius: 6,
-    border: "none",
-  },
-  button: {
-    padding: 12,
-    width: "100%",
-    background: "#22c55e",
-    border: "none",
-    color: "white",
-    borderRadius: 6,
-  },
-  secondary: {
-    marginTop: 10,
-    padding: 10,
-    width: "100%",
-    background: "#3b82f6",
-    border: "none",
-    color: "white",
-    borderRadius: 6,
-  },
-  upgrade: {
-    background: "gold",
-    padding: 10,
-    marginBottom: 10,
-    border: "none",
-    borderRadius: 6,
-  },
-  logout: {
-    background: "red",
-    padding: 8,
-    marginBottom: 10,
-    border: "none",
-    borderRadius: 6,
-    color: "white",
-  },
-  adminBox: {
-    background: "#111",
-    color: "#fff",
-    padding: 8,
-    marginBottom: 10,
-    borderRadius: 6,
-  },
-  appBox: {
-    background: "white",
-    padding: 30,
-    borderRadius: 12,
-    width: 400,
-  },
-  responseBox: {
-    marginTop: 20,
-    textAlign: "left",
-  },
-};

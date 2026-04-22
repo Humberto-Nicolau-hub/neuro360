@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // 🔥 IMPORT BLINDADO (resolve problema do Vercel)
-import EvolucaoChart from "./EvolucaoChart";
+import EvolucaoChart from "./EvolucaoChart.js";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",

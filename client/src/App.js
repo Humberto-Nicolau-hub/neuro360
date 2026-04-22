@@ -188,95 +188,68 @@ export default function App() {
 
   if (!session) {
     return (
-      <div style={styles.container}>
-        <div style={styles.card}>
-          <h1 style={styles.title}>NeuroMapa360</h1>
+      <div style={{ padding: 40 }}>
+        <h1>NeuroMapa360</h1>
 
-          <input
-            style={styles.input}
-            placeholder="Seu email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <input
+          placeholder="Seu email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-          <button style={styles.button} onClick={login}>
-            Entrar
-          </button>
-        </div>
+        <button onClick={login}>Entrar</button>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div style={{ padding: 20 }}>
       <div ref={topRef}></div>
 
-      <div style={styles.container}>
-        <div style={styles.appBox}>
-          <h1>NeuroMapa360</h1>
+      <h1>NeuroMapa360</h1>
 
-          <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
+      <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
 
-          <button style={styles.logout} onClick={logout}>
-            Sair
-          </button>
+      <button onClick={logout}>Sair</button>
 
-          {isAdmin && <div style={styles.adminBox}>🔐 Admin ativo</div>}
+      {isAdmin && <p>🔐 Admin ativo</p>}
 
-          {plano === "free" && (
-            <button style={styles.upgrade} onClick={irParaPagamento}>
-              Upgrade Premium
-            </button>
-          )}
+      {plano === "free" && (
+        <button onClick={irParaPagamento}>
+          Upgrade Premium
+        </button>
+      )}
 
-          <select
-            style={styles.input}
-            value={emocao}
-            onChange={(e) => setEmocao(e.target.value)}
-          >
-            <option>Ansioso</option>
-            <option>Triste</option>
-            <option>Feliz</option>
-            <option>Estressado</option>
-          </select>
+      <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
+        <option>Ansioso</option>
+        <option>Triste</option>
+        <option>Feliz</option>
+        <option>Estressado</option>
+      </select>
 
-          <input
-            style={styles.input}
-            placeholder="Descreva como você está"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-          />
+      <input
+        placeholder="Descreva como você está"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+      />
 
-          <button style={styles.button} onClick={falarComIA}>
-            {loading ? "Pensando..." : "Falar com IA"}
-          </button>
+      <button onClick={falarComIA}>
+        {loading ? "Pensando..." : "Falar com IA"}
+      </button>
 
-          <button style={styles.secondary} onClick={gerarRelatorio}>
-            Gerar Relatório
-          </button>
+      <button onClick={gerarRelatorio}>
+        Gerar Relatório
+      </button>
 
-          {resposta && (
-            <div style={styles.responseBox}>
-              <h3>Resposta da IA</h3>
-              <p>{resposta}</p>
-            </div>
-          )}
+      {resposta && <p>{resposta}</p>}
+      {relatorio && <p>{relatorio}</p>}
 
-          {relatorio && (
-            <div style={styles.responseBox}>
-              <h3>Relatório</h3>
-              <p>{relatorio}</p>
-            </div>
-          )}
-
-          {grafico.length > 0 && (
-            <div style={styles.responseBox}>
-              <h3>Evolução Emocional</h3>
-              <EvolucaoChart data={grafico} />
-            </div>
-          )}
-        </div>
-      </div>
+      {grafico.length > 0 && (
+        <>
+          <h3>Evolução Emocional</h3>
+          <EvolucaoChart data={grafico} />
+        </>
+      )}
     </div>
   );
 }

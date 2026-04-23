@@ -9,6 +9,18 @@ const supabase = createClient(
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
+const EMOCOES = [
+  "Ansioso",
+  "Triste",
+  "Feliz",
+  "Estressado",
+  "Desmotivado",
+  "Deprimido",
+  "Desorientado",
+  "Confuso",
+  "Procrastinador"
+];
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
@@ -19,11 +31,29 @@ export default function App() {
   const [plano, setPlano] = useState("free");
   const [grafico, setGrafico] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [limiteAtingido, setLimiteAtingido] = useState(false);
 
   const topRef = useRef(null);
 
   const scrollTop = () => {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // 🔒 CONTROLE LOCAL (backup caso backend falhe)
+  const verificarLimiteLocal = () => {
+    if (plano === "premium") return true;
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    const key = `uso_${session?.user?.id}_${hoje}`;
+    const uso = parseInt(localStorage.getItem(key) || "0");
+
+    if (uso >= 3) {
+      setLimiteAtingido(true);
+      return false;
+    }
+
+    localStorage.setItem(key, uso + 1);
+    return true;
   };
 
   const buscarPlano = async (user_id) => {
@@ -112,6 +142,10 @@ export default function App() {
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
 
+    if (!verificarLimiteLocal()) {
+      return alert("Limite FREE atingido. Faça upgrade.");
+    }
+
     setLoading(true);
 
     try {
@@ -122,6 +156,7 @@ export default function App() {
           texto,
           emocao,
           user_id: session?.user?.id,
+          plano
         }),
       });
 
@@ -220,11 +255,16 @@ export default function App() {
         </button>
       )}
 
+      {limiteAtingido && (
+        <p style={{ color: "red" }}>
+          Limite diário atingido. Faça upgrade.
+        </p>
+      )}
+
       <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
-        <option>Ansioso</option>
-        <option>Triste</option>
-        <option>Feliz</option>
-        <option>Estressado</option>
+        {EMOCOES.map((e) => (
+          <option key={e}>{e}</option>
+        ))}
       </select>
 
       <input

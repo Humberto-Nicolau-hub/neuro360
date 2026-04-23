@@ -8,7 +8,17 @@ import {
 } from "recharts";
 
 export default function EvolucaoChart({ data = [] }) {
+  // 🔒 PROTEÇÃO TOTAL
   const safeData = Array.isArray(data) ? data : [];
+
+  // 🔒 evita crash se dados vierem vazios
+  if (safeData.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: 20 }}>
+        <p>Sem dados ainda</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: "100%", height: 250 }}>

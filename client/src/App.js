@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import EvolucaoChart from "./EvolucaoChart";
+import EvolucaoChart from "./EvolucaoChart.js"; // 🔥 IMPORT EXPLÍCITO (CORREÇÃO FINAL)
 
 // 🔐 SUPABASE
 const supabase = createClient(
@@ -11,7 +11,7 @@ const supabase = createClient(
 // 🔗 BACKEND
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
-// 🎯 EMOÇÕES EXPANDIDAS
+// 🎯 EMOÇÕES
 const EMOCOES = [
   "Ansioso",
   "Triste",
@@ -42,7 +42,7 @@ export default function App() {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 🔒 LIMITE FREE (ROBUSTO)
+  // 🔒 LIMITE LOCAL
   const verificarLimiteLocal = () => {
     if (plano === "premium") return true;
 
@@ -64,19 +64,18 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
       const data = await res.json();
-      return data.plano || "free";
+      return data?.plano || "free";
     } catch {
       return "free";
     }
   };
 
-  // 📊 GRÁFICO
+  // 📊 GRÁFICO (blindado)
   const carregarGrafico = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
 
-      // 🔥 HARDEN: evita quebra
       if (!Array.isArray(data)) {
         setGrafico([]);
         return;
@@ -149,7 +148,6 @@ export default function App() {
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
-    sessionStorage.clear();
     window.location.reload();
   };
 
@@ -158,7 +156,7 @@ export default function App() {
     if (!texto) return alert("Descreva o que está sentindo");
 
     if (!verificarLimiteLocal()) {
-      return alert("Limite FREE atingido. Faça upgrade.");
+      return alert("Limite FREE atingido");
     }
 
     setLoading(true);
@@ -197,7 +195,7 @@ export default function App() {
   // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
-      return alert("🔒 Premium apenas");
+      return alert("Premium apenas");
     }
 
     try {
@@ -236,10 +234,7 @@ export default function App() {
     }
   };
 
-  const isAdmin =
-    session?.user?.email === "contatobetaoofertas@gmail.com";
-
-  // 🔓 LOGIN SCREEN
+  // 🔐 LOGIN SCREEN
   if (!session) {
     return (
       <div style={{ padding: 40 }}>
@@ -267,8 +262,6 @@ export default function App() {
 
       <button onClick={logout}>Sair</button>
 
-      {isAdmin && <p>🔐 Admin ativo</p>}
-
       {plano === "free" && (
         <button onClick={irParaPagamento}>
           Upgrade Premium
@@ -277,7 +270,7 @@ export default function App() {
 
       {limiteAtingido && (
         <p style={{ color: "red" }}>
-          Limite diário atingido. Faça upgrade.
+          Limite diário atingido
         </p>
       )}
 

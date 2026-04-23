@@ -4,22 +4,12 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import Stripe from "stripe";
-import nodemailer from "nodemailer";
 
 dotenv.config();
 
 const app = express();
 
-// 🔗 SUPABASE
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// 💳 STRIPE
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// ⚠️ WEBHOOK
+// ⚠️ webhook precisa vir antes do json()
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const sig = req.headers["stripe-signature"];
@@ -53,10 +43,46 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
 app.use(cors());
 app.use(express.json());
 
+// 🔗 SUPABASE
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// 💳 STRIPE
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 // 🤖 OPENAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// 🧠 MAPEAMENTO EMOCIONAL
+const mapaEmocao = {
+  Ansioso: 2,
+  Triste: 1,
+  Estressado: 3,
+  Feliz: 5,
+  Desmotivado: 1,
+  Deprimido: 0,
+  Desorientado: 2,
+  Confuso: 2,
+  Procrastinador: 2
+};
+
+// 🔒 LIMITE FREE (3 por dia)
+const verificarLimite = async (user_id) => {
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  const { data } = await supabase
+    .from("registros")
+    .select("id")
+    .eq("user_id", user_id)
+    .gte("created_at", `${hoje}T00:00:00`)
+    .lte("created_at", `${hoje}T23:59:59`);
+
+  return data.length < 3;
+};
 
 // 🔥 PLANO
 app.get("/plano/:user_id", async (req, res) => {
@@ -71,7 +97,7 @@ app.get("/plano/:user_id", async (req, res) => {
   res.json({ plano: data?.plano || "free" });
 });
 
-// 🔥 EVOLUÇÃO (NOVO)
+// 📈 EVOLUÇÃO
 app.get("/evolucao/:user_id", async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -83,16 +109,9 @@ app.get("/evolucao/:user_id", async (req, res) => {
       .order("created_at", { ascending: true })
       .limit(30);
 
-    const mapa = {
-      Ansioso: 2,
-      Triste: 1,
-      Estressado: 3,
-      Feliz: 5
-    };
-
     const evolucao = data.map(item => ({
       data: new Date(item.created_at).toLocaleDateString(),
-      valor: mapa[item.emocao] || 3
+      valor: mapaEmocao[item.emocao] ?? 3
     }));
 
     res.json(evolucao);
@@ -102,10 +121,12 @@ app.get("/evolucao/:user_id", async (req, res) => {
   }
 });
 
-// 🧠 IA
+// 🧠 IA EVOLUÍDA
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
+
+    if (!texto) return res.status(400).json({ erro: "Texto obrigatório" });
 
     const { data: perfil } = await supabase
       .from("profiles")
@@ -115,20 +136,75 @@ app.post("/ia", async (req, res) => {
 
     const plano = perfil?.plano || "free";
 
+    // 🔒 limite backend real
+    if (plano === "free") {
+      const podeUsar = await verificarLimite(user_id);
+      if (!podeUsar) {
+        return res.json({
+          resposta: "Você atingiu o limite diário do plano FREE. Para continuar evoluindo, considere o plano premium.",
+          plano
+        });
+      }
+    }
+
+    // 📚 contexto inteligente
     const { data: historico } = await supabase
       .from("registros")
-      .select("texto")
+      .select("texto, emocao")
       .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
       .limit(plano === "premium" ? 10 : 3);
 
-    const contexto = historico?.map(h => h.texto).join("\n");
+    const contexto = historico
+      ?.map(h => `(${h.emocao}) ${h.texto}`)
+      .join("\n");
+
+    // 🧠 PROMPT PROFISSIONAL
+    const systemPrompt = `
+Você é um terapeuta especializado em:
+- Programação Neurolinguística (PNL)
+- Terapia Neuro Sistêmica
+
+Seu papel:
+✔ Ajudar o usuário com solução prática IMEDIATA
+✔ Ser direto, humano e empático
+✔ NÃO ser genérico
+✔ NÃO ser superficial
+✔ NÃO agir como psicólogo clínico
+
+Regras:
+- Sempre reconhecer o sentimento do usuário
+- Dar orientação prática
+- Usar técnicas de PNL (âncoras, reprogramação, ressignificação)
+- Finalizar com ação clara
+
+IMPORTANTE:
+- Se for plano FREE → resposta objetiva
+- Se for PREMIUM → aprofundar análise emocional + estratégia clara
+
+Sempre incluir:
+"Se persistir, procure ajuda profissional."
+`;
+
+    const userPrompt = `
+Histórico:
+${contexto}
+
+Estado atual: ${emocao}
+
+Relato:
+${texto}
+
+Responda com clareza, foco e solução.
+`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "Especialista em PNL" },
-        { role: "user", content: `${contexto}\n${texto}` }
-      ]
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: plano === "premium" ? 0.7 : 0.4,
     });
 
     const resposta = completion.choices[0].message.content;
@@ -139,27 +215,33 @@ app.post("/ia", async (req, res) => {
 
     res.json({ resposta, plano });
 
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ erro: "Erro IA" });
   }
 });
 
-// 📊 RELATÓRIO
+// 📊 RELATÓRIO INTELIGENTE
 app.post("/relatorio", async (req, res) => {
   const { user_id } = req.body;
 
   const { data } = await supabase
     .from("registros")
-    .select("texto")
+    .select("texto, emocao")
     .eq("user_id", user_id)
     .limit(10);
 
-  const resumo = data?.map(d => d.texto).join("\n");
+  const resumo = data
+    ?.map(d => `(${d.emocao}) ${d.texto}`)
+    .join("\n");
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
-      { role: "system", content: "Gerar relatório emocional" },
+      {
+        role: "system",
+        content: "Gerar relatório emocional profundo com análise e recomendações práticas"
+      },
       { role: "user", content: resumo }
     ]
   });

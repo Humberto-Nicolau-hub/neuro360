@@ -2,13 +2,16 @@ import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
+// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
 );
 
+// 🔗 BACKEND
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
+// 🎯 EMOÇÕES EXPANDIDAS
 const EMOCOES = [
   "Ansioso",
   "Triste",
@@ -39,7 +42,7 @@ export default function App() {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 🔒 CONTROLE LOCAL (backup caso backend falhe)
+  // 🔒 LIMITE FREE (ROBUSTO)
   const verificarLimiteLocal = () => {
     if (plano === "premium") return true;
 
@@ -56,6 +59,7 @@ export default function App() {
     return true;
   };
 
+  // 📡 PLANO
   const buscarPlano = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
@@ -66,16 +70,25 @@ export default function App() {
     }
   };
 
+  // 📊 GRÁFICO
   const carregarGrafico = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
-      setGrafico(Array.isArray(data) ? data : []);
+
+      // 🔥 HARDEN: evita quebra
+      if (!Array.isArray(data)) {
+        setGrafico([]);
+        return;
+      }
+
+      setGrafico(data);
     } catch {
       setGrafico([]);
     }
   };
 
+  // 🔄 INIT
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
@@ -115,6 +128,7 @@ export default function App() {
     };
   }, []);
 
+  // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite um email");
 
@@ -139,6 +153,7 @@ export default function App() {
     window.location.reload();
   };
 
+  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
 
@@ -162,22 +177,24 @@ export default function App() {
 
       const data = await res.json();
 
-      setResposta(data.resposta || "");
+      setResposta(data?.resposta || "");
 
-      if (data.plano) setPlano(data.plano);
+      if (data?.plano) setPlano(data.plano);
 
       if (session?.user?.id) {
         await carregarGrafico(session.user.id);
       }
 
       scrollTop();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Erro IA");
     }
 
     setLoading(false);
   };
 
+  // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
     if (plano !== "premium") {
       return alert("🔒 Premium apenas");
@@ -193,7 +210,7 @@ export default function App() {
       });
 
       const data = await res.json();
-      setRelatorio(data.relatorio || "");
+      setRelatorio(data?.relatorio || "");
 
       scrollTop();
     } catch {
@@ -201,6 +218,7 @@ export default function App() {
     }
   };
 
+  // 💳 PAGAMENTO
   const irParaPagamento = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/create-checkout`, {
@@ -221,6 +239,7 @@ export default function App() {
   const isAdmin =
     session?.user?.email === "contatobetaoofertas@gmail.com";
 
+  // 🔓 LOGIN SCREEN
   if (!session) {
     return (
       <div style={{ padding: 40 }}>
@@ -237,6 +256,7 @@ export default function App() {
     );
   }
 
+  // 🔥 APP
   return (
     <div style={{ padding: 20 }}>
       <div ref={topRef}></div>

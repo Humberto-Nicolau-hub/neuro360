@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
+console.log("EvolucaoChart:", EvolucaoChart);
+
 // 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",

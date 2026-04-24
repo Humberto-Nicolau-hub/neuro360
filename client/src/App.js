@@ -40,16 +40,19 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // ✅ LOGIN REAL
+  // ✅ LOGIN CORRIGIDO
   const login = async () => {
     if (!email) return alert("Digite seu email");
 
     const { error } = await supabase.auth.signInWithOtp({
-      email
+      email,
+      options: {
+        emailRedirectTo: window.location.origin
+      }
     });
 
     if (error) {
-      alert("Erro ao enviar email");
+      alert("Erro ao enviar email: " + error.message);
     } else {
       alert("Confira seu email para acessar 🚀");
     }
@@ -81,7 +84,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // 💰 BLOQUEIO FREE (BASE MONETIZAÇÃO)
   const falarComIALimitado = () => {
     if (plano === "free" && resposta) {
       return alert("Upgrade para PREMIUM para continuar 🚀");
@@ -89,7 +91,6 @@ export default function App() {
     falarComIA();
   };
 
-  // 🔐 LOGIN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -111,18 +112,15 @@ export default function App() {
     );
   }
 
-  // 🚀 APP
   return (
     <div style={styles.app}>
       
-      {/* SIDEBAR */}
       <div style={styles.sidebar}>
         <h2>Neuro360</h2>
 
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
 
-        {/* 💰 BOTÃO PREMIUM */}
         <button
           style={{...styles.menuItem, color:"#22c55e"}}
           onClick={()=>alert("Stripe entra no próximo passo")}
@@ -138,7 +136,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* MAIN */}
       <div style={styles.main}>
         
         <h1>Dashboard Emocional</h1>

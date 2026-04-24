@@ -4,7 +4,7 @@ import EvolucaoChart from "./EvolucaoChart";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.SEUAQUI"
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
@@ -13,13 +13,15 @@ const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimid
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
   const [grafico, setGrafico] = useState([]);
   const [plano, setPlano] = useState("free");
+  const [loading, setLoading] = useState(false);
 
-  // 🔥 SCROLL AUTOMÁTICO
+  // 🔥 SCROLL
   useEffect(() => {
     if (resposta) {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -30,34 +32,78 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
     });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_, session) => setSession(session)
+    );
+
+    return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  const falarComIA = async () => {
-    const res = await fetch(`${BACKEND_URL}/ia`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        texto,
-        emocao,
-        user_id: session?.user?.id
-      })
+  // ✅ LOGIN REAL
+  const login = async () => {
+    if (!email) return alert("Digite seu email");
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email
     });
 
-    const data = await res.json();
-    setResposta(data.resposta);
+    if (error) {
+      alert("Erro ao enviar email");
+    } else {
+      alert("Confira seu email para acessar 🚀");
+    }
   };
 
+  const falarComIA = async () => {
+    if (!texto) return alert("Descreva algo");
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/ia`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          texto,
+          emocao,
+          user_id: session?.user?.id
+        })
+      });
+
+      const data = await res.json();
+      setResposta(data.resposta);
+
+    } catch {
+      alert("Erro IA");
+    }
+
+    setLoading(false);
+  };
+
+  // 💰 BLOQUEIO FREE (BASE MONETIZAÇÃO)
+  const falarComIALimitado = () => {
+    if (plano === "free" && resposta) {
+      return alert("Upgrade para PREMIUM para continuar 🚀");
+    }
+    falarComIA();
+  };
+
+  // 🔐 LOGIN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
         <div style={styles.loginCard}>
           <h1>NeuroMapa360</h1>
-          <button
-            style={styles.button}
-            onClick={() =>
-              supabase.auth.signInWithOtp({ email: "teste@email.com" })
-            }
-          >
+
+          <input
+            style={styles.input}
+            placeholder="Seu email"
+            value={email}
+            onChange={(e)=>setEmail(e.target.value)}
+          />
+
+          <button style={styles.button} onClick={login}>
             Entrar
           </button>
         </div>
@@ -65,37 +111,39 @@ export default function App() {
     );
   }
 
+  // 🚀 APP
   return (
     <div style={styles.app}>
       
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
-        <h2 style={{marginBottom:20}}>Neuro360</h2>
+        <h2>Neuro360</h2>
 
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
-        <button style={styles.menuItem}>Histórico</button>
-        <button style={styles.menuItem}>Plano</button>
 
-        <div style={{marginTop:"auto"}}>
-          <button
-            style={styles.logout}
-            onClick={() => supabase.auth.signOut()}
-          >
-            Sair
-          </button>
-        </div>
+        {/* 💰 BOTÃO PREMIUM */}
+        <button
+          style={{...styles.menuItem, color:"#22c55e"}}
+          onClick={()=>alert("Stripe entra no próximo passo")}
+        >
+          Upgrade Premium
+        </button>
+
+        <button
+          style={styles.logout}
+          onClick={() => supabase.auth.signOut()}
+        >
+          Sair
+        </button>
       </div>
 
       {/* MAIN */}
       <div style={styles.main}>
         
-        <h1 style={{marginBottom:20}}>Dashboard Emocional</h1>
+        <h1>Dashboard Emocional</h1>
 
-        {/* CARD IA */}
         <div style={styles.card}>
-          <h3>Como você está hoje?</h3>
-
           <select
             style={styles.input}
             value={emocao}
@@ -106,17 +154,16 @@ export default function App() {
 
           <input
             style={styles.input}
-            placeholder="Descreva seu estado"
+            placeholder="Como você está?"
             value={texto}
             onChange={(e)=>setTexto(e.target.value)}
           />
 
-          <button style={styles.button} onClick={falarComIA}>
-            Falar com IA
+          <button style={styles.button} onClick={falarComIALimitado}>
+            {loading ? "Pensando..." : "Falar com IA"}
           </button>
         </div>
 
-        {/* RESPOSTA */}
         {resposta && (
           <div style={styles.card}>
             <h3>Insight da IA</h3>
@@ -124,10 +171,8 @@ export default function App() {
           </div>
         )}
 
-        {/* GRÁFICO */}
         {grafico.length > 0 && (
           <div style={styles.card}>
-            <h3>Evolução</h3>
             <EvolucaoChart data={grafico} />
           </div>
         )}
@@ -137,7 +182,6 @@ export default function App() {
   );
 }
 
-// 🎨 DESIGN PREMIUM
 const styles = {
   app: {
     display: "flex",
@@ -145,29 +189,25 @@ const styles = {
     background: "#0f172a",
     color: "#fff"
   },
-
   sidebar: {
     width: 220,
     background: "#020617",
     padding: 20,
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
+    gap: 10
   },
-
   main: {
     flex: 1,
     padding: 30,
     overflowY: "auto"
   },
-
   card: {
     background: "#1e293b",
     padding: 20,
     borderRadius: 12,
-    marginBottom: 20,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+    marginBottom: 20
   },
-
   input: {
     width: "100%",
     padding: 12,
@@ -177,7 +217,6 @@ const styles = {
     background: "#334155",
     color: "#fff"
   },
-
   button: {
     marginTop: 15,
     padding: 12,
@@ -185,27 +224,23 @@ const styles = {
     borderRadius: 8,
     border: "none",
     background: "#3b82f6",
-    color: "#fff",
-    cursor: "pointer"
+    color: "#fff"
   },
-
   menuItem: {
     background: "none",
     border: "none",
     color: "#94a3b8",
-    padding: "10px 0",
     textAlign: "left",
-    cursor: "pointer"
+    padding: 8
   },
-
   logout: {
+    marginTop: "auto",
     background: "#ef4444",
     color: "#fff",
     border: "none",
     padding: 10,
     borderRadius: 6
   },
-
   loginContainer: {
     height: "100vh",
     display: "flex",
@@ -213,7 +248,6 @@ const styles = {
     alignItems: "center",
     background: "#0f172a"
   },
-
   loginCard: {
     background: "#1e293b",
     padding: 40,

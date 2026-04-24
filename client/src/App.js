@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart.js";
 
-// 🔐 SUPABASE (mantido)
+// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
@@ -11,15 +11,8 @@ const supabase = createClient(
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 const EMOCOES = [
-  "Ansioso",
-  "Triste",
-  "Feliz",
-  "Estressado",
-  "Desmotivado",
-  "Deprimido",
-  "Desorientado",
-  "Confuso",
-  "Procrastinador"
+  "Ansioso","Triste","Feliz","Estressado","Desmotivado",
+  "Deprimido","Desorientado","Confuso","Procrastinador"
 ];
 
 export default function App() {
@@ -34,11 +27,17 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [limiteAtingido, setLimiteAtingido] = useState(false);
 
-  const topRef = useRef(null);
-
-  const scrollTop = () => {
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // 🚀 SCROLL AUTOMÁTICO PROFISSIONAL
+  useEffect(() => {
+    if (resposta || relatorio) {
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      }, 100);
+    }
+  }, [resposta, relatorio]);
 
   const verificarLimiteLocal = () => {
     if (plano === "premium") return true;
@@ -132,7 +131,6 @@ export default function App() {
 
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
-
     if (!verificarLimiteLocal()) return alert("Limite FREE atingido");
 
     setLoading(true);
@@ -155,7 +153,7 @@ export default function App() {
       if (data?.plano) setPlano(data.plano);
 
       await carregarGrafico(session.user.id);
-      scrollTop();
+
     } catch {
       alert("Erro IA");
     }
@@ -177,30 +175,12 @@ export default function App() {
 
       const data = await res.json();
       setRelatorio(data?.relatorio || "");
-      scrollTop();
     } catch {
       alert("Erro relatório");
     }
   };
 
-  const irParaPagamento = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/create-checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: session.user.id,
-        }),
-      });
-
-      const data = await res.json();
-      window.location.href = data.url;
-    } catch {
-      alert("Erro pagamento");
-    }
-  };
-
-  // 🔐 LOGIN (AGORA COM DESIGN)
+  // 🔐 LOGIN UI
   if (!session) {
     return (
       <div style={styles.container}>
@@ -220,7 +200,7 @@ export default function App() {
     );
   }
 
-  // 🔥 APP COM UI BONITA
+  // 🔥 APP UI
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -268,11 +248,10 @@ export default function App() {
   );
 }
 
-// 🎨 ESTILO PROFISSIONAL
 const styles = {
   container: {
     background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
-    height: "100vh",
+    minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center"

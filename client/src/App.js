@@ -1,17 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import EvolucaoChart from "./EvolucaoChart.js"; // 🔥 IMPORT EXPLÍCITO (CORREÇÃO FINAL)
+import EvolucaoChart from "./EvolucaoChart.js";
 
-// 🔐 SUPABASE
+// 🔐 SUPABASE (mantido)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
 );
 
-// 🔗 BACKEND
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
-// 🎯 EMOÇÕES
 const EMOCOES = [
   "Ansioso",
   "Triste",
@@ -42,7 +40,6 @@ export default function App() {
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 🔒 LIMITE LOCAL
   const verificarLimiteLocal = () => {
     if (plano === "premium") return true;
 
@@ -59,7 +56,6 @@ export default function App() {
     return true;
   };
 
-  // 📡 PLANO
   const buscarPlano = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
@@ -70,24 +66,16 @@ export default function App() {
     }
   };
 
-  // 📊 GRÁFICO (blindado)
   const carregarGrafico = async (user_id) => {
     try {
       const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
       const data = await res.json();
-
-      if (!Array.isArray(data)) {
-        setGrafico([]);
-        return;
-      }
-
-      setGrafico(data);
+      setGrafico(Array.isArray(data) ? data : []);
     } catch {
       setGrafico([]);
     }
   };
 
-  // 🔄 INIT
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
@@ -97,10 +85,7 @@ export default function App() {
 
       if (sessionData?.user) {
         const user_id = sessionData.user.id;
-
-        const planoAtual = await buscarPlano(user_id);
-        setPlano(planoAtual);
-
+        setPlano(await buscarPlano(user_id));
         await carregarGrafico(user_id);
       }
     };
@@ -113,21 +98,15 @@ export default function App() {
 
         if (session?.user) {
           const user_id = session.user.id;
-
-          const planoAtual = await buscarPlano(user_id);
-          setPlano(planoAtual);
-
+          setPlano(await buscarPlano(user_id));
           await carregarGrafico(user_id);
         }
       }
     );
 
-    return () => {
-      listener?.subscription?.unsubscribe();
-    };
+    return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite um email");
 
@@ -151,13 +130,10 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva o que está sentindo");
 
-    if (!verificarLimiteLocal()) {
-      return alert("Limite FREE atingido");
-    }
+    if (!verificarLimiteLocal()) return alert("Limite FREE atingido");
 
     setLoading(true);
 
@@ -176,27 +152,19 @@ export default function App() {
       const data = await res.json();
 
       setResposta(data?.resposta || "");
-
       if (data?.plano) setPlano(data.plano);
 
-      if (session?.user?.id) {
-        await carregarGrafico(session.user.id);
-      }
-
+      await carregarGrafico(session.user.id);
       scrollTop();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Erro IA");
     }
 
     setLoading(false);
   };
 
-  // 📊 RELATÓRIO
   const gerarRelatorio = async () => {
-    if (plano !== "premium") {
-      return alert("Premium apenas");
-    }
+    if (plano !== "premium") return alert("Premium apenas");
 
     try {
       const res = await fetch(`${BACKEND_URL}/relatorio`, {
@@ -209,14 +177,12 @@ export default function App() {
 
       const data = await res.json();
       setRelatorio(data?.relatorio || "");
-
       scrollTop();
     } catch {
       alert("Erro relatório");
     }
   };
 
-  // 💳 PAGAMENTO
   const irParaPagamento = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/create-checkout`, {
@@ -234,75 +200,122 @@ export default function App() {
     }
   };
 
-  // 🔐 LOGIN SCREEN
+  // 🔐 LOGIN (AGORA COM DESIGN)
   if (!session) {
     return (
-      <div style={{ padding: 40 }}>
-        <h1>NeuroMapa360</h1>
-
-        <input
-          placeholder="Seu email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <button onClick={login}>Entrar</button>
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <h1>NeuroMapa360</h1>
+          <input
+            style={styles.input}
+            placeholder="Seu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button style={styles.button} onClick={login}>
+            Entrar
+          </button>
+        </div>
       </div>
     );
   }
 
-  // 🔥 APP
+  // 🔥 APP COM UI BONITA
   return (
-    <div style={{ padding: 20 }}>
-      <div ref={topRef}></div>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h1>NeuroMapa360</h1>
+        <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
 
-      <h1>NeuroMapa360</h1>
+        <button style={styles.logout} onClick={logout}>Sair</button>
 
-      <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
+        <select
+          style={styles.input}
+          value={emocao}
+          onChange={(e) => setEmocao(e.target.value)}
+        >
+          {EMOCOES.map((e) => (
+            <option key={e}>{e}</option>
+          ))}
+        </select>
 
-      <button onClick={logout}>Sair</button>
+        <input
+          style={styles.input}
+          placeholder="Descreva como você está"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+        />
 
-      {plano === "free" && (
-        <button onClick={irParaPagamento}>
-          Upgrade Premium
+        <button style={styles.button} onClick={falarComIA}>
+          {loading ? "Pensando..." : "Falar com IA"}
         </button>
-      )}
 
-      {limiteAtingido && (
-        <p style={{ color: "red" }}>
-          Limite diário atingido
-        </p>
-      )}
+        <button style={styles.buttonSecondary} onClick={gerarRelatorio}>
+          Gerar Relatório
+        </button>
 
-      <select value={emocao} onChange={(e) => setEmocao(e.target.value)}>
-        {EMOCOES.map((e) => (
-          <option key={e}>{e}</option>
-        ))}
-      </select>
+        {resposta && <p>{resposta}</p>}
+        {relatorio && <p>{relatorio}</p>}
 
-      <input
-        placeholder="Descreva como você está"
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-      />
-
-      <button onClick={falarComIA}>
-        {loading ? "Pensando..." : "Falar com IA"}
-      </button>
-
-      <button onClick={gerarRelatorio}>
-        Gerar Relatório
-      </button>
-
-      {resposta && <p>{resposta}</p>}
-      {relatorio && <p>{relatorio}</p>}
-
-      {grafico.length > 0 && (
-        <>
-          <h3>Evolução Emocional</h3>
-          <EvolucaoChart data={grafico} />
-        </>
-      )}
+        {grafico.length > 0 && (
+          <>
+            <h3>Evolução Emocional</h3>
+            <EvolucaoChart data={grafico} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
+
+// 🎨 ESTILO PROFISSIONAL
+const styles = {
+  container: {
+    background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  card: {
+    background: "#fff",
+    padding: 30,
+    borderRadius: 12,
+    width: 350,
+    textAlign: "center",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+  },
+  input: {
+    width: "100%",
+    padding: 10,
+    margin: "10px 0",
+    borderRadius: 6,
+    border: "1px solid #ccc"
+  },
+  button: {
+    width: "100%",
+    padding: 12,
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    marginTop: 10
+  },
+  buttonSecondary: {
+    width: "100%",
+    padding: 12,
+    background: "#22c55e",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    marginTop: 10
+  },
+  logout: {
+    background: "#ef4444",
+    color: "#fff",
+    border: "none",
+    padding: "6px 10px",
+    borderRadius: 6,
+    marginBottom: 10
+  }
+};

@@ -1,198 +1,63 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import EvolucaoChart from "./EvolucaoChart.js";
+import EvolucaoChart from "./EvolucaoChart";
 
-// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
-const EMOCOES = [
-  "Ansioso","Triste","Feliz","Estressado","Desmotivado",
-  "Deprimido","Desorientado","Confuso","Procrastinador"
-];
+const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido"];
 
 export default function App() {
   const [session, setSession] = useState(null);
-  const [email, setEmail] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
-  const [relatorio, setRelatorio] = useState("");
-  const [plano, setPlano] = useState("free");
   const [grafico, setGrafico] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [limiteAtingido, setLimiteAtingido] = useState(false);
+  const [plano, setPlano] = useState("free");
 
-  // 🚀 SCROLL AUTOMÁTICO PROFISSIONAL
+  // 🔥 SCROLL AUTOMÁTICO
   useEffect(() => {
-    if (resposta || relatorio) {
-      setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth"
-        });
-      }, 100);
+    if (resposta) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [resposta, relatorio]);
-
-  const verificarLimiteLocal = () => {
-    if (plano === "premium") return true;
-
-    const hoje = new Date().toISOString().slice(0, 10);
-    const key = `uso_${session?.user?.id}_${hoje}`;
-    const uso = parseInt(localStorage.getItem(key) || "0");
-
-    if (uso >= 3) {
-      setLimiteAtingido(true);
-      return false;
-    }
-
-    localStorage.setItem(key, uso + 1);
-    return true;
-  };
-
-  const buscarPlano = async (user_id) => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/plano/${user_id}`);
-      const data = await res.json();
-      return data?.plano || "free";
-    } catch {
-      return "free";
-    }
-  };
-
-  const carregarGrafico = async (user_id) => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/evolucao/${user_id}`);
-      const data = await res.json();
-      setGrafico(Array.isArray(data) ? data : []);
-    } catch {
-      setGrafico([]);
-    }
-  };
+  }, [resposta]);
 
   useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      const sessionData = data.session;
-
-      setSession(sessionData);
-
-      if (sessionData?.user) {
-        const user_id = sessionData.user.id;
-        setPlano(await buscarPlano(user_id));
-        await carregarGrafico(user_id);
-      }
-    };
-
-    init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        setSession(session);
-
-        if (session?.user) {
-          const user_id = session.user.id;
-          setPlano(await buscarPlano(user_id));
-          await carregarGrafico(user_id);
-        }
-      }
-    );
-
-    return () => listener?.subscription?.unsubscribe();
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
   }, []);
 
-  const login = async () => {
-    if (!email) return alert("Digite um email");
-
-    const password = "123456";
-
-    let { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+  const falarComIA = async () => {
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session?.user?.id
+      })
     });
 
-    if (!error && data.session) return;
-
-    await supabase.auth.signUp({ email, password });
-
-    alert("Conta criada ou logada!");
+    const data = await res.json();
+    setResposta(data.resposta);
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    localStorage.clear();
-    window.location.reload();
-  };
-
-  const falarComIA = async () => {
-    if (!texto) return alert("Descreva o que está sentindo");
-    if (!verificarLimiteLocal()) return alert("Limite FREE atingido");
-
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/ia`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          texto,
-          emocao,
-          user_id: session?.user?.id,
-          plano
-        }),
-      });
-
-      const data = await res.json();
-
-      setResposta(data?.resposta || "");
-      if (data?.plano) setPlano(data.plano);
-
-      await carregarGrafico(session.user.id);
-
-    } catch {
-      alert("Erro IA");
-    }
-
-    setLoading(false);
-  };
-
-  const gerarRelatorio = async () => {
-    if (plano !== "premium") return alert("Premium apenas");
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/relatorio`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: session?.user?.id,
-        }),
-      });
-
-      const data = await res.json();
-      setRelatorio(data?.relatorio || "");
-    } catch {
-      alert("Erro relatório");
-    }
-  };
-
-  // 🔐 LOGIN UI
   if (!session) {
     return (
-      <div style={styles.container}>
-        <div style={styles.card}>
+      <div style={styles.loginContainer}>
+        <div style={styles.loginCard}>
           <h1>NeuroMapa360</h1>
-          <input
-            style={styles.input}
-            placeholder="Seu email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <button style={styles.button} onClick={login}>
+          <button
+            style={styles.button}
+            onClick={() =>
+              supabase.auth.signInWithOtp({ email: "teste@email.com" })
+            }
+          >
             Entrar
           </button>
         </div>
@@ -200,101 +65,158 @@ export default function App() {
     );
   }
 
-  // 🔥 APP UI
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1>NeuroMapa360</h1>
-        <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
+    <div style={styles.app}>
+      
+      {/* SIDEBAR */}
+      <div style={styles.sidebar}>
+        <h2 style={{marginBottom:20}}>Neuro360</h2>
 
-        <button style={styles.logout} onClick={logout}>Sair</button>
+        <button style={styles.menuItem}>Dashboard</button>
+        <button style={styles.menuItem}>Relatórios</button>
+        <button style={styles.menuItem}>Histórico</button>
+        <button style={styles.menuItem}>Plano</button>
 
-        <select
-          style={styles.input}
-          value={emocao}
-          onChange={(e) => setEmocao(e.target.value)}
-        >
-          {EMOCOES.map((e) => (
-            <option key={e}>{e}</option>
-          ))}
-        </select>
+        <div style={{marginTop:"auto"}}>
+          <button
+            style={styles.logout}
+            onClick={() => supabase.auth.signOut()}
+          >
+            Sair
+          </button>
+        </div>
+      </div>
 
-        <input
-          style={styles.input}
-          placeholder="Descreva como você está"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
+      {/* MAIN */}
+      <div style={styles.main}>
+        
+        <h1 style={{marginBottom:20}}>Dashboard Emocional</h1>
 
-        <button style={styles.button} onClick={falarComIA}>
-          {loading ? "Pensando..." : "Falar com IA"}
-        </button>
+        {/* CARD IA */}
+        <div style={styles.card}>
+          <h3>Como você está hoje?</h3>
 
-        <button style={styles.buttonSecondary} onClick={gerarRelatorio}>
-          Gerar Relatório
-        </button>
+          <select
+            style={styles.input}
+            value={emocao}
+            onChange={(e)=>setEmocao(e.target.value)}
+          >
+            {EMOCOES.map(e => <option key={e}>{e}</option>)}
+          </select>
 
-        {resposta && <p>{resposta}</p>}
-        {relatorio && <p>{relatorio}</p>}
+          <input
+            style={styles.input}
+            placeholder="Descreva seu estado"
+            value={texto}
+            onChange={(e)=>setTexto(e.target.value)}
+          />
 
-        {grafico.length > 0 && (
-          <>
-            <h3>Evolução Emocional</h3>
-            <EvolucaoChart data={grafico} />
-          </>
+          <button style={styles.button} onClick={falarComIA}>
+            Falar com IA
+          </button>
+        </div>
+
+        {/* RESPOSTA */}
+        {resposta && (
+          <div style={styles.card}>
+            <h3>Insight da IA</h3>
+            <p>{resposta}</p>
+          </div>
         )}
+
+        {/* GRÁFICO */}
+        {grafico.length > 0 && (
+          <div style={styles.card}>
+            <h3>Evolução</h3>
+            <EvolucaoChart data={grafico} />
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
+// 🎨 DESIGN PREMIUM
 const styles = {
-  container: {
-    background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
-    minHeight: "100vh",
+  app: {
     display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
+    height: "100vh",
+    background: "#0f172a",
+    color: "#fff"
   },
-  card: {
-    background: "#fff",
+
+  sidebar: {
+    width: 220,
+    background: "#020617",
+    padding: 20,
+    display: "flex",
+    flexDirection: "column"
+  },
+
+  main: {
+    flex: 1,
     padding: 30,
-    borderRadius: 12,
-    width: 350,
-    textAlign: "center",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+    overflowY: "auto"
   },
+
+  card: {
+    background: "#1e293b",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+  },
+
   input: {
     width: "100%",
-    padding: 10,
-    margin: "10px 0",
-    borderRadius: 6,
-    border: "1px solid #ccc"
+    padding: 12,
+    marginTop: 10,
+    borderRadius: 8,
+    border: "none",
+    background: "#334155",
+    color: "#fff"
   },
+
   button: {
-    width: "100%",
+    marginTop: 15,
     padding: 12,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    marginTop: 10
-  },
-  buttonSecondary: {
     width: "100%",
-    padding: 12,
-    background: "#22c55e",
-    color: "#fff",
+    borderRadius: 8,
     border: "none",
-    borderRadius: 6,
-    marginTop: 10
+    background: "#3b82f6",
+    color: "#fff",
+    cursor: "pointer"
   },
+
+  menuItem: {
+    background: "none",
+    border: "none",
+    color: "#94a3b8",
+    padding: "10px 0",
+    textAlign: "left",
+    cursor: "pointer"
+  },
+
   logout: {
     background: "#ef4444",
     color: "#fff",
     border: "none",
-    padding: "6px 10px",
-    borderRadius: 6,
-    marginBottom: 10
+    padding: 10,
+    borderRadius: 6
+  },
+
+  loginContainer: {
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#0f172a"
+  },
+
+  loginCard: {
+    background: "#1e293b",
+    padding: 40,
+    borderRadius: 12
   }
 };

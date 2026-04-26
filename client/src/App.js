@@ -2,17 +2,27 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
+// 🔐 SUPABASE (CHAVE CORRETA E PADRÃO)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
+  "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
-// 🔥 COLE SEU LINK DO STRIPE AQUI
+// 💰 STRIPE
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 
-const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido"];
+// ✅ EMOÇÕES (ATUALIZADO)
+const EMOCOES = [
+  "Ansioso",
+  "Triste",
+  "Feliz",
+  "Estressado",
+  "Desmotivado",
+  "Deprimido",
+  "Procrastinador"
+];
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -32,6 +42,7 @@ export default function App() {
     }
   }, [resposta]);
 
+  // 🔐 SESSÃO
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -44,7 +55,7 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 BUSCAR PLANO DO USUÁRIO
+  // 🔥 BUSCAR PLANO
   useEffect(() => {
     if (session?.user?.email) {
       buscarPlano();
@@ -52,18 +63,22 @@ export default function App() {
   }, [session]);
 
   const buscarPlano = async () => {
-    const { data } = await supabase
-      .from("usuarios")
-      .select("plano")
-      .eq("email", session.user.email)
-      .single();
+    try {
+      const { data } = await supabase
+        .from("usuarios")
+        .select("plano")
+        .eq("email", session.user.email)
+        .single();
 
-    if (data?.plano) {
-      setPlano(data.plano);
+      if (data?.plano) {
+        setPlano(data.plano);
+      }
+    } catch {
+      setPlano("free");
     }
   };
 
-  // ✅ LOGIN
+  // ✅ LOGIN (MAGIC LINK CORRETO)
   const login = async () => {
     if (!email) return alert("Digite seu email");
 
@@ -81,7 +96,7 @@ export default function App() {
     }
   };
 
-  // 🔥 FORMATAR RESPOSTA (UX PREMIUM)
+  // 🔥 FORMATAR RESPOSTA
   const formatarResposta = (texto) => {
     return texto
       .replace(/\d+\.\s\*\*(.*?)\*\*/g, '\n\n🔹 $1')
@@ -102,7 +117,7 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           texto,
           emocao,
@@ -116,17 +131,25 @@ export default function App() {
       setInteracoes(prev => prev + 1);
 
     } catch {
-      alert("Erro IA");
+      alert("Erro ao falar com IA");
     }
 
     setLoading(false);
   };
 
-  // 🔥 STRIPE
+  // 💰 STRIPE
   const irParaPagamento = () => {
     window.location.href = STRIPE_LINK;
   };
 
+  // 🔐 LOGOUT CORRIGIDO
+  const logout = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    window.location.reload();
+  };
+
+  // 🔐 LOGIN SCREEN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -148,6 +171,7 @@ export default function App() {
     );
   }
 
+  // 🚀 APP
   return (
     <div style={styles.app}>
       
@@ -172,10 +196,7 @@ export default function App() {
           </span>
         )}
 
-        <button
-          style={styles.logout}
-          onClick={() => supabase.auth.signOut()}
-        >
+        <button style={styles.logout} onClick={logout}>
           Sair
         </button>
       </div>
@@ -223,6 +244,7 @@ export default function App() {
   );
 }
 
+// 🎨 ESTILO (INALTERADO)
 const styles = {
   app: {
     display: "flex",

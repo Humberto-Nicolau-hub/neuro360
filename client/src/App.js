@@ -24,6 +24,17 @@ const EMOCOES = [
   "Procrastinador"
 ];
 
+// 🔥 MAPA EMOCIONAL (GRÁFICO)
+const MAPA = {
+  "Deprimido": 1,
+  "Desmotivado": 2,
+  "Triste": 3,
+  "Ansioso": 4,
+  "Estressado": 5,
+  "Procrastinador": 6,
+  "Feliz": 8
+};
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
@@ -56,10 +67,11 @@ export default function App() {
     }
   }, [resposta]);
 
-  // 🚀 BUSCAR / CRIAR USUÁRIO AUTOMÁTICO (SEM SQL MANUAL)
+  // 🚀 BUSCAR / CRIAR USUÁRIO
   useEffect(() => {
     if (session?.user?.email) {
       buscarPlano();
+      buscarRegistros();
     }
   }, [session]);
 
@@ -67,14 +79,13 @@ export default function App() {
     try {
       const userEmail = session.user.email;
 
-      let { data, error } = await supabase
+      let { data } = await supabase
         .from("profiles")
         .select("*")
         .eq("email", userEmail)
         .single();
 
-      // 🔥 cria automaticamente se não existir
-      if (error || !data) {
+      if (!data) {
         const isAdmin = userEmail === ADMIN_EMAIL;
 
         const { data: novo } = await supabase
@@ -92,19 +103,35 @@ export default function App() {
         data = novo;
       }
 
-      // 🔥 força ADMIN
       if (userEmail === ADMIN_EMAIL) {
         setIsAdmin(true);
         setPlano("premium");
       } else {
-        setIsAdmin(data.is_admin || false);
-        setPlano(data.plano || "free");
+        setIsAdmin(data?.is_admin || false);
+        setPlano(data?.plano || "free");
       }
 
-    } catch (err) {
-      console.error(err);
+    } catch {
       setPlano("free");
     }
+  };
+
+  // 📊 BUSCAR DADOS DO GRÁFICO
+  const buscarRegistros = async () => {
+    const { data } = await supabase
+      .from("registros_emocionais")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: true });
+
+    if (!data) return;
+
+    const formatado = data.map(d => ({
+      data: new Date(d.created_at).toLocaleDateString(),
+      valor: MAPA[d.emocao] || 5
+    }));
+
+    setGrafico(formatado);
   };
 
   // 🔐 LOGIN
@@ -128,9 +155,7 @@ export default function App() {
   // 🤖 FORMATAR IA
   const formatarResposta = (texto) => {
     return texto
-      .replace(/\d+\.\s\*\*(.*?)\*\*/g, '\n\n🔹 $1')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\n/g, '<br/>');
+      .replace(/\n/g, "<br/>");
   };
 
   const falarComIA = async () => {
@@ -149,13 +174,25 @@ export default function App() {
         body: JSON.stringify({
           texto,
           emocao,
-          user_id: session?.user?.id
+          user_id: session.user.id
         })
       });
 
       const data = await res.json();
       setResposta(formatarResposta(data.resposta));
       setInteracoes(prev => prev + 1);
+
+      // 🔥 SALVAR NO BANCO
+      await supabase.from("registros_emocionais").insert([
+        {
+          user_id: session.user.id,
+          emocao,
+          texto
+        }
+      ]);
+
+      // 🔄 ATUALIZA GRÁFICO
+      buscarRegistros();
 
     } catch {
       alert("Erro ao falar com IA");

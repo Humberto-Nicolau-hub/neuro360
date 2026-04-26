@@ -4,10 +4,13 @@ import EvolucaoChart from "./EvolucaoChart";
 
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZHp3eGdhYnVhZHNucGxjc2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njc4NDMsImV4cCI6MjA5MDA0Mzg0M30.GMxoMDJha-vJg0j32koiR8D2oNMUHs39bTs3LAw8cn4"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+
+// 🔥 COLE SEU LINK DO STRIPE AQUI
+const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 
 const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido"];
 
@@ -20,6 +23,7 @@ export default function App() {
   const [grafico, setGrafico] = useState([]);
   const [plano, setPlano] = useState("free");
   const [loading, setLoading] = useState(false);
+  const [interacoes, setInteracoes] = useState(0);
 
   // 🔥 SCROLL
   useEffect(() => {
@@ -40,7 +44,26 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // ✅ LOGIN CORRIGIDO
+  // 🔥 BUSCAR PLANO DO USUÁRIO
+  useEffect(() => {
+    if (session?.user?.email) {
+      buscarPlano();
+    }
+  }, [session]);
+
+  const buscarPlano = async () => {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("plano")
+      .eq("email", session.user.email)
+      .single();
+
+    if (data?.plano) {
+      setPlano(data.plano);
+    }
+  };
+
+  // ✅ LOGIN
   const login = async () => {
     if (!email) return alert("Digite seu email");
 
@@ -58,8 +81,21 @@ export default function App() {
     }
   };
 
+  // 🔥 FORMATAR RESPOSTA (UX PREMIUM)
+  const formatarResposta = (texto) => {
+    return texto
+      .replace(/\d+\.\s\*\*(.*?)\*\*/g, '\n\n🔹 $1')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\n/g, '<br/>');
+  };
+
   const falarComIA = async () => {
     if (!texto) return alert("Descreva algo");
+
+    // 🔒 LIMITE FREE
+    if (plano === "free" && interacoes >= 3) {
+      return alert("Limite diário atingido. Faça upgrade 🚀");
+    }
 
     setLoading(true);
 
@@ -75,7 +111,9 @@ export default function App() {
       });
 
       const data = await res.json();
-      setResposta(data.resposta);
+      setResposta(formatarResposta(data.resposta));
+
+      setInteracoes(prev => prev + 1);
 
     } catch {
       alert("Erro IA");
@@ -84,11 +122,9 @@ export default function App() {
     setLoading(false);
   };
 
-  const falarComIALimitado = () => {
-    if (plano === "free" && resposta) {
-      return alert("Upgrade para PREMIUM para continuar 🚀");
-    }
-    falarComIA();
+  // 🔥 STRIPE
+  const irParaPagamento = () => {
+    window.location.href = STRIPE_LINK;
   };
 
   if (!session) {
@@ -121,12 +157,20 @@ export default function App() {
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
 
-        <button
-          style={{...styles.menuItem, color:"#22c55e"}}
-          onClick={()=>alert("Stripe entra no próximo passo")}
-        >
-          Upgrade Premium
-        </button>
+        {plano === "free" && (
+          <button
+            style={{...styles.menuItem, color:"#22c55e"}}
+            onClick={irParaPagamento}
+          >
+            Upgrade Premium 🚀
+          </button>
+        )}
+
+        {plano === "premium" && (
+          <span style={{color:"#22c55e"}}>
+            Premium Ativo ✅
+          </span>
+        )}
 
         <button
           style={styles.logout}
@@ -156,7 +200,7 @@ export default function App() {
             onChange={(e)=>setTexto(e.target.value)}
           />
 
-          <button style={styles.button} onClick={falarComIALimitado}>
+          <button style={styles.button} onClick={falarComIA}>
             {loading ? "Pensando..." : "Falar com IA"}
           </button>
         </div>
@@ -164,7 +208,7 @@ export default function App() {
         {resposta && (
           <div style={styles.card}>
             <h3>Insight da IA</h3>
-            <p>{resposta}</p>
+            <div dangerouslySetInnerHTML={{ __html: resposta }} />
           </div>
         )}
 

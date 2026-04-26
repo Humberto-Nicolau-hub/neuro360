@@ -12,6 +12,7 @@ const supabase = createClient(
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
+const REDIRECT_URL = "https://neuro360-zzx3.vercel.app";
 
 // 🔥 EMOÇÕES
 const EMOCOES = [
@@ -24,7 +25,7 @@ const EMOCOES = [
   "Procrastinador"
 ];
 
-// 🔥 MAPA EMOCIONAL (GRÁFICO)
+// 🔥 MAPA EMOCIONAL
 const MAPA = {
   "Deprimido": 1,
   "Desmotivado": 2,
@@ -60,35 +61,29 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 SCROLL
-  useEffect(() => {
-    if (resposta) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [resposta]);
-
-  // 🚀 BUSCAR / CRIAR USUÁRIO
+  // 🔄 AO LOGAR
   useEffect(() => {
     if (session?.user?.email) {
-      buscarPlano();
+      buscarOuCriarUsuario();
       buscarRegistros();
     }
   }, [session]);
 
-  const buscarPlano = async () => {
-    try {
-      const userEmail = session.user.email;
+  // 🚀 CRIAR OU BUSCAR USUÁRIO
+  const buscarOuCriarUsuario = async () => {
+    const userEmail = session.user.email;
 
-      let { data } = await supabase
+    try {
+      let { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("email", userEmail)
-        .single();
+        .maybeSingle();
 
       if (!data) {
         const isAdmin = userEmail === ADMIN_EMAIL;
 
-        const { data: novo } = await supabase
+        const { data: novo, error: insertError } = await supabase
           .from("profiles")
           .insert([
             {
@@ -100,31 +95,41 @@ export default function App() {
           .select()
           .single();
 
+        if (insertError) {
+          console.error("Erro ao criar usuário:", insertError);
+          return;
+        }
+
         data = novo;
       }
 
+      setPlano(data.plano || "free");
+      setIsAdmin(data.is_admin || false);
+
       if (userEmail === ADMIN_EMAIL) {
-        setIsAdmin(true);
         setPlano("premium");
-      } else {
-        setIsAdmin(data?.is_admin || false);
-        setPlano(data?.plano || "free");
+        setIsAdmin(true);
       }
 
-    } catch {
-      setPlano("free");
+    } catch (err) {
+      console.error("Erro usuário:", err);
     }
   };
 
-  // 📊 BUSCAR DADOS DO GRÁFICO
+  // 📊 BUSCAR REGISTROS
   const buscarRegistros = async () => {
-    const { data } = await supabase
+    if (!session?.user?.id) return;
+
+    const { data, error } = await supabase
       .from("registros_emocionais")
       .select("*")
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: true });
 
-    if (!data) return;
+    if (error) {
+      console.error("Erro ao buscar registros:", error);
+      return;
+    }
 
     const formatado = data.map(d => ({
       data: new Date(d.created_at).toLocaleDateString(),
@@ -141,28 +146,23 @@ export default function App() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: REDIRECT_URL
       }
     });
 
     if (error) {
       alert("Erro ao enviar email: " + error.message);
     } else {
-      alert("Confira seu email para acessar 🚀");
+      alert("Confira seu email 🚀");
     }
   };
 
-  // 🤖 FORMATAR IA
-  const formatarResposta = (texto) => {
-    return texto
-      .replace(/\n/g, "<br/>");
-  };
-
+  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva algo");
 
     if (plano === "free" && interacoes >= 3) {
-      return alert("Limite diário atingido. Faça upgrade 🚀");
+      return alert("Limite atingido. Faça upgrade 🚀");
     }
 
     setLoading(true);
@@ -179,31 +179,32 @@ export default function App() {
       });
 
       const data = await res.json();
-      setResposta(formatarResposta(data.resposta));
+      setResposta(data.resposta);
       setInteracoes(prev => prev + 1);
 
-      // 🔥 SALVAR NO BANCO
-      await supabase.from("registros_emocionais").insert([
-        {
-          user_id: session.user.id,
-          emocao,
-          texto
-        }
-      ]);
+      // 🔥 SALVAR
+      const { error } = await supabase
+        .from("registros_emocionais")
+        .insert([
+          {
+            user_id: session.user.id,
+            emocao,
+            texto
+          }
+        ]);
 
-      // 🔄 ATUALIZA GRÁFICO
+      if (error) {
+        console.error("Erro ao salvar:", error);
+      }
+
       buscarRegistros();
 
-    } catch {
-      alert("Erro ao falar com IA");
+    } catch (err) {
+      console.error(err);
+      alert("Erro IA");
     }
 
     setLoading(false);
-  };
-
-  // 💰 STRIPE
-  const irParaPagamento = () => {
-    window.location.href = STRIPE_LINK;
   };
 
   // 🔐 LOGOUT
@@ -213,7 +214,7 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🔐 LOGIN SCREEN
+  // LOGIN SCREEN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -235,44 +236,22 @@ export default function App() {
     );
   }
 
-  // 🚀 APP
+  // APP
   return (
     <div style={styles.app}>
-      
       <div style={styles.sidebar}>
         <h2>Neuro360</h2>
 
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
 
-        {plano === "free" && (
-          <button
-            style={{...styles.menuItem, color:"#22c55e"}}
-            onClick={irParaPagamento}
-          >
-            Upgrade Premium 🚀
-          </button>
-        )}
+        {plano === "premium" && <span style={{color:"#22c55e"}}>Premium ✅</span>}
+        {isAdmin && <span style={{color:"#facc15"}}>ADMIN 👑</span>}
 
-        {plano === "premium" && (
-          <span style={{color:"#22c55e"}}>
-            Premium Ativo ✅
-          </span>
-        )}
-
-        {isAdmin && (
-          <span style={{color:"#facc15"}}>
-            ADMIN 👑
-          </span>
-        )}
-
-        <button style={styles.logout} onClick={logout}>
-          Sair
-        </button>
+        <button style={styles.logout} onClick={logout}>Sair</button>
       </div>
 
       <div style={styles.main}>
-        
         <h1>Dashboard Emocional</h1>
 
         <div style={styles.card}>
@@ -299,7 +278,7 @@ export default function App() {
         {resposta && (
           <div style={styles.card}>
             <h3>Insight da IA</h3>
-            <div dangerouslySetInnerHTML={{ __html: resposta }} />
+            <p>{resposta}</p>
           </div>
         )}
 
@@ -308,7 +287,6 @@ export default function App() {
             <EvolucaoChart data={grafico} />
           </div>
         )}
-
       </div>
     </div>
   );

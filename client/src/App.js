@@ -2,14 +2,16 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
-// 🔐 SUPABASE (CHAVE CORRETA)
+// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
+// 🔥 CONFIG
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
+const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
 
 // 🔥 EMOÇÕES
 const EMOCOES = [
@@ -34,13 +36,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
 
-  // 🔥 SCROLL
-  useEffect(() => {
-    if (resposta) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [resposta]);
-
   // 🔐 SESSÃO
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -54,7 +49,14 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 BUSCAR / CRIAR USUÁRIO (SaaS)
+  // 🔥 SCROLL
+  useEffect(() => {
+    if (resposta) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [resposta]);
+
+  // 🚀 BUSCAR / CRIAR USUÁRIO AUTOMÁTICO (SEM SQL MANUAL)
   useEffect(() => {
     if (session?.user?.email) {
       buscarPlano();
@@ -63,21 +65,25 @@ export default function App() {
 
   const buscarPlano = async () => {
     try {
+      const userEmail = session.user.email;
+
       let { data, error } = await supabase
-        .from("usuarios")
+        .from("profiles")
         .select("*")
-        .eq("email", session.user.email)
+        .eq("email", userEmail)
         .single();
 
-      // 🔥 CRIA USUÁRIO AUTOMÁTICO
+      // 🔥 cria automaticamente se não existir
       if (error || !data) {
+        const isAdmin = userEmail === ADMIN_EMAIL;
+
         const { data: novo } = await supabase
-          .from("usuarios")
+          .from("profiles")
           .insert([
             {
-              email: session.user.email,
-              plano: "free",
-              is_admin: false
+              email: userEmail,
+              plano: isAdmin ? "premium" : "free",
+              is_admin: isAdmin
             }
           ])
           .select()
@@ -86,22 +92,22 @@ export default function App() {
         data = novo;
       }
 
-      // 🔥 DEFINE ADMIN
-      setIsAdmin(data.is_admin);
-
-      // 🔥 ADMIN SEMPRE PREMIUM
-      if (data.is_admin) {
+      // 🔥 força ADMIN
+      if (userEmail === ADMIN_EMAIL) {
+        setIsAdmin(true);
         setPlano("premium");
       } else {
+        setIsAdmin(data.is_admin || false);
         setPlano(data.plano || "free");
       }
 
-    } catch {
+    } catch (err) {
+      console.error(err);
       setPlano("free");
     }
   };
 
-  // ✅ LOGIN
+  // 🔐 LOGIN
   const login = async () => {
     if (!email) return alert("Digite seu email");
 
@@ -119,7 +125,7 @@ export default function App() {
     }
   };
 
-  // 🔥 FORMATAR IA
+  // 🤖 FORMATAR IA
   const formatarResposta = (texto) => {
     return texto
       .replace(/\d+\.\s\*\*(.*?)\*\*/g, '\n\n🔹 $1')
@@ -218,9 +224,9 @@ export default function App() {
         )}
 
         {isAdmin && (
-          <button style={styles.menuItem}>
-            Painel Admin
-          </button>
+          <span style={{color:"#facc15"}}>
+            ADMIN 👑
+          </span>
         )}
 
         <button style={styles.logout} onClick={logout}>
@@ -272,74 +278,14 @@ export default function App() {
 }
 
 const styles = {
-  app: {
-    display: "flex",
-    height: "100vh",
-    background: "#0f172a",
-    color: "#fff"
-  },
-  sidebar: {
-    width: 220,
-    background: "#020617",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10
-  },
-  main: {
-    flex: 1,
-    padding: 30,
-    overflowY: "auto"
-  },
-  card: {
-    background: "#1e293b",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20
-  },
-  input: {
-    width: "100%",
-    padding: 12,
-    marginTop: 10,
-    borderRadius: 8,
-    border: "none",
-    background: "#334155",
-    color: "#fff"
-  },
-  button: {
-    marginTop: 15,
-    padding: 12,
-    width: "100%",
-    borderRadius: 8,
-    border: "none",
-    background: "#3b82f6",
-    color: "#fff"
-  },
-  menuItem: {
-    background: "none",
-    border: "none",
-    color: "#94a3b8",
-    textAlign: "left",
-    padding: 8
-  },
-  logout: {
-    marginTop: "auto",
-    background: "#ef4444",
-    color: "#fff",
-    border: "none",
-    padding: 10,
-    borderRadius: 6
-  },
-  loginContainer: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#0f172a"
-  },
-  loginCard: {
-    background: "#1e293b",
-    padding: 40,
-    borderRadius: 12
-  }
+  app: { display:"flex", height:"100vh", background:"#0f172a", color:"#fff"},
+  sidebar:{ width:220, background:"#020617", padding:20, display:"flex", flexDirection:"column", gap:10},
+  main:{ flex:1, padding:30, overflowY:"auto"},
+  card:{ background:"#1e293b", padding:20, borderRadius:12, marginBottom:20},
+  input:{ width:"100%", padding:12, marginTop:10, borderRadius:8, border:"none", background:"#334155", color:"#fff"},
+  button:{ marginTop:15, padding:12, width:"100%", borderRadius:8, border:"none", background:"#3b82f6", color:"#fff"},
+  menuItem:{ background:"none", border:"none", color:"#94a3b8", textAlign:"left", padding:8},
+  logout:{ marginTop:"auto", background:"#ef4444", color:"#fff", border:"none", padding:10, borderRadius:6},
+  loginContainer:{ height:"100vh", display:"flex", justifyContent:"center", alignItems:"center", background:"#0f172a"},
+  loginCard:{ background:"#1e293b", padding:40, borderRadius:12}
 };

@@ -2,18 +2,16 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
-// 🔐 SUPABASE (CHAVE CORRETA E PADRÃO)
+// 🔐 SUPABASE (CHAVE CORRETA)
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
-
-// 💰 STRIPE
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 
-// ✅ EMOÇÕES (ATUALIZADO)
+// 🔥 EMOÇÕES
 const EMOCOES = [
   "Ansioso",
   "Triste",
@@ -32,6 +30,7 @@ export default function App() {
   const [resposta, setResposta] = useState("");
   const [grafico, setGrafico] = useState([]);
   const [plano, setPlano] = useState("free");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
 
@@ -55,7 +54,7 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 BUSCAR PLANO
+  // 🔥 BUSCAR / CRIAR USUÁRIO (SaaS)
   useEffect(() => {
     if (session?.user?.email) {
       buscarPlano();
@@ -64,21 +63,45 @@ export default function App() {
 
   const buscarPlano = async () => {
     try {
-      const { data } = await supabase
+      let { data, error } = await supabase
         .from("usuarios")
-        .select("plano")
+        .select("*")
         .eq("email", session.user.email)
         .single();
 
-      if (data?.plano) {
-        setPlano(data.plano);
+      // 🔥 CRIA USUÁRIO AUTOMÁTICO
+      if (error || !data) {
+        const { data: novo } = await supabase
+          .from("usuarios")
+          .insert([
+            {
+              email: session.user.email,
+              plano: "free",
+              is_admin: false
+            }
+          ])
+          .select()
+          .single();
+
+        data = novo;
       }
+
+      // 🔥 DEFINE ADMIN
+      setIsAdmin(data.is_admin);
+
+      // 🔥 ADMIN SEMPRE PREMIUM
+      if (data.is_admin) {
+        setPlano("premium");
+      } else {
+        setPlano(data.plano || "free");
+      }
+
     } catch {
       setPlano("free");
     }
   };
 
-  // ✅ LOGIN (MAGIC LINK CORRETO)
+  // ✅ LOGIN
   const login = async () => {
     if (!email) return alert("Digite seu email");
 
@@ -96,7 +119,7 @@ export default function App() {
     }
   };
 
-  // 🔥 FORMATAR RESPOSTA
+  // 🔥 FORMATAR IA
   const formatarResposta = (texto) => {
     return texto
       .replace(/\d+\.\s\*\*(.*?)\*\*/g, '\n\n🔹 $1')
@@ -107,7 +130,6 @@ export default function App() {
   const falarComIA = async () => {
     if (!texto) return alert("Descreva algo");
 
-    // 🔒 LIMITE FREE
     if (plano === "free" && interacoes >= 3) {
       return alert("Limite diário atingido. Faça upgrade 🚀");
     }
@@ -117,7 +139,7 @@ export default function App() {
     try {
       const res = await fetch(`${BACKEND_URL}/ia`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
           texto,
           emocao,
@@ -127,7 +149,6 @@ export default function App() {
 
       const data = await res.json();
       setResposta(formatarResposta(data.resposta));
-
       setInteracoes(prev => prev + 1);
 
     } catch {
@@ -142,7 +163,7 @@ export default function App() {
     window.location.href = STRIPE_LINK;
   };
 
-  // 🔐 LOGOUT CORRIGIDO
+  // 🔐 LOGOUT
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
@@ -196,6 +217,12 @@ export default function App() {
           </span>
         )}
 
+        {isAdmin && (
+          <button style={styles.menuItem}>
+            Painel Admin
+          </button>
+        )}
+
         <button style={styles.logout} onClick={logout}>
           Sair
         </button>
@@ -244,7 +271,6 @@ export default function App() {
   );
 }
 
-// 🎨 ESTILO (INALTERADO)
 const styles = {
   app: {
     display: "flex",

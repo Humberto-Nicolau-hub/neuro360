@@ -27,6 +27,7 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [modoCadastro, setModoCadastro] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
 
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
@@ -50,7 +51,7 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 LOAD USER DATA
+  // 🔥 LOAD USER
   useEffect(() => {
     if (session?.user?.email) {
       buscarOuCriarUsuario();
@@ -58,58 +59,35 @@ export default function App() {
     }
   }, [session]);
 
-  // 🧠 USER PROFILE (CORRIGIDO)
   const buscarOuCriarUsuario = async () => {
-    try {
-      const userEmail = session.user.email;
+    const userEmail = session.user.email;
 
-      let { data, error } = await supabase
+    let { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    if (!data) {
+      const isAdminUser = userEmail === ADMIN_EMAIL;
+
+      const { data: novo } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("email", userEmail)
-        .maybeSingle();
+        .insert([{
+          email: userEmail,
+          plano: isAdminUser ? "premium" : "free",
+          is_admin: isAdminUser
+        }])
+        .select()
+        .single();
 
-      if (error) {
-        console.error("Erro ao buscar profile:", error);
-      }
-
-      // 🔴 CRIA SE NÃO EXISTIR
-      if (!data) {
-        const isAdminUser = userEmail === ADMIN_EMAIL;
-
-        const { data: novo, error: insertError } = await supabase
-          .from("profiles")
-          .insert([{
-            email: userEmail,
-            plano: isAdminUser ? "premium" : "free",
-            is_admin: isAdminUser
-          }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Erro ao criar profile:", insertError);
-          return;
-        }
-
-        data = novo;
-      }
-
-      // ✅ GARANTIA TOTAL
-      const planoFinal = data?.plano || "free";
-      const adminFinal = data?.is_admin || false;
-
-      setPlano(planoFinal);
-      setIsAdmin(adminFinal);
-
-      console.log("Plano carregado:", planoFinal);
-
-    } catch (err) {
-      console.error("Erro geral profile:", err);
+      data = novo;
     }
+
+    setPlano(data?.plano || "free");
+    setIsAdmin(data?.is_admin || false);
   };
 
-  // 📊 REGISTROS
   const buscarRegistros = async () => {
     if (!session?.user?.id) return;
 
@@ -136,10 +114,7 @@ export default function App() {
       password
     });
 
-    if (error) {
-      console.error(error);
-      alert("Login inválido ❌");
-    }
+    if (error) alert("Login inválido ❌");
 
     setLoading(false);
   };
@@ -165,6 +140,35 @@ export default function App() {
     }
 
     setLoading(false);
+  };
+
+  // 💳 STRIPE CHECKOUT
+  const irParaCheckout = async () => {
+    try {
+      setLoadingCheckout(true);
+
+      const res = await fetch(`${BACKEND_URL}/create-checkout`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          user_id: session.user.id,
+          email: session.user.email
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Erro ao iniciar pagamento");
+      }
+
+    } catch {
+      alert("Erro no checkout");
+    }
+
+    setLoadingCheckout(false);
   };
 
   // 🤖 IA
@@ -220,35 +224,16 @@ export default function App() {
         <div style={styles.loginCard}>
           <h1>NeuroMapa360</h1>
 
-          <input
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChange={(e)=>setEmail(e.target.value)}
-          />
+          <input style={styles.input} placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} />
+          <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={(e)=>setPassword(e.target.value)} />
 
-          <input
-            style={styles.input}
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e)=>setPassword(e.target.value)}
-          />
-
-          <button
-            style={styles.button}
-            onClick={modoCadastro ? cadastrar : login}
-          >
+          <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
             {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
           </button>
 
-          <p
-            style={{ marginTop: 10, cursor: "pointer", color: "#38bdf8" }}
-            onClick={() => setModoCadastro(!modoCadastro)}
-          >
-            {modoCadastro
-              ? "Já tem conta? Login"
-              : "Não tem conta? Criar conta"}
+          <p style={{ marginTop: 10, cursor: "pointer", color: "#38bdf8" }}
+             onClick={() => setModoCadastro(!modoCadastro)}>
+            {modoCadastro ? "Já tem conta? Login" : "Não tem conta? Criar conta"}
           </p>
         </div>
       </div>
@@ -265,16 +250,23 @@ export default function App() {
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
 
-        {/* 🔥 STATUS PLANO FIXO */}
         <div style={{ marginTop: 10 }}>
           <span style={{ color: plano === "premium" ? "#22c55e" : "#94a3b8" }}>
             Plano: {plano === "premium" ? "Premium ✅" : "Free"}
           </span>
         </div>
 
-        {isAdmin && (
-          <span style={{ color: "#facc15" }}>ADMIN 👑</span>
+        {/* 🔥 BOTÃO STRIPE */}
+        {plano === "free" && (
+          <button
+            style={{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10 }}
+            onClick={irParaCheckout}
+          >
+            {loadingCheckout ? "Redirecionando..." : "Upgrade para Premium 🚀"}
+          </button>
         )}
+
+        {isAdmin && <span style={{ color: "#facc15" }}>ADMIN 👑</span>}
 
         <button style={styles.logout} onClick={logout}>Sair</button>
       </div>
@@ -283,20 +275,11 @@ export default function App() {
         <h1>Dashboard Emocional</h1>
 
         <div style={styles.card}>
-          <select
-            style={styles.input}
-            value={emocao}
-            onChange={(e)=>setEmocao(e.target.value)}
-          >
+          <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
             {EMOCOES.map(e => <option key={e}>{e}</option>)}
           </select>
 
-          <input
-            style={styles.input}
-            placeholder="Como você está?"
-            value={texto}
-            onChange={(e)=>setTexto(e.target.value)}
-          />
+          <input style={styles.input} placeholder="Como você está?" value={texto} onChange={(e)=>setTexto(e.target.value)} />
 
           <button style={styles.button} onClick={falarComIA}>
             {loading ? "Pensando..." : "Falar com IA"}

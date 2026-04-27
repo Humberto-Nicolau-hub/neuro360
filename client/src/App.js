@@ -21,6 +21,7 @@ const MAPA = {
 };
 
 export default function App() {
+
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,10 +32,12 @@ export default function App() {
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
   const [grafico, setGrafico] = useState([]);
+
   const [plano, setPlano] = useState("free");
   const [isAdmin, setIsAdmin] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
 
+  // 🔐 SESSION
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -47,6 +50,7 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
+  // 🔥 LOAD USER DATA
   useEffect(() => {
     if (session?.user?.email) {
       buscarOuCriarUsuario();
@@ -54,35 +58,58 @@ export default function App() {
     }
   }, [session]);
 
+  // 🧠 USER PROFILE (CORRIGIDO)
   const buscarOuCriarUsuario = async () => {
-    const userEmail = session.user.email;
+    try {
+      const userEmail = session.user.email;
 
-    let { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("email", userEmail)
-      .maybeSingle();
-
-    if (!data) {
-      const isAdminUser = userEmail === ADMIN_EMAIL;
-
-      const { data: novo } = await supabase
+      let { data, error } = await supabase
         .from("profiles")
-        .insert([{
-          email: userEmail,
-          plano: isAdminUser ? "premium" : "free",
-          is_admin: isAdminUser
-        }])
-        .select()
-        .single();
+        .select("*")
+        .eq("email", userEmail)
+        .maybeSingle();
 
-      data = novo;
+      if (error) {
+        console.error("Erro ao buscar profile:", error);
+      }
+
+      // 🔴 CRIA SE NÃO EXISTIR
+      if (!data) {
+        const isAdminUser = userEmail === ADMIN_EMAIL;
+
+        const { data: novo, error: insertError } = await supabase
+          .from("profiles")
+          .insert([{
+            email: userEmail,
+            plano: isAdminUser ? "premium" : "free",
+            is_admin: isAdminUser
+          }])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Erro ao criar profile:", insertError);
+          return;
+        }
+
+        data = novo;
+      }
+
+      // ✅ GARANTIA TOTAL
+      const planoFinal = data?.plano || "free";
+      const adminFinal = data?.is_admin || false;
+
+      setPlano(planoFinal);
+      setIsAdmin(adminFinal);
+
+      console.log("Plano carregado:", planoFinal);
+
+    } catch (err) {
+      console.error("Erro geral profile:", err);
     }
-
-    setPlano(data?.plano || "free");
-    setIsAdmin(data?.is_admin || false);
   };
 
+  // 📊 REGISTROS
   const buscarRegistros = async () => {
     if (!session?.user?.id) return;
 
@@ -100,7 +127,7 @@ export default function App() {
     setGrafico(formatado);
   };
 
-  // ✅ LOGIN CORRETO
+  // 🔐 LOGIN
   const login = async () => {
     setLoading(true);
 
@@ -110,13 +137,14 @@ export default function App() {
     });
 
     if (error) {
-      alert("Email ou senha incorretos ❌");
+      console.error(error);
+      alert("Login inválido ❌");
     }
 
     setLoading(false);
   };
 
-  // ✅ CADASTRO CORRETO
+  // 🆕 CADASTRO
   const cadastrar = async () => {
     setLoading(true);
 
@@ -127,22 +155,24 @@ export default function App() {
 
     if (error) {
       if (error.message.includes("already")) {
-        alert("Email já cadastrado. Faça login.");
+        alert("Email já existe. Faça login.");
       } else {
         alert(error.message);
       }
     } else {
       alert("Conta criada! Verifique seu email 📩");
+      setModoCadastro(false);
     }
 
     setLoading(false);
   };
 
+  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva algo");
 
     if (plano === "free" && interacoes >= 3) {
-      return alert("Limite atingido. Faça upgrade 🚀");
+      return alert("Limite free atingido 🚀");
     }
 
     setLoading(true);
@@ -159,6 +189,7 @@ export default function App() {
       });
 
       const data = await res.json();
+
       setResposta(data.resposta);
       setInteracoes(prev => prev + 1);
 
@@ -171,7 +202,7 @@ export default function App() {
       buscarRegistros();
 
     } catch {
-      alert("Erro IA");
+      alert("Erro na IA");
     }
 
     setLoading(false);
@@ -182,7 +213,7 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🔐 LOGIN UI
+  // 🔐 LOGIN SCREEN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -216,7 +247,7 @@ export default function App() {
             onClick={() => setModoCadastro(!modoCadastro)}
           >
             {modoCadastro
-              ? "Já tem conta? Fazer login"
+              ? "Já tem conta? Login"
               : "Não tem conta? Criar conta"}
           </p>
         </div>
@@ -224,17 +255,26 @@ export default function App() {
     );
   }
 
-  // 🔥 APP
+  // 🚀 APP
   return (
     <div style={styles.app}>
+
       <div style={styles.sidebar}>
         <h2>Neuro360</h2>
 
         <button style={styles.menuItem}>Dashboard</button>
         <button style={styles.menuItem}>Relatórios</button>
 
-        {plano === "premium" && <span style={{color:"#22c55e"}}>Premium ✅</span>}
-        {isAdmin && <span style={{color:"#facc15"}}>ADMIN 👑</span>}
+        {/* 🔥 STATUS PLANO FIXO */}
+        <div style={{ marginTop: 10 }}>
+          <span style={{ color: plano === "premium" ? "#22c55e" : "#94a3b8" }}>
+            Plano: {plano === "premium" ? "Premium ✅" : "Free"}
+          </span>
+        </div>
+
+        {isAdmin && (
+          <span style={{ color: "#facc15" }}>ADMIN 👑</span>
+        )}
 
         <button style={styles.logout} onClick={logout}>Sair</button>
       </div>

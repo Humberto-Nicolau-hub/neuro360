@@ -10,7 +10,6 @@ const supabase = createClient(
 
 // 🔥 CONFIG
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
-const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
 
 const EMOCOES = [
@@ -25,16 +24,17 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [modoCadastro, setModoCadastro] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
   const [grafico, setGrafico] = useState([]);
   const [plano, setPlano] = useState("free");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
 
-  // 🔐 SESSÃO
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -47,7 +47,6 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔄 AO LOGAR
   useEffect(() => {
     if (session?.user?.email) {
       buscarOuCriarUsuario();
@@ -101,71 +100,42 @@ export default function App() {
     setGrafico(formatado);
   };
 
-  // 🔥 LOGIN PROFISSIONAL DEFINITIVO
+  // ✅ LOGIN CORRETO
   const login = async () => {
-    if (!email || !password) {
-      return alert("Preencha email e senha");
-    }
-
     setLoading(true);
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-      // ✅ LOGIN OK
-      if (!error && data?.session) {
-        setLoading(false);
-        return;
-      }
-
-      console.log("Erro login:", error?.message);
-
-      // 🔹 USUÁRIO NÃO EXISTE → CRIA
-      if (
-        error?.message?.toLowerCase().includes("invalid") ||
-        error?.message?.toLowerCase().includes("not found")
-      ) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password
-        });
-
-        if (signUpError) {
-          alert("Erro ao criar conta: " + signUpError.message);
-        } else {
-          alert("Conta criada com sucesso 🚀");
-        }
-
-        setLoading(false);
-        return;
-      }
-
-      // 🔹 USUÁRIO JÁ EXISTE
-      if (error?.message?.toLowerCase().includes("already")) {
-        alert("Conta já existe. Faça login.");
-        setLoading(false);
-        return;
-      }
-
-      // 🔹 EMAIL NÃO CONFIRMADO
-      if (error?.message?.toLowerCase().includes("confirm")) {
-        alert("Confirme seu email antes de entrar 📩");
-        setLoading(false);
-        return;
-      }
-
-      // 🔹 FALLBACK
-      alert("Erro: " + error.message);
-      setLoading(false);
-
-    } catch (err) {
-      console.error(err);
-      alert("Erro inesperado");
-      setLoading(false);
+    if (error) {
+      alert("Email ou senha incorretos ❌");
     }
+
+    setLoading(false);
+  };
+
+  // ✅ CADASTRO CORRETO
+  const cadastrar = async () => {
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) {
+      if (error.message.includes("already")) {
+        alert("Email já cadastrado. Faça login.");
+      } else {
+        alert(error.message);
+      }
+    } else {
+      alert("Conta criada! Verifique seu email 📩");
+    }
+
+    setLoading(false);
   };
 
   const falarComIA = async () => {
@@ -209,11 +179,10 @@ export default function App() {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    localStorage.clear();
     window.location.reload();
   };
 
-  // LOGIN
+  // 🔐 LOGIN UI
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -235,15 +204,27 @@ export default function App() {
             onChange={(e)=>setPassword(e.target.value)}
           />
 
-          <button style={styles.button} onClick={login}>
-            {loading ? "Entrando..." : "Entrar / Criar Conta"}
+          <button
+            style={styles.button}
+            onClick={modoCadastro ? cadastrar : login}
+          >
+            {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
           </button>
+
+          <p
+            style={{ marginTop: 10, cursor: "pointer", color: "#38bdf8" }}
+            onClick={() => setModoCadastro(!modoCadastro)}
+          >
+            {modoCadastro
+              ? "Já tem conta? Fazer login"
+              : "Não tem conta? Criar conta"}
+          </p>
         </div>
       </div>
     );
   }
 
-  // APP
+  // 🔥 APP
   return (
     <div style={styles.app}>
       <div style={styles.sidebar}>

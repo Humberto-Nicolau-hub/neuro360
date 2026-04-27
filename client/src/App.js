@@ -80,8 +80,8 @@ export default function App() {
       data = novo;
     }
 
-    setPlano(data.plano || "free");
-    setIsAdmin(data.is_admin || false);
+    setPlano(data?.plano || "free");
+    setIsAdmin(data?.is_admin || false);
   };
 
   const buscarRegistros = async () => {
@@ -93,15 +93,15 @@ export default function App() {
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: true });
 
-    const formatado = data.map(d => ({
+    const formatado = data?.map(d => ({
       data: new Date(d.created_at).toLocaleDateString(),
       valor: MAPA[d.emocao] || 5
-    }));
+    })) || [];
 
     setGrafico(formatado);
   };
 
-  // 🔥 LOGIN PROFISSIONAL CORRIGIDO
+  // 🔥 LOGIN PROFISSIONAL DEFINITIVO
   const login = async () => {
     if (!email || !password) {
       return alert("Preencha email e senha");
@@ -109,34 +109,63 @@ export default function App() {
 
     setLoading(true);
 
-    // 1. tenta login
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (!loginError) {
-      setLoading(false);
-      return;
-    }
-
-    // 2. se erro for credencial inválida → cria conta
-    if (loginError.message.includes("Invalid login credentials")) {
-      const { error: signUpError } = await supabase.auth.signUp({
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (signUpError) {
-        alert(signUpError.message);
-      } else {
-        alert("Conta criada com sucesso 🚀");
+      // ✅ LOGIN OK
+      if (!error && data?.session) {
+        setLoading(false);
+        return;
       }
-    } else {
-      alert(loginError.message);
-    }
 
-    setLoading(false);
+      console.log("Erro login:", error?.message);
+
+      // 🔹 USUÁRIO NÃO EXISTE → CRIA
+      if (
+        error?.message?.toLowerCase().includes("invalid") ||
+        error?.message?.toLowerCase().includes("not found")
+      ) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password
+        });
+
+        if (signUpError) {
+          alert("Erro ao criar conta: " + signUpError.message);
+        } else {
+          alert("Conta criada com sucesso 🚀");
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // 🔹 USUÁRIO JÁ EXISTE
+      if (error?.message?.toLowerCase().includes("already")) {
+        alert("Conta já existe. Faça login.");
+        setLoading(false);
+        return;
+      }
+
+      // 🔹 EMAIL NÃO CONFIRMADO
+      if (error?.message?.toLowerCase().includes("confirm")) {
+        alert("Confirme seu email antes de entrar 📩");
+        setLoading(false);
+        return;
+      }
+
+      // 🔹 FALLBACK
+      alert("Erro: " + error.message);
+      setLoading(false);
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro inesperado");
+      setLoading(false);
+    }
   };
 
   const falarComIA = async () => {

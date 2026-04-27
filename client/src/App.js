@@ -13,26 +13,12 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
 
-// 🔥 EMOÇÕES
 const EMOCOES = [
-  "Ansioso",
-  "Triste",
-  "Feliz",
-  "Estressado",
-  "Desmotivado",
-  "Deprimido",
-  "Procrastinador"
+  "Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"
 ];
 
-// 🔥 MAPA
 const MAPA = {
-  "Deprimido": 1,
-  "Desmotivado": 2,
-  "Triste": 3,
-  "Ansioso": 4,
-  "Estressado": 5,
-  "Procrastinador": 6,
-  "Feliz": 8
+  "Deprimido":1,"Desmotivado":2,"Triste":3,"Ansioso":4,"Estressado":5,"Procrastinador":6,"Feliz":8
 };
 
 export default function App() {
@@ -69,7 +55,6 @@ export default function App() {
     }
   }, [session]);
 
-  // 🚀 USUÁRIO
   const buscarOuCriarUsuario = async () => {
     const userEmail = session.user.email;
 
@@ -80,17 +65,15 @@ export default function App() {
       .maybeSingle();
 
     if (!data) {
-      const isAdmin = userEmail === ADMIN_EMAIL;
+      const isAdminUser = userEmail === ADMIN_EMAIL;
 
       const { data: novo } = await supabase
         .from("profiles")
-        .insert([
-          {
-            email: userEmail,
-            plano: isAdmin ? "premium" : "free",
-            is_admin: isAdmin
-          }
-        ])
+        .insert([{
+          email: userEmail,
+          plano: isAdminUser ? "premium" : "free",
+          is_admin: isAdminUser
+        }])
         .select()
         .single();
 
@@ -101,7 +84,6 @@ export default function App() {
     setIsAdmin(data.is_admin || false);
   };
 
-  // 📊 REGISTROS
   const buscarRegistros = async () => {
     if (!session?.user?.id) return;
 
@@ -119,7 +101,7 @@ export default function App() {
     setGrafico(formatado);
   };
 
-  // 🔐 LOGIN PROFISSIONAL
+  // 🔥 LOGIN PROFISSIONAL CORRIGIDO
   const login = async () => {
     if (!email || !password) {
       return alert("Preencha email e senha");
@@ -127,30 +109,36 @@ export default function App() {
 
     setLoading(true);
 
-    // tenta login
-    let { error } = await supabase.auth.signInWithPassword({
+    // 1. tenta login
+    const { error: loginError } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    // se não existir → cria conta
-    if (error) {
+    if (!loginError) {
+      setLoading(false);
+      return;
+    }
+
+    // 2. se erro for credencial inválida → cria conta
+    if (loginError.message.includes("Invalid login credentials")) {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password
       });
 
       if (signUpError) {
-        alert("Erro: " + signUpError.message);
+        alert(signUpError.message);
       } else {
         alert("Conta criada com sucesso 🚀");
       }
+    } else {
+      alert(loginError.message);
     }
 
     setLoading(false);
   };
 
-  // 🤖 IA
   const falarComIA = async () => {
     if (!texto) return alert("Descreva algo");
 
@@ -175,13 +163,11 @@ export default function App() {
       setResposta(data.resposta);
       setInteracoes(prev => prev + 1);
 
-      await supabase.from("registros_emocionais").insert([
-        {
-          user_id: session.user.id,
-          emocao,
-          texto
-        }
-      ]);
+      await supabase.from("registros_emocionais").insert([{
+        user_id: session.user.id,
+        emocao,
+        texto
+      }]);
 
       buscarRegistros();
 
@@ -192,7 +178,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // 🔐 LOGOUT
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();

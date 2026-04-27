@@ -12,7 +12,6 @@ const supabase = createClient(
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const STRIPE_LINK = "https://buy.stripe.com/test_bJedR8fVvfKXgU23AzfIs01";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
-const REDIRECT_URL = "https://neuro360-zzx3.vercel.app";
 
 // 🔥 EMOÇÕES
 const EMOCOES = [
@@ -25,7 +24,7 @@ const EMOCOES = [
   "Procrastinador"
 ];
 
-// 🔥 MAPA EMOCIONAL
+// 🔥 MAPA
 const MAPA = {
   "Deprimido": 1,
   "Desmotivado": 2,
@@ -39,6 +38,7 @@ const MAPA = {
 export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
@@ -69,67 +69,47 @@ export default function App() {
     }
   }, [session]);
 
-  // 🚀 CRIAR OU BUSCAR USUÁRIO
+  // 🚀 USUÁRIO
   const buscarOuCriarUsuario = async () => {
     const userEmail = session.user.email;
 
-    try {
-      let { data, error } = await supabase
+    let { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    if (!data) {
+      const isAdmin = userEmail === ADMIN_EMAIL;
+
+      const { data: novo } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("email", userEmail)
-        .maybeSingle();
+        .insert([
+          {
+            email: userEmail,
+            plano: isAdmin ? "premium" : "free",
+            is_admin: isAdmin
+          }
+        ])
+        .select()
+        .single();
 
-      if (!data) {
-        const isAdmin = userEmail === ADMIN_EMAIL;
-
-        const { data: novo, error: insertError } = await supabase
-          .from("profiles")
-          .insert([
-            {
-              email: userEmail,
-              plano: isAdmin ? "premium" : "free",
-              is_admin: isAdmin
-            }
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error("Erro ao criar usuário:", insertError);
-          return;
-        }
-
-        data = novo;
-      }
-
-      setPlano(data.plano || "free");
-      setIsAdmin(data.is_admin || false);
-
-      if (userEmail === ADMIN_EMAIL) {
-        setPlano("premium");
-        setIsAdmin(true);
-      }
-
-    } catch (err) {
-      console.error("Erro usuário:", err);
+      data = novo;
     }
+
+    setPlano(data.plano || "free");
+    setIsAdmin(data.is_admin || false);
   };
 
-  // 📊 BUSCAR REGISTROS
+  // 📊 REGISTROS
   const buscarRegistros = async () => {
     if (!session?.user?.id) return;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("registros_emocionais")
       .select("*")
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Erro ao buscar registros:", error);
-      return;
-    }
 
     const formatado = data.map(d => ({
       data: new Date(d.created_at).toLocaleDateString(),
@@ -139,22 +119,35 @@ export default function App() {
     setGrafico(formatado);
   };
 
-  // 🔐 LOGIN
+  // 🔐 LOGIN PROFISSIONAL
   const login = async () => {
-    if (!email) return alert("Digite seu email");
+    if (!email || !password) {
+      return alert("Preencha email e senha");
+    }
 
-    const { error } = await supabase.auth.signInWithOtp({
+    setLoading(true);
+
+    // tenta login
+    let { error } = await supabase.auth.signInWithPassword({
       email,
-      options: {
-        emailRedirectTo: REDIRECT_URL
-      }
+      password
     });
 
+    // se não existir → cria conta
     if (error) {
-      alert("Erro ao enviar email: " + error.message);
-    } else {
-      alert("Confira seu email 🚀");
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (signUpError) {
+        alert("Erro: " + signUpError.message);
+      } else {
+        alert("Conta criada com sucesso 🚀");
+      }
     }
+
+    setLoading(false);
   };
 
   // 🤖 IA
@@ -182,25 +175,17 @@ export default function App() {
       setResposta(data.resposta);
       setInteracoes(prev => prev + 1);
 
-      // 🔥 SALVAR
-      const { error } = await supabase
-        .from("registros_emocionais")
-        .insert([
-          {
-            user_id: session.user.id,
-            emocao,
-            texto
-          }
-        ]);
-
-      if (error) {
-        console.error("Erro ao salvar:", error);
-      }
+      await supabase.from("registros_emocionais").insert([
+        {
+          user_id: session.user.id,
+          emocao,
+          texto
+        }
+      ]);
 
       buscarRegistros();
 
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Erro IA");
     }
 
@@ -214,7 +199,7 @@ export default function App() {
     window.location.reload();
   };
 
-  // LOGIN SCREEN
+  // LOGIN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -223,13 +208,21 @@ export default function App() {
 
           <input
             style={styles.input}
-            placeholder="Seu email"
+            placeholder="Email"
             value={email}
             onChange={(e)=>setEmail(e.target.value)}
           />
 
+          <input
+            style={styles.input}
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e)=>setPassword(e.target.value)}
+          />
+
           <button style={styles.button} onClick={login}>
-            Entrar
+            {loading ? "Entrando..." : "Entrar / Criar Conta"}
           </button>
         </div>
       </div>

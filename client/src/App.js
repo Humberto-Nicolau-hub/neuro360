@@ -2,16 +2,13 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
-// 🔐 SUPABASE
 const supabase = createClient(
   "https://qodzwxgabuadsnplcscl.supabase.co",
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// 🔥 CONFIG
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
-
 const MAX_FREE_INTERACOES = 3;
 
 const EMOCOES = [
@@ -21,6 +18,30 @@ const EMOCOES = [
 const MAPA = {
   "Deprimido":1,"Desmotivado":2,"Triste":3,"Ansioso":4,"Estressado":5,"Procrastinador":6,"Feliz":8
 };
+
+// 🔒 PREMIUM OVERLAY
+const PremiumOverlay = ({ onUpgrade }) => (
+  <div style={{
+    position: "absolute",
+    inset: 0,
+    backdropFilter: "blur(6px)",
+    background: "rgba(15,23,42,0.8)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12
+  }}>
+    <h3>🔒 Conteúdo Premium</h3>
+    <p style={{ textAlign: "center", maxWidth: 260 }}>
+      Existe um padrão mais profundo aqui.  
+      Desbloqueie sua evolução completa agora.
+    </p>
+    <button style={styles.upgrade} onClick={onUpgrade}>
+      Desbloquear evolução 🚀
+    </button>
+  </div>
+);
 
 export default function App() {
 
@@ -40,7 +61,6 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
 
-  // 🔐 SESSION
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -53,7 +73,6 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔄 SINCRONIZA DADOS
   useEffect(() => {
     if (session?.user) {
       buscarOuCriarUsuario();
@@ -62,86 +81,61 @@ export default function App() {
   }, [session]);
 
   const buscarOuCriarUsuario = async () => {
-    try {
-      const userEmail = session.user.email;
+    const userEmail = session.user.email;
 
-      let { data } = await supabase
+    let { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    if (!data) {
+      const isAdminUser = userEmail === ADMIN_EMAIL;
+
+      const { data: novo } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("email", userEmail)
-        .maybeSingle();
+        .insert([{
+          email: userEmail,
+          plano: isAdminUser ? "premium" : "free",
+          is_admin: isAdminUser
+        }])
+        .select()
+        .single();
 
-      if (!data) {
-        const isAdminUser = userEmail === ADMIN_EMAIL;
-
-        const { data: novo, error } = await supabase
-          .from("profiles")
-          .insert([{
-            email: userEmail,
-            plano: isAdminUser ? "premium" : "free",
-            is_admin: isAdminUser
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        data = novo;
-      }
-
-      setPlano(data?.plano || "free");
-      setIsAdmin(data?.is_admin || false);
-
-    } catch (err) {
-      console.error("Erro ao buscar/criar usuário:", err);
+      data = novo;
     }
+
+    setPlano(data?.plano || "free");
+    setIsAdmin(data?.is_admin || false);
   };
 
   const buscarRegistros = async () => {
-    try {
-      if (!session?.user?.id) return;
+    if (!session?.user?.id) return;
 
-      const { data, error } = await supabase
-        .from("registros_emocionais")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: true });
+    const { data } = await supabase
+      .from("registros_emocionais")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: true });
 
-      if (error) throw error;
+    const formatado = data?.map(d => ({
+      data: new Date(d.created_at).toLocaleDateString(),
+      valor: MAPA[d.emocao] || 5
+    })) || [];
 
-      const formatado = data?.map(d => ({
-        data: new Date(d.created_at).toLocaleDateString(),
-        valor: MAPA[d.emocao] || 5
-      })) || [];
-
-      setGrafico(formatado);
-
-    } catch (err) {
-      console.error("Erro ao buscar registros:", err);
-    }
+    setGrafico(formatado);
   };
 
-  // 🔐 LOGIN
   const login = async () => {
     setLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) alert("Login inválido ❌");
-
     setLoading(false);
   };
 
-  // 🆕 CADASTRO
   const cadastrar = async () => {
     setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
       if (error.message.includes("already")) {
@@ -157,100 +151,76 @@ export default function App() {
     setLoading(false);
   };
 
-  // 💳 CHECKOUT
   const irParaCheckout = async () => {
-    try {
-      setLoadingCheckout(true);
+    setLoadingCheckout(true);
 
-      const res = await fetch(`${BACKEND_URL}/create-checkout`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          user_id: session.user.id,
-          email: session.user.email
-        })
-      });
+    const res = await fetch(`${BACKEND_URL}/create-checkout`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        user_id: session.user.id,
+        email: session.user.email
+      })
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-
-      window.location.href = data.url;
-
-    } catch (err) {
-      alert("Erro ao iniciar pagamento");
-      console.error(err);
-    }
+    const data = await res.json();
+    window.location.href = data.url;
 
     setLoadingCheckout(false);
   };
 
-  // 💳 PORTAL
   const gerenciarAssinatura = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/create-portal`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          email: session.user.email
-        })
-      });
+    const res = await fetch(`${BACKEND_URL}/create-portal`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        email: session.user.email
+      })
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-
-      window.location.href = data.url;
-
-    } catch (err) {
-      alert("Erro no portal");
-      console.error(err);
-    }
+    const data = await res.json();
+    window.location.href = data.url;
   };
 
-  // 🤖 IA (COM BLOQUEIO PREMIUM)
   const falarComIA = async () => {
 
     if (!texto) return alert("Descreva como você está.");
 
-    // 🔒 BLOQUEIO FREE
     if (plano === "free" && interacoes >= MAX_FREE_INTERACOES) {
-      return alert("Você atingiu o limite do plano gratuito. Faça upgrade 🚀");
+      return alert(
+        "🔥 Você chegou no limite gratuito.\n\n" +
+        "Desbloqueie agora:\n" +
+        "✔ Insights profundos\n" +
+        "✔ Evolução completa\n" +
+        "✔ Acesso ilimitado\n\n" +
+        "Clique em upgrade 🚀"
+      );
     }
 
     setLoading(true);
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/ia`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          texto,
-          emocao,
-          user_id: session.user.id
-        })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-
-      setResposta(data.resposta);
-      setInteracoes(prev => prev + 1);
-
-      await supabase.from("registros_emocionais").insert([{
-        user_id: session.user.id,
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
         emocao,
-        texto
-      }]);
+        user_id: session.user.id
+      })
+    });
 
-      buscarRegistros();
+    const data = await res.json();
 
-    } catch (err) {
-      alert("Erro na IA");
-      console.error(err);
-    }
+    setResposta(data.resposta);
+    setInteracoes(prev => prev + 1);
 
+    await supabase.from("registros_emocionais").insert([{
+      user_id: session.user.id,
+      emocao,
+      texto
+    }]);
+
+    buscarRegistros();
     setLoading(false);
   };
 
@@ -259,7 +229,6 @@ export default function App() {
     window.location.reload();
   };
 
-  // 🔐 LOGIN SCREEN
   if (!session) {
     return (
       <div style={styles.loginContainer}>
@@ -275,7 +244,7 @@ export default function App() {
 
           <p style={{ marginTop: 10, cursor: "pointer", color: "#38bdf8" }}
              onClick={() => setModoCadastro(!modoCadastro)}>
-            {modoCadastro ? "Já tem conta? Login" : "Não tem conta? Criar conta"}
+            {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
           </p>
         </div>
       </div>
@@ -294,7 +263,7 @@ export default function App() {
 
         {plano === "free" ? (
           <button style={styles.upgrade} onClick={irParaCheckout}>
-            {loadingCheckout ? "Redirecionando..." : "Upgrade 🚀"}
+            {loadingCheckout ? "Redirecionando..." : "Desbloquear evolução 🚀"}
           </button>
         ) : (
           <button style={styles.portal} onClick={gerenciarAssinatura}>
@@ -303,7 +272,6 @@ export default function App() {
         )}
 
         {isAdmin && <span style={{ color: "#facc15" }}>ADMIN 👑</span>}
-
         <button style={styles.logout} onClick={logout}>Sair</button>
       </div>
 
@@ -326,12 +294,25 @@ export default function App() {
           <div style={styles.card}>
             <h3>Insight da IA</h3>
             <p>{resposta}</p>
+
+            {plano === "free" && (
+              <div style={{ marginTop:10 }}>
+                <p>💎 Existe um padrão mais profundo aqui...</p>
+                <button style={styles.upgrade} onClick={irParaCheckout}>
+                  Ver análise completa 🚀
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {grafico.length > 0 && (
-          <div style={styles.card}>
+          <div style={{ ...styles.card, position:"relative" }}>
             <EvolucaoChart data={grafico} />
+
+            {plano === "free" && grafico.length > 3 && (
+              <PremiumOverlay onUpgrade={irParaCheckout} />
+            )}
           </div>
         )}
       </div>
@@ -346,8 +327,8 @@ const styles = {
   card:{ background:"#1e293b", padding:20, borderRadius:12, marginBottom:20},
   input:{ width:"100%", padding:12, marginTop:10, borderRadius:8, border:"none", background:"#334155", color:"#fff"},
   button:{ marginTop:15, padding:12, width:"100%", borderRadius:8, border:"none", background:"#3b82f6", color:"#fff"},
-  upgrade:{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10 },
-  portal:{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10 },
+  upgrade:{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
+  portal:{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
   logout:{ marginTop:"auto", background:"#ef4444", color:"#fff", border:"none", padding:10, borderRadius:6},
   loginContainer:{ height:"100vh", display:"flex", justifyContent:"center", alignItems:"center", background:"#0f172a"},
   loginCard:{ background:"#1e293b", padding:40, borderRadius:12}

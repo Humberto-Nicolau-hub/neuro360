@@ -12,6 +12,8 @@ const supabase = createClient(
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
 
+const MAX_FREE_INTERACOES = 3;
+
 const EMOCOES = [
   "Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"
 ];
@@ -51,58 +53,71 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 SINCRONIZA PLANO SEMPRE
+  // 🔄 SINCRONIZA DADOS
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user) {
       buscarOuCriarUsuario();
       buscarRegistros();
     }
   }, [session]);
 
   const buscarOuCriarUsuario = async () => {
-    const userEmail = session.user.email;
+    try {
+      const userEmail = session.user.email;
 
-    let { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("email", userEmail)
-      .maybeSingle();
-
-    if (!data) {
-      const isAdminUser = userEmail === ADMIN_EMAIL;
-
-      const { data: novo } = await supabase
+      let { data } = await supabase
         .from("profiles")
-        .insert([{
-          email: userEmail,
-          plano: isAdminUser ? "premium" : "free",
-          is_admin: isAdminUser
-        }])
-        .select()
-        .single();
+        .select("*")
+        .eq("email", userEmail)
+        .maybeSingle();
 
-      data = novo;
+      if (!data) {
+        const isAdminUser = userEmail === ADMIN_EMAIL;
+
+        const { data: novo, error } = await supabase
+          .from("profiles")
+          .insert([{
+            email: userEmail,
+            plano: isAdminUser ? "premium" : "free",
+            is_admin: isAdminUser
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        data = novo;
+      }
+
+      setPlano(data?.plano || "free");
+      setIsAdmin(data?.is_admin || false);
+
+    } catch (err) {
+      console.error("Erro ao buscar/criar usuário:", err);
     }
-
-    setPlano(data?.plano || "free");
-    setIsAdmin(data?.is_admin || false);
   };
 
   const buscarRegistros = async () => {
-    if (!session?.user?.id) return;
+    try {
+      if (!session?.user?.id) return;
 
-    const { data } = await supabase
-      .from("registros_emocionais")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: true });
+      const { data, error } = await supabase
+        .from("registros_emocionais")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: true });
 
-    const formatado = data?.map(d => ({
-      data: new Date(d.created_at).toLocaleDateString(),
-      valor: MAPA[d.emocao] || 5
-    })) || [];
+      if (error) throw error;
 
-    setGrafico(formatado);
+      const formatado = data?.map(d => ({
+        data: new Date(d.created_at).toLocaleDateString(),
+        valor: MAPA[d.emocao] || 5
+      })) || [];
+
+      setGrafico(formatado);
+
+    } catch (err) {
+      console.error("Erro ao buscar registros:", err);
+    }
   };
 
   // 🔐 LOGIN
@@ -158,17 +173,19 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.url) window.location.href = data.url;
-      else alert("Erro ao iniciar pagamento");
+      if (!res.ok) throw new Error(data.error);
 
-    } catch {
-      alert("Erro no checkout");
+      window.location.href = data.url;
+
+    } catch (err) {
+      alert("Erro ao iniciar pagamento");
+      console.error(err);
     }
 
     setLoadingCheckout(false);
   };
 
-  // 💳 PORTAL (NOVO)
+  // 💳 PORTAL
   const gerenciarAssinatura = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/create-portal`, {
@@ -181,20 +198,24 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.url) window.location.href = data.url;
-      else alert("Erro ao abrir portal");
+      if (!res.ok) throw new Error(data.error);
 
-    } catch {
+      window.location.href = data.url;
+
+    } catch (err) {
       alert("Erro no portal");
+      console.error(err);
     }
   };
 
-  // 🤖 IA
+  // 🤖 IA (COM BLOQUEIO PREMIUM)
   const falarComIA = async () => {
-    if (!texto) return alert("Descreva algo");
 
-    if (plano === "free" && interacoes >= 3) {
-      return alert("Limite free atingido 🚀");
+    if (!texto) return alert("Descreva como você está.");
+
+    // 🔒 BLOQUEIO FREE
+    if (plano === "free" && interacoes >= MAX_FREE_INTERACOES) {
+      return alert("Você atingiu o limite do plano gratuito. Faça upgrade 🚀");
     }
 
     setLoading(true);
@@ -212,6 +233,8 @@ export default function App() {
 
       const data = await res.json();
 
+      if (!res.ok) throw new Error(data.error);
+
       setResposta(data.resposta);
       setInteracoes(prev => prev + 1);
 
@@ -223,8 +246,9 @@ export default function App() {
 
       buscarRegistros();
 
-    } catch {
+    } catch (err) {
       alert("Erro na IA");
+      console.error(err);
     }
 
     setLoading(false);
@@ -258,35 +282,22 @@ export default function App() {
     );
   }
 
-  // 🚀 APP
   return (
     <div style={styles.app}>
 
       <div style={styles.sidebar}>
         <h2>Neuro360</h2>
 
-        <button style={styles.menuItem}>Dashboard</button>
-        <button style={styles.menuItem}>Relatórios</button>
+        <span style={{ color: plano === "premium" ? "#22c55e" : "#94a3b8" }}>
+          Plano: {plano === "premium" ? "Premium ✅" : "Free"}
+        </span>
 
-        <div style={{ marginTop: 10 }}>
-          <span style={{ color: plano === "premium" ? "#22c55e" : "#94a3b8" }}>
-            Plano: {plano === "premium" ? "Premium ✅" : "Free"}
-          </span>
-        </div>
-
-        {/* 🔥 BOTÃO INTELIGENTE */}
         {plano === "free" ? (
-          <button
-            style={{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10 }}
-            onClick={irParaCheckout}
-          >
-            {loadingCheckout ? "Redirecionando..." : "Upgrade para Premium 🚀"}
+          <button style={styles.upgrade} onClick={irParaCheckout}>
+            {loadingCheckout ? "Redirecionando..." : "Upgrade 🚀"}
           </button>
         ) : (
-          <button
-            style={{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10 }}
-            onClick={gerenciarAssinatura}
-          >
+          <button style={styles.portal} onClick={gerenciarAssinatura}>
             Gerenciar Assinatura ⚙️
           </button>
         )}
@@ -335,7 +346,8 @@ const styles = {
   card:{ background:"#1e293b", padding:20, borderRadius:12, marginBottom:20},
   input:{ width:"100%", padding:12, marginTop:10, borderRadius:8, border:"none", background:"#334155", color:"#fff"},
   button:{ marginTop:15, padding:12, width:"100%", borderRadius:8, border:"none", background:"#3b82f6", color:"#fff"},
-  menuItem:{ background:"none", border:"none", color:"#94a3b8", textAlign:"left", padding:8},
+  upgrade:{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10 },
+  portal:{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10 },
   logout:{ marginTop:"auto", background:"#ef4444", color:"#fff", border:"none", padding:10, borderRadius:6},
   loginContainer:{ height:"100vh", display:"flex", justifyContent:"center", alignItems:"center", background:"#0f172a"},
   loginCard:{ background:"#1e293b", padding:40, borderRadius:12}

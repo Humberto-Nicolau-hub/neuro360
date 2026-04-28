@@ -9,47 +9,24 @@ dotenv.config();
 
 const app = express();
 
-/* =====================================================
-   🔒 VALIDAÇÃO DE VARIÁVEIS (ANTI-ERRO 500)
-===================================================== */
-const REQUIRED_ENVS = [
-  "STRIPE_SECRET_KEY",
-  "STRIPE_PRICE_ID",
-  "SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "OPENAI_API_KEY"
-];
-
-REQUIRED_ENVS.forEach((env) => {
-  if (!process.env[env]) {
-    console.error(`❌ ERRO: Variável ${env} não definida`);
-  }
-});
-
-/* =====================================================
-   🔐 STRIPE
-===================================================== */
+/* =========================
+   🔐 STRIPE CONFIG
+========================= */
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
 });
 
-/* =====================================================
-   🔗 SUPABASE (ADMIN)
-===================================================== */
+/* =========================
+   🔗 SUPABASE ADMIN
+========================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-/* =====================================================
-   🌐 FRONTEND URL (CORREÇÃO CRÍTICA)
-===================================================== */
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || "https://neuro360.vercel.app";
-
-/* =====================================================
-   ⚠️ WEBHOOK STRIPE (ANTES DO JSON)
-===================================================== */
+/* =========================
+   ⚠️ WEBHOOK (ANTES DO JSON)
+========================= */
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -71,7 +48,7 @@ app.post(
         const user_id = session?.metadata?.user_id;
 
         if (!user_id) {
-          console.log("⚠️ user_id não encontrado");
+          console.log("⚠️ user_id não encontrado no metadata");
           return res.json({ received: true });
         }
 
@@ -81,14 +58,13 @@ app.post(
           .eq("id", user_id);
 
         if (error) {
-          console.error("❌ Erro Supabase:", error.message);
+          console.error("❌ Erro ao atualizar plano:", error.message);
         } else {
-          console.log("✅ Usuário PREMIUM:", user_id);
+          console.log("✅ Usuário virou PREMIUM:", user_id);
         }
       }
 
       res.json({ received: true });
-
     } catch (err) {
       console.error("❌ ERRO WEBHOOK:", err.message);
       res.status(400).send(`Webhook Error: ${err.message}`);
@@ -96,39 +72,49 @@ app.post(
   }
 );
 
-/* =====================================================
+/* =========================
    🔓 MIDDLEWARES
-===================================================== */
+========================= */
 app.use(cors());
 app.use(express.json());
 
-/* =====================================================
+/* =========================
    🤖 OPENAI
-===================================================== */
+========================= */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/* =====================================================
-   💳 CHECKOUT STRIPE (CORRIGIDO E BLINDADO)
-===================================================== */
+/* =========================
+   💳 CHECKOUT STRIPE
+========================= */
 app.post("/create-checkout", async (req, res) => {
   try {
     const { user_id, email } = req.body;
 
+    console.log("📥 Dados recebidos:", { user_id, email });
+
+    /* 🔒 VALIDAÇÃO */
     if (!user_id || !email) {
       return res.status(400).json({
         error: "Dados inválidos (user_id ou email ausente)",
       });
     }
 
-    console.log("🧾 Iniciando checkout:", {
-      email,
-      user_id,
-      price: process.env.STRIPE_PRICE_ID,
-      frontend: FRONTEND_URL,
+    /* 🔍 DEBUG DE ENV (CRÍTICO) */
+    console.log("🧪 ENV CHECK:", {
+      STRIPE_KEY: !!process.env.STRIPE_SECRET_KEY,
+      PRICE_ID: process.env.STRIPE_PRICE_ID,
+      FRONTEND: process.env.FRONTEND_URL,
     });
 
+    if (!process.env.STRIPE_PRICE_ID) {
+      return res.status(500).json({
+        error: "STRIPE_PRICE_ID não definido no ambiente",
+      });
+    }
+
+    /* 🚀 CRIA SESSÃO */
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
 
@@ -147,17 +133,16 @@ app.post("/create-checkout", async (req, res) => {
         user_id,
       },
 
-      success_url: `${FRONTEND_URL}`,
-      cancel_url: `${FRONTEND_URL}`,
+      /* 🔥 HARD FIX (evita erro ENV) */
+      success_url: "https://neuro360.vercel.app",
+      cancel_url: "https://neuro360.vercel.app",
     });
 
     console.log("✅ Checkout criado:", session.id);
 
     res.json({ url: session.url });
-
   } catch (err) {
-    console.error("❌ ERRO STRIPE DETALHADO:");
-    console.error(err);
+    console.error("❌ ERRO CHECKOUT:", err.message);
 
     res.status(500).json({
       error: "Erro ao criar checkout",
@@ -166,9 +151,9 @@ app.post("/create-checkout", async (req, res) => {
   }
 });
 
-/* =====================================================
+/* =========================
    🤖 IA
-===================================================== */
+========================= */
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao } = req.body;
@@ -178,7 +163,8 @@ app.post("/ia", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "Você é um especialista em PNL e inteligência emocional.",
+          content:
+            "Você é um especialista em PNL, inteligência emocional e reprogramação mental.",
         },
         {
           role: "user",
@@ -190,16 +176,15 @@ app.post("/ia", async (req, res) => {
     res.json({
       resposta: completion.choices[0].message.content,
     });
-
   } catch (err) {
     console.error("❌ ERRO IA:", err.message);
     res.status(500).json({ error: "Erro na IA" });
   }
 });
 
-/* =====================================================
+/* =========================
    🚀 SERVER
-===================================================== */
+========================= */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

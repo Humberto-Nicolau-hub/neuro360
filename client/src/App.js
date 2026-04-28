@@ -19,7 +19,52 @@ const MAPA = {
   "Deprimido":1,"Desmotivado":2,"Triste":3,"Ansioso":4,"Estressado":5,"Procrastinador":6,"Feliz":8
 };
 
-// 🔒 PREMIUM OVERLAY
+// 🔒 MODAL PREMIUM
+const PremiumModal = ({ onClose, onUpgrade }) => (
+  <div style={{
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.85)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999
+  }}>
+    <div style={{
+      background: "#020617",
+      padding: 30,
+      borderRadius: 12,
+      maxWidth: 400,
+      textAlign: "center"
+    }}>
+      <h2>🚀 Desbloqueie sua evolução</h2>
+
+      <p style={{ marginTop: 10 }}>
+        Você começou a entender sua mente…
+        agora é hora de evoluir de verdade.
+      </p>
+
+      <ul style={{ textAlign: "left", marginTop: 15 }}>
+        <li>✔ IA ilimitada</li>
+        <li>✔ Padrões emocionais ocultos</li>
+        <li>✔ Evolução guiada</li>
+      </ul>
+
+      <button style={styles.upgrade} onClick={onUpgrade}>
+        Quero desbloquear 🚀
+      </button>
+
+      <button
+        style={{ marginTop: 10, background:"none", color:"#94a3b8", border:"none" }}
+        onClick={onClose}
+      >
+        Continuar no gratuito
+      </button>
+    </div>
+  </div>
+);
+
+// 🔒 OVERLAY GRÁFICO
 const PremiumOverlay = ({ onUpgrade }) => (
   <div style={{
     position: "absolute",
@@ -60,6 +105,10 @@ export default function App() {
   const [plano, setPlano] = useState("free");
   const [isAdmin, setIsAdmin] = useState(false);
   const [interacoes, setInteracoes] = useState(0);
+
+  const [showModal, setShowModal] = useState(false);
+
+  const isPremium = plano === "premium" || isAdmin;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -186,15 +235,9 @@ export default function App() {
 
     if (!texto) return alert("Descreva como você está.");
 
-    if (plano === "free" && interacoes >= MAX_FREE_INTERACOES) {
-      return alert(
-        "🔥 Você chegou no limite gratuito.\n\n" +
-        "Desbloqueie agora:\n" +
-        "✔ Insights profundos\n" +
-        "✔ Evolução completa\n" +
-        "✔ Acesso ilimitado\n\n" +
-        "Clique em upgrade 🚀"
-      );
+    if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
+      setShowModal(true);
+      return;
     }
 
     setLoading(true);
@@ -254,16 +297,23 @@ export default function App() {
   return (
     <div style={styles.app}>
 
+      {showModal && (
+        <PremiumModal
+          onClose={() => setShowModal(false)}
+          onUpgrade={irParaCheckout}
+        />
+      )}
+
       <div style={styles.sidebar}>
         <h2>Neuro360</h2>
 
-        <span style={{ color: plano === "premium" ? "#22c55e" : "#94a3b8" }}>
-          Plano: {plano === "premium" ? "Premium ✅" : "Free"}
+        <span style={{ color: isPremium ? "#22c55e" : "#94a3b8" }}>
+          Plano: {isPremium ? "Premium ✅" : "Free"}
         </span>
 
-        {plano === "free" ? (
+        {!isPremium ? (
           <button style={styles.upgrade} onClick={irParaCheckout}>
-            {loadingCheckout ? "Redirecionando..." : "Desbloquear evolução 🚀"}
+            Desbloquear evolução 🚀
           </button>
         ) : (
           <button style={styles.portal} onClick={gerenciarAssinatura}>
@@ -295,7 +345,7 @@ export default function App() {
             <h3>Insight da IA</h3>
             <p>{resposta}</p>
 
-            {plano === "free" && (
+            {!isPremium && (
               <div style={{ marginTop:10 }}>
                 <p>💎 Existe um padrão mais profundo aqui...</p>
                 <button style={styles.upgrade} onClick={irParaCheckout}>
@@ -310,7 +360,7 @@ export default function App() {
           <div style={{ ...styles.card, position:"relative" }}>
             <EvolucaoChart data={grafico} />
 
-            {plano === "free" && grafico.length > 3 && (
+            {!isPremium && grafico.length > 3 && (
               <PremiumOverlay onUpgrade={irParaCheckout} />
             )}
           </div>

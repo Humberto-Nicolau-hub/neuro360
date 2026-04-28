@@ -48,7 +48,7 @@ app.post(
         const user_id = session?.metadata?.user_id;
 
         if (!user_id) {
-          console.log("⚠️ user_id não encontrado no metadata");
+          console.log("⚠️ user_id não encontrado");
           return res.json({ received: true });
         }
 
@@ -86,40 +86,47 @@ const openai = new OpenAI({
 });
 
 /* =========================
+   🔐 FUNÇÃO: VALIDAR USUÁRIO
+========================= */
+const validarUsuarioPremium = async (user_id) => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("plano, is_admin")
+    .eq("id", user_id)
+    .single();
+
+  if (error || !data) return null;
+
+  const isPremium = data.plano === "premium" || data.is_admin;
+
+  return {
+    ...data,
+    isPremium,
+  };
+};
+
+/* =========================
    💳 CHECKOUT STRIPE
 ========================= */
 app.post("/create-checkout", async (req, res) => {
   try {
     const { user_id, email } = req.body;
 
-    console.log("📥 Dados recebidos:", { user_id, email });
-
-    /* 🔒 VALIDAÇÃO */
     if (!user_id || !email) {
       return res.status(400).json({
-        error: "Dados inválidos (user_id ou email ausente)",
+        error: "Dados inválidos",
       });
     }
-
-    /* 🔍 DEBUG DE ENV (CRÍTICO) */
-    console.log("🧪 ENV CHECK:", {
-      STRIPE_KEY: !!process.env.STRIPE_SECRET_KEY,
-      PRICE_ID: process.env.STRIPE_PRICE_ID,
-      FRONTEND: process.env.FRONTEND_URL,
-    });
 
     if (!process.env.STRIPE_PRICE_ID) {
       return res.status(500).json({
-        error: "STRIPE_PRICE_ID não definido no ambiente",
+        error: "STRIPE_PRICE_ID não definido",
       });
     }
 
-    /* 🚀 CRIA SESSÃO */
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-
       payment_method_types: ["card"],
-
       customer_email: email,
 
       line_items: [
@@ -133,12 +140,9 @@ app.post("/create-checkout", async (req, res) => {
         user_id,
       },
 
-      /* 🔥 HARD FIX (evita erro ENV) */
-      success_url: "https://neuro360.vercel.app",
-      cancel_url: "https://neuro360.vercel.app",
+      success_url: process.env.FRONTEND_URL,
+      cancel_url: process.env.FRONTEND_URL,
     });
-
-    console.log("✅ Checkout criado:", session.id);
 
     res.json({ url: session.url });
   } catch (err) {
@@ -152,12 +156,34 @@ app.post("/create-checkout", async (req, res) => {
 });
 
 /* =========================
-   🤖 IA
+   🤖 IA (PROTEGIDA)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao } = req.body;
+    const { texto, emocao, user_id } = req.body;
 
+    if (!texto || !emocao || !user_id) {
+      return res.status(400).json({
+        error: "Dados incompletos",
+      });
+    }
+
+    // 🔒 VALIDA PLANO
+    const user = await validarUsuarioPremium(user_id);
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
+
+    if (!user.isPremium) {
+      return res.status(403).json({
+        error: "Acesso restrito ao plano premium",
+      });
+    }
+
+    // 🤖 IA
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

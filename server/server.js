@@ -9,82 +9,125 @@ dotenv.config();
 
 const app = express();
 
-// 🔐 STRIPE
+/* =====================================================
+   🔒 VALIDAÇÃO DE VARIÁVEIS (ANTI-ERRO 500)
+===================================================== */
+const REQUIRED_ENVS = [
+  "STRIPE_SECRET_KEY",
+  "STRIPE_PRICE_ID",
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "OPENAI_API_KEY"
+];
+
+REQUIRED_ENVS.forEach((env) => {
+  if (!process.env[env]) {
+    console.error(`❌ ERRO: Variável ${env} não definida`);
+  }
+});
+
+/* =====================================================
+   🔐 STRIPE
+===================================================== */
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
 });
 
-// 🔗 SUPABASE (ADMIN - SERVICE ROLE)
+/* =====================================================
+   🔗 SUPABASE (ADMIN)
+===================================================== */
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ⚠️ WEBHOOK (ANTES DO JSON)
-app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  try {
-    const sig = req.headers["stripe-signature"];
+/* =====================================================
+   🌐 FRONTEND URL (CORREÇÃO CRÍTICA)
+===================================================== */
+const FRONTEND_URL =
+  process.env.FRONTEND_URL || "https://neuro360.vercel.app";
 
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+/* =====================================================
+   ⚠️ WEBHOOK STRIPE (ANTES DO JSON)
+===================================================== */
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
+      const sig = req.headers["stripe-signature"];
 
-    console.log("📩 Evento recebido:", event.type);
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
+      console.log("📩 Evento Stripe:", event.type);
 
-      const user_id = session?.metadata?.user_id;
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
 
-      if (!user_id) {
-        console.log("⚠️ user_id não encontrado no metadata");
-        return res.json({ received: true });
+        const user_id = session?.metadata?.user_id;
+
+        if (!user_id) {
+          console.log("⚠️ user_id não encontrado");
+          return res.json({ received: true });
+        }
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({ plano: "premium" })
+          .eq("id", user_id);
+
+        if (error) {
+          console.error("❌ Erro Supabase:", error.message);
+        } else {
+          console.log("✅ Usuário PREMIUM:", user_id);
+        }
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({ plano: "premium" })
-        .eq("id", user_id);
+      res.json({ received: true });
 
-      if (error) {
-        console.error("Erro ao atualizar plano:", error.message);
-      } else {
-        console.log("✅ Usuário virou premium:", user_id);
-      }
+    } catch (err) {
+      console.error("❌ ERRO WEBHOOK:", err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
     }
-
-    res.json({ received: true });
-
-  } catch (err) {
-    console.error("❌ Erro webhook:", err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
   }
-});
+);
 
-// 🔓 MIDDLEWARES
+/* =====================================================
+   🔓 MIDDLEWARES
+===================================================== */
 app.use(cors());
 app.use(express.json());
 
-// 🤖 OPENAI
+/* =====================================================
+   🤖 OPENAI
+===================================================== */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 💳 CHECKOUT STRIPE (ASSINATURA)
+/* =====================================================
+   💳 CHECKOUT STRIPE (CORRIGIDO E BLINDADO)
+===================================================== */
 app.post("/create-checkout", async (req, res) => {
   try {
     const { user_id, email } = req.body;
 
-    // 🔒 VALIDAÇÃO
-    if (!email || !user_id) {
+    if (!user_id || !email) {
       return res.status(400).json({
-        error: "Dados inválidos (email ou user_id ausente)",
+        error: "Dados inválidos (user_id ou email ausente)",
       });
     }
 
-    console.log("🧾 Criando checkout para:", email);
+    console.log("🧾 Iniciando checkout:", {
+      email,
+      user_id,
+      price: process.env.STRIPE_PRICE_ID,
+      frontend: FRONTEND_URL,
+    });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -95,7 +138,7 @@ app.post("/create-checkout", async (req, res) => {
 
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID, // 🔥 AGORA VEM DO ENV
+          price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
@@ -104,8 +147,8 @@ app.post("/create-checkout", async (req, res) => {
         user_id,
       },
 
-      success_url: `${process.env.FRONTEND_URL}`,
-      cancel_url: `${process.env.FRONTEND_URL}`,
+      success_url: `${FRONTEND_URL}`,
+      cancel_url: `${FRONTEND_URL}`,
     });
 
     console.log("✅ Checkout criado:", session.id);
@@ -113,7 +156,8 @@ app.post("/create-checkout", async (req, res) => {
     res.json({ url: session.url });
 
   } catch (err) {
-    console.error("❌ ERRO STRIPE:", err.message);
+    console.error("❌ ERRO STRIPE DETALHADO:");
+    console.error(err);
 
     res.status(500).json({
       error: "Erro ao criar checkout",
@@ -122,7 +166,9 @@ app.post("/create-checkout", async (req, res) => {
   }
 });
 
-// 🤖 IA (mantido)
+/* =====================================================
+   🤖 IA
+===================================================== */
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao } = req.body;
@@ -146,12 +192,14 @@ app.post("/ia", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Erro IA:", err.message);
+    console.error("❌ ERRO IA:", err.message);
     res.status(500).json({ error: "Erro na IA" });
   }
 });
 
-// 🚀 SERVER
+/* =====================================================
+   🚀 SERVER
+===================================================== */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

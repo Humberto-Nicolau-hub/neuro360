@@ -51,7 +51,7 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 LOAD USER
+  // 🔥 SINCRONIZA PLANO SEMPRE
   useEffect(() => {
     if (session?.user?.email) {
       buscarOuCriarUsuario();
@@ -142,7 +142,7 @@ export default function App() {
     setLoading(false);
   };
 
-  // 💳 STRIPE CHECKOUT
+  // 💳 CHECKOUT
   const irParaCheckout = async () => {
     try {
       setLoadingCheckout(true);
@@ -158,17 +158,35 @@ export default function App() {
 
       const data = await res.json();
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Erro ao iniciar pagamento");
-      }
+      if (data.url) window.location.href = data.url;
+      else alert("Erro ao iniciar pagamento");
 
     } catch {
       alert("Erro no checkout");
     }
 
     setLoadingCheckout(false);
+  };
+
+  // 💳 PORTAL (NOVO)
+  const gerenciarAssinatura = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/create-portal`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          email: session.user.email
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.url) window.location.href = data.url;
+      else alert("Erro ao abrir portal");
+
+    } catch {
+      alert("Erro no portal");
+    }
   };
 
   // 🤖 IA
@@ -256,13 +274,20 @@ export default function App() {
           </span>
         </div>
 
-        {/* 🔥 BOTÃO STRIPE */}
-        {plano === "free" && (
+        {/* 🔥 BOTÃO INTELIGENTE */}
+        {plano === "free" ? (
           <button
             style={{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10 }}
             onClick={irParaCheckout}
           >
             {loadingCheckout ? "Redirecionando..." : "Upgrade para Premium 🚀"}
+          </button>
+        ) : (
+          <button
+            style={{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10 }}
+            onClick={gerenciarAssinatura}
+          >
+            Gerenciar Assinatura ⚙️
           </button>
         )}
 

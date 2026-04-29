@@ -86,7 +86,7 @@ const openai = new OpenAI({
 });
 
 /* =========================
-   🔐 FUNÇÃO: VALIDAR USUÁRIO
+   🔐 VALIDAR USUÁRIO
 ========================= */
 const validarUsuarioPremium = async (user_id) => {
   const { data, error } = await supabase
@@ -97,12 +97,7 @@ const validarUsuarioPremium = async (user_id) => {
 
   if (error || !data) return null;
 
-  const isPremium = data.plano === "premium" || data.is_admin;
-
-  return {
-    ...data,
-    isPremium,
-  };
+  return data;
 };
 
 /* =========================
@@ -115,12 +110,6 @@ app.post("/create-checkout", async (req, res) => {
     if (!user_id || !email) {
       return res.status(400).json({
         error: "Dados inválidos",
-      });
-    }
-
-    if (!process.env.STRIPE_PRICE_ID) {
-      return res.status(500).json({
-        error: "STRIPE_PRICE_ID não definido",
       });
     }
 
@@ -147,16 +136,12 @@ app.post("/create-checkout", async (req, res) => {
     res.json({ url: session.url });
   } catch (err) {
     console.error("❌ ERRO CHECKOUT:", err.message);
-
-    res.status(500).json({
-      error: "Erro ao criar checkout",
-      detalhe: err.message,
-    });
+    res.status(500).json({ error: "Erro ao criar checkout" });
   }
 });
 
 /* =========================
-   🤖 IA (PROTEGIDA)
+   🤖 IA (CORRIGIDA)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -168,8 +153,9 @@ app.post("/ia", async (req, res) => {
       });
     }
 
-    // 🔒 VALIDA PLANO
     const user = await validarUsuarioPremium(user_id);
+
+    console.log("👤 USER:", user);
 
     if (!user) {
       return res.status(404).json({
@@ -177,13 +163,20 @@ app.post("/ia", async (req, res) => {
       });
     }
 
-    if (!user.isPremium) {
+    // 👑 ADMIN LIBERADO
+    if (user.is_admin) {
+      console.log("👑 ADMIN - acesso liberado");
+    }
+
+    // 🔒 BLOQUEIA SOMENTE SE NÃO FOR ADMIN E NÃO FOR PREMIUM
+    else if (user.plano !== "premium") {
+      console.log("🔒 BLOQUEADO - usuário free");
       return res.status(403).json({
-        error: "Acesso restrito ao plano premium",
+        error: "Free limitado no frontend",
       });
     }
 
-    // 🤖 IA
+    // 🤖 IA LIBERADA
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

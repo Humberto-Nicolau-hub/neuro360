@@ -1,5 +1,3 @@
-// 🔥 ALTERAÇÕES JÁ INCLUÍDAS — ARQUIVO COMPLETO
-
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
@@ -10,101 +8,31 @@ const supabase = createClient(
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
-const ADMIN_EMAIL = "contatobetaofertas@gmail.com";
+
+// ✅ CORREÇÃO CRÍTICA
+const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
+
 const MAX_FREE_INTERACOES = 3;
-
-const EMOCOES = [
-  "Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"
-];
-
-const MAPA = {
-  "Deprimido":1,"Desmotivado":2,"Triste":3,"Ansioso":4,"Estressado":5,"Procrastinador":6,"Feliz":8
-};
-
-const PremiumModal = ({ onClose, onUpgrade }) => (
-  <div style={{
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.85)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 999
-  }}>
-    <div style={{
-      background: "#020617",
-      padding: 30,
-      borderRadius: 12,
-      maxWidth: 400,
-      textAlign: "center"
-    }}>
-      <h2>🚀 Desbloqueie sua evolução</h2>
-      <p style={{ marginTop: 10 }}>
-        Você começou a entender sua mente… agora é hora de evoluir de verdade.
-      </p>
-      <ul style={{ textAlign: "left", marginTop: 15 }}>
-        <li>✔ IA ilimitada</li>
-        <li>✔ Padrões emocionais ocultos</li>
-        <li>✔ Evolução guiada</li>
-      </ul>
-      <button style={styles.upgrade} onClick={onUpgrade}>
-        Quero desbloquear 🚀
-      </button>
-      <button
-        style={{ marginTop: 10, background:"none", color:"#94a3b8", border:"none" }}
-        onClick={onClose}
-      >
-        Continuar no gratuito
-      </button>
-    </div>
-  </div>
-);
-
-const PremiumOverlay = ({ onUpgrade }) => (
-  <div style={{
-    position: "absolute",
-    inset: 0,
-    backdropFilter: "blur(6px)",
-    background: "rgba(15,23,42,0.8)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12
-  }}>
-    <h3>🔒 Conteúdo Premium</h3>
-    <p style={{ textAlign: "center", maxWidth: 260 }}>
-      Existe um padrão mais profundo aqui.  
-      Desbloqueie sua evolução completa agora.
-    </p>
-    <button style={styles.upgrade} onClick={onUpgrade}>
-      Desbloquear evolução 🚀
-    </button>
-  </div>
-);
 
 export default function App() {
 
   const [session, setSession] = useState(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [modoCadastro, setModoCadastro] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
 
   const [texto, setTexto] = useState("");
   const [emocao, setEmocao] = useState("Ansioso");
   const [resposta, setResposta] = useState("");
-  const [grafico, setGrafico] = useState([]);
 
   const [plano, setPlano] = useState("free");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [interacoes, setInteracoes] = useState(0);
 
+  const [interacoes, setInteracoes] = useState(0);
   const [showModal, setShowModal] = useState(false);
 
   const isPremium = plano === "premium" || isAdmin;
 
+  // =========================
+  // 🔐 AUTH
+  // =========================
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -117,90 +45,39 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  // 🔥 RESET INTERAÇÕES + CARREGAMENTO
+  // =========================
+  // 🔥 CARREGAR PERFIL CORRETO
+  // =========================
   useEffect(() => {
-    if (session?.user) {
-      setInteracoes(0); // 🔥 CORREÇÃO CRÍTICA
-      buscarOuCriarUsuario();
-      buscarRegistros();
-    }
+    if (!session?.user) return;
+
+    carregarPerfil();
+
   }, [session]);
 
-  const buscarOuCriarUsuario = async () => {
+  const carregarPerfil = async () => {
+
     const userEmail = session.user.email;
 
-    let { data } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("email", userEmail)
-      .maybeSingle();
+      .single();
 
     const isAdminUser = userEmail === ADMIN_EMAIL;
 
-    if (!data) {
-      const { data: novo } = await supabase
-        .from("profiles")
-        .insert([{
-          email: userEmail,
-          plano: isAdminUser ? "premium" : "free",
-          is_admin: isAdminUser
-        }])
-        .select()
-        .single();
+    console.log("🔥 PERFIL:", data);
 
-      data = novo;
-    }
-
-    // 🔥 FORÇA ADMIN
     setPlano(isAdminUser ? "premium" : data?.plano || "free");
     setIsAdmin(isAdminUser || data?.is_admin || false);
+
   };
 
-  const buscarRegistros = async () => {
-    if (!session?.user?.id) return;
-
-    const { data } = await supabase
-      .from("registros_emocionais")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: true });
-
-    const formatado = data?.map(d => ({
-      data: new Date(d.created_at).toLocaleDateString(),
-      valor: MAPA[d.emocao] || 5
-    })) || [];
-
-    setGrafico(formatado);
-  };
-
-  const login = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Login inválido ❌");
-    setLoading(false);
-  };
-
-  const cadastrar = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      if (error.message.includes("already")) {
-        alert("Email já existe. Faça login.");
-      } else {
-        alert(error.message);
-      }
-    } else {
-      alert("Conta criada! Verifique seu email 📩");
-      setModoCadastro(false);
-    }
-
-    setLoading(false);
-  };
-
+  // =========================
+  // 🚀 CHECKOUT
+  // =========================
   const irParaCheckout = async () => {
-    setLoadingCheckout(true);
-
     const res = await fetch(`${BACKEND_URL}/create-checkout`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -212,33 +89,20 @@ export default function App() {
 
     const data = await res.json();
     window.location.href = data.url;
-
-    setLoadingCheckout(false);
   };
 
-  const gerenciarAssinatura = async () => {
-    const res = await fetch(`${BACKEND_URL}/create-portal`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        email: session.user.email
-      })
-    });
-
-    const data = await res.json();
-    window.location.href = data.url;
-  };
-
+  // =========================
+  // 🤖 IA
+  // =========================
   const falarComIA = async () => {
 
-    if (!texto) return alert("Descreva como você está.");
+    if (!texto) return alert("Digite algo");
 
+    // 🆓 CONTROLE FREE (CORRETO)
     if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
       setShowModal(true);
       return;
     }
-
-    setLoading(true);
 
     const res = await fetch(`${BACKEND_URL}/ia`, {
       method: "POST",
@@ -252,132 +116,65 @@ export default function App() {
 
     const data = await res.json();
 
+    if (data.error) {
+      console.log("⚠️ BACKEND:", data.error);
+      return;
+    }
+
     setResposta(data.resposta);
-    setInteracoes(prev => prev + 1);
 
-    await supabase.from("registros_emocionais").insert([{
-      user_id: session.user.id,
-      emocao,
-      texto
-    }]);
-
-    buscarRegistros();
-    setLoading(false);
+    // 🔥 INCREMENTO CORRETO
+    if (!isPremium) {
+      setInteracoes(prev => prev + 1);
+    }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
-
-  if (!session) {
-    return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginCard}>
-          <h1>NeuroMapa360</h1>
-
-          <input style={styles.input} placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} />
-          <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={(e)=>setPassword(e.target.value)} />
-
-          <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
-            {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
-          </button>
-
-          <p style={{ marginTop: 10, cursor: "pointer", color: "#38bdf8" }}
-             onClick={() => setModoCadastro(!modoCadastro)}>
-            {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // =========================
+  // UI
+  // =========================
+  if (!session) return <div>Login...</div>;
 
   return (
-    <div style={styles.app}>
+    <div style={{ padding: 30, color: "#fff", background:"#0f172a", minHeight:"100vh" }}>
 
       {showModal && (
-        <PremiumModal
-          onClose={() => setShowModal(false)}
-          onUpgrade={irParaCheckout}
-        />
+        <div style={{
+          position:"fixed",
+          inset:0,
+          background:"rgba(0,0,0,0.8)",
+          display:"flex",
+          justifyContent:"center",
+          alignItems:"center"
+        }}>
+          <div style={{ background:"#020617", padding:30 }}>
+            <h2>🚀 Desbloqueie sua evolução</h2>
+            <button onClick={irParaCheckout}>Virar Premium</button>
+            <button onClick={()=>setShowModal(false)}>Continuar free</button>
+          </div>
+        </div>
       )}
 
-      <div style={styles.sidebar}>
-        <h2>Neuro360</h2>
+      <h1>Dashboard Emocional</h1>
 
-        <span style={{ color: isPremium ? "#22c55e" : "#94a3b8" }}>
-          Plano: {isPremium ? "Premium ✅" : "Free"}
-        </span>
+      <p>
+        Plano: {isPremium ? "Premium ✅" : "Free"}
+        {isAdmin && " 👑 ADMIN"}
+      </p>
 
-        {!isPremium ? (
-          <button style={styles.upgrade} onClick={irParaCheckout}>
-            Desbloquear evolução 🚀
-          </button>
-        ) : (
-          <button style={styles.portal} onClick={gerenciarAssinatura}>
-            Gerenciar Assinatura ⚙️
-          </button>
-        )}
+      <input
+        placeholder="Como você está?"
+        value={texto}
+        onChange={(e)=>setTexto(e.target.value)}
+      />
 
-        {isAdmin && <span style={{ color: "#facc15" }}>ADMIN 👑</span>}
-        <button style={styles.logout} onClick={logout}>Sair</button>
-      </div>
+      <button onClick={falarComIA}>
+        Falar com IA
+      </button>
 
-      <div style={styles.main}>
-        <h1>Dashboard Emocional</h1>
+      <p>Interações usadas: {interacoes}/{MAX_FREE_INTERACOES}</p>
 
-        <div style={styles.card}>
-          <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
-            {EMOCOES.map(e => <option key={e}>{e}</option>)}
-          </select>
+      {resposta && <p>{resposta}</p>}
 
-          <input style={styles.input} placeholder="Como você está?" value={texto} onChange={(e)=>setTexto(e.target.value)} />
-
-          <button style={styles.button} onClick={falarComIA}>
-            {loading ? "Pensando..." : "Falar com IA"}
-          </button>
-        </div>
-
-        {resposta && (
-          <div style={styles.card}>
-            <h3>Insight da IA</h3>
-            <p>{resposta}</p>
-
-            {!isPremium && (
-              <div style={{ marginTop:10 }}>
-                <p>💎 Existe um padrão mais profundo aqui...</p>
-                <button style={styles.upgrade} onClick={irParaCheckout}>
-                  Ver análise completa 🚀
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {grafico.length > 0 && (
-          <div style={{ ...styles.card, position:"relative" }}>
-            <EvolucaoChart data={grafico} />
-
-            {!isPremium && grafico.length > 3 && (
-              <PremiumOverlay onUpgrade={irParaCheckout} />
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
-
-const styles = {
-  app: { display:"flex", height:"100vh", background:"#0f172a", color:"#fff"},
-  sidebar:{ width:220, background:"#020617", padding:20, display:"flex", flexDirection:"column", gap:10},
-  main:{ flex:1, padding:30, overflowY:"auto"},
-  card:{ background:"#1e293b", padding:20, borderRadius:12, marginBottom:20},
-  input:{ width:"100%", padding:12, marginTop:10, borderRadius:8, border:"none", background:"#334155", color:"#fff"},
-  button:{ marginTop:15, padding:12, width:"100%", borderRadius:8, border:"none", background:"#3b82f6", color:"#fff"},
-  upgrade:{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
-  portal:{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
-  logout:{ marginTop:"auto", background:"#ef4444", color:"#fff", border:"none", padding:10, borderRadius:6},
-  loginContainer:{ height:"100vh", display:"flex", justifyContent:"center", alignItems:"center", background:"#0f172a"},
-  loginCard:{ background:"#1e293b", padding:40, borderRadius:12}
-};

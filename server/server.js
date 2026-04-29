@@ -72,10 +72,12 @@ app.post(
 );
 
 /* =========================
-   🔓 MIDDLEWARES
+   🔓 MIDDLEWARES (CORS CORRIGIDO)
 ========================= */
+
+// 🔥 CORREÇÃO DEFINITIVA DO SEU ERRO
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: true, // aceita qualquer origem (resolve Vercel dinâmico)
   credentials: true
 }));
 
@@ -108,7 +110,7 @@ const validarUsuarioPremium = async (user_id) => {
       return null;
     }
 
-    return data[0]; // pega o primeiro com segurança
+    return data[0];
 
   } catch (err) {
     console.error("❌ ERRO INTERNO VALIDAR USUÁRIO:", err.message);
@@ -173,11 +175,9 @@ app.post("/ia", async (req, res) => {
 
     console.log("👤 USER:", user);
 
-    // 🔴 USUÁRIO NÃO EXISTE → NÃO QUEBRA MAIS
     if (!user) {
       console.log("⚠️ Criando fallback FREE");
 
-      // fallback padrão (não trava IA)
       const fallbackUser = {
         plano: "free",
         is_admin: false

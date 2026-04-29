@@ -41,19 +41,6 @@ const PremiumModal = ({ onClose, onUpgrade }) => (
   </div>
 );
 
-const PremiumOverlay = ({ onUpgrade }) => (
-  <div style={{
-    position:"absolute",
-    inset:0,
-    background:"rgba(0,0,0,0.8)",
-    display:"flex",
-    alignItems:"center",
-    justifyContent:"center"
-  }}>
-    <button onClick={onUpgrade}>🔒 Desbloquear</button>
-  </div>
-);
-
 export default function App() {
 
 const [session, setSession] = useState(null);
@@ -89,10 +76,24 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
+// 🔥 CONTROLE DIÁRIO REAL
+useEffect(() => {
+  const hoje = new Date().toDateString();
+  const ultimoUso = localStorage.getItem("ultimoUso");
+
+  if (ultimoUso !== hoje) {
+    localStorage.setItem("ultimoUso", hoje);
+    localStorage.setItem("interacoes", "0");
+    setInteracoes(0);
+  } else {
+    const salvas = parseInt(localStorage.getItem("interacoes") || "0");
+    setInteracoes(salvas);
+  }
+}, []);
+
 // LOAD USER
 useEffect(() => {
   if (session?.user) {
-    setInteracoes(0);
     buscarOuCriarUsuario();
     buscarRegistros();
   }
@@ -187,17 +188,6 @@ const irParaCheckout = async () => {
   setLoadingCheckout(false);
 };
 
-const gerenciarAssinatura = async () => {
-  const res = await fetch(`${BACKEND_URL}/create-portal`, {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ email: session.user.email })
-  });
-
-  const data = await res.json();
-  window.location.href = data.url;
-};
-
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
@@ -209,28 +199,41 @@ const falarComIA = async () => {
 
   setLoading(true);
 
-  const res = await fetch(`${BACKEND_URL}/ia`, {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      texto,
+  try {
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session.user.id
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data?.resposta) throw new Error();
+
+    setResposta(data.resposta);
+
+    setInteracoes(prev => {
+      const novo = prev + 1;
+      localStorage.setItem("interacoes", novo.toString());
+      return novo;
+    });
+
+    await supabase.from("registros_emocionais").insert([{
+      user_id: session.user.id,
       emocao,
-      user_id: session.user.id
-    })
-  });
+      texto
+    }]);
 
-  const data = await res.json();
+    buscarRegistros();
 
-  setResposta(data.resposta);
-  setInteracoes(prev => prev + 1);
+  } catch {
+    alert("Erro ao falar com IA");
+  }
 
-  await supabase.from("registros_emocionais").insert([{
-    user_id: session.user.id,
-    emocao,
-    texto
-  }]);
-
-  buscarRegistros();
   setLoading(false);
 };
 
@@ -280,13 +283,9 @@ return (
         Plano: {isPremium ? "Premium ✅" : "Free"}
       </span>
 
-      {!isPremium ? (
+      {!isPremium && (
         <button style={styles.upgrade} onClick={irParaCheckout}>
           Desbloquear evolução 🚀
-        </button>
-      ) : (
-        <button style={styles.portal} onClick={gerenciarAssinatura}>
-          Gerenciar Assinatura ⚙️
         </button>
       )}
 
@@ -317,12 +316,8 @@ return (
       )}
 
       {grafico.length > 0 && (
-        <div style={{ ...styles.card, position:"relative" }}>
+        <div style={styles.card}>
           <EvolucaoChart data={grafico} />
-
-          {!isPremium && grafico.length > 3 && (
-            <PremiumOverlay onUpgrade={irParaCheckout} />
-          )}
         </div>
       )}
     </div>
@@ -339,7 +334,6 @@ const styles = {
   input:{ width:"100%", padding:12, marginTop:10, borderRadius:8, border:"none", background:"#334155", color:"#fff"},
   button:{ marginTop:15, padding:12, width:"100%", borderRadius:8, border:"none", background:"#3b82f6", color:"#fff"},
   upgrade:{ background:"#22c55e", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
-  portal:{ background:"#3b82f6", padding:10, borderRadius:6, marginTop:10, border:"none", color:"#fff"},
   logout:{ marginTop:"auto", background:"#ef4444", color:"#fff", border:"none", padding:10, borderRadius:6},
   loginContainer:{ height:"100vh", display:"flex", justifyContent:"center", alignItems:"center", background:"#0f172a"},
   loginCard:{ background:"#1e293b", padding:40, borderRadius:12}

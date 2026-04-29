@@ -95,7 +95,10 @@ const validarUsuarioPremium = async (user_id) => {
     .eq("id", user_id)
     .single();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("❌ ERRO AO BUSCAR USUÁRIO:", error.message);
+    return null;
+  }
 
   return data;
 };
@@ -117,18 +120,15 @@ app.post("/create-checkout", async (req, res) => {
       mode: "subscription",
       payment_method_types: ["card"],
       customer_email: email,
-
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
-
       metadata: {
         user_id,
       },
-
       success_url: process.env.FRONTEND_URL,
       cancel_url: process.env.FRONTEND_URL,
     });
@@ -141,7 +141,7 @@ app.post("/create-checkout", async (req, res) => {
 });
 
 /* =========================
-   🤖 IA (CORRIGIDA)
+   🤖 IA (VERSÃO FINAL CORRIGIDA)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -157,26 +157,29 @@ app.post("/ia", async (req, res) => {
 
     console.log("👤 USER:", user);
 
+    // 🔴 USUÁRIO NÃO EXISTE
     if (!user) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
-    // 👑 ADMIN LIBERADO
+    // 👑 ADMIN
     if (user.is_admin) {
-      console.log("👑 ADMIN - acesso liberado");
+      console.log("👑 ADMIN LIBERADO");
     }
 
-    // 🔒 BLOQUEIA SOMENTE SE NÃO FOR ADMIN E NÃO FOR PREMIUM
-    else if (user.plano !== "premium") {
-      console.log("🔒 BLOQUEADO - usuário free");
-      return res.status(403).json({
-        error: "Free limitado no frontend",
-      });
+    // 💎 PREMIUM
+    else if (user.plano === "premium") {
+      console.log("💎 PREMIUM LIBERADO");
     }
 
-    // 🤖 IA LIBERADA
+    // 🆓 FREE (NÃO BLOQUEIA NO BACKEND)
+    else {
+      console.log("🆓 FREE - permitido (controle no frontend)");
+    }
+
+    // 🤖 IA EXECUTA PARA TODOS
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -195,6 +198,7 @@ app.post("/ia", async (req, res) => {
     res.json({
       resposta: completion.choices[0].message.content,
     });
+
   } catch (err) {
     console.error("❌ ERRO IA:", err.message);
     res.status(500).json({ error: "Erro na IA" });

@@ -1,3 +1,5 @@
+// 🔥 ALTERAÇÕES JÁ INCLUÍDAS — ARQUIVO COMPLETO
+
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
@@ -19,7 +21,6 @@ const MAPA = {
   "Deprimido":1,"Desmotivado":2,"Triste":3,"Ansioso":4,"Estressado":5,"Procrastinador":6,"Feliz":8
 };
 
-// 🔒 MODAL PREMIUM
 const PremiumModal = ({ onClose, onUpgrade }) => (
   <div style={{
     position: "fixed",
@@ -38,22 +39,17 @@ const PremiumModal = ({ onClose, onUpgrade }) => (
       textAlign: "center"
     }}>
       <h2>🚀 Desbloqueie sua evolução</h2>
-
       <p style={{ marginTop: 10 }}>
-        Você começou a entender sua mente…
-        agora é hora de evoluir de verdade.
+        Você começou a entender sua mente… agora é hora de evoluir de verdade.
       </p>
-
       <ul style={{ textAlign: "left", marginTop: 15 }}>
         <li>✔ IA ilimitada</li>
         <li>✔ Padrões emocionais ocultos</li>
         <li>✔ Evolução guiada</li>
       </ul>
-
       <button style={styles.upgrade} onClick={onUpgrade}>
         Quero desbloquear 🚀
       </button>
-
       <button
         style={{ marginTop: 10, background:"none", color:"#94a3b8", border:"none" }}
         onClick={onClose}
@@ -64,7 +60,6 @@ const PremiumModal = ({ onClose, onUpgrade }) => (
   </div>
 );
 
-// 🔒 OVERLAY GRÁFICO
 const PremiumOverlay = ({ onUpgrade }) => (
   <div style={{
     position: "absolute",
@@ -122,8 +117,10 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
+  // 🔥 RESET INTERAÇÕES + CARREGAMENTO
   useEffect(() => {
     if (session?.user) {
+      setInteracoes(0); // 🔥 CORREÇÃO CRÍTICA
       buscarOuCriarUsuario();
       buscarRegistros();
     }
@@ -138,9 +135,9 @@ export default function App() {
       .eq("email", userEmail)
       .maybeSingle();
 
-    if (!data) {
-      const isAdminUser = userEmail === ADMIN_EMAIL;
+    const isAdminUser = userEmail === ADMIN_EMAIL;
 
+    if (!data) {
       const { data: novo } = await supabase
         .from("profiles")
         .insert([{
@@ -154,8 +151,9 @@ export default function App() {
       data = novo;
     }
 
-    setPlano(data?.plano || "free");
-    setIsAdmin(data?.is_admin || false);
+    // 🔥 FORÇA ADMIN
+    setPlano(isAdminUser ? "premium" : data?.plano || "free");
+    setIsAdmin(isAdminUser || data?.is_admin || false);
   };
 
   const buscarRegistros = async () => {

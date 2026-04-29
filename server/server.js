@@ -44,11 +44,10 @@ app.post(
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
-
         const user_id = session?.metadata?.user_id;
 
         if (!user_id) {
-          console.log("⚠️ user_id não encontrado");
+          console.log("⚠️ user_id não encontrado no webhook");
           return res.json({ received: true });
         }
 
@@ -75,7 +74,11 @@ app.post(
 /* =========================
    🔓 MIDDLEWARES
 ========================= */
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
+
 app.use(express.json());
 
 /* =========================
@@ -86,21 +89,31 @@ const openai = new OpenAI({
 });
 
 /* =========================
-   🔐 VALIDAR USUÁRIO
+   🔐 VALIDAR USUÁRIO (CORRIGIDO)
 ========================= */
 const validarUsuarioPremium = async (user_id) => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("plano, is_admin")
-    .eq("id", user_id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("plano, is_admin")
+      .eq("id", user_id);
 
-  if (error) {
-    console.error("❌ ERRO AO BUSCAR USUÁRIO:", error.message);
+    if (error) {
+      console.error("❌ ERRO AO BUSCAR USUÁRIO:", error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log("⚠️ Usuário não encontrado:", user_id);
+      return null;
+    }
+
+    return data[0]; // pega o primeiro com segurança
+
+  } catch (err) {
+    console.error("❌ ERRO INTERNO VALIDAR USUÁRIO:", err.message);
     return null;
   }
-
-  return data;
 };
 
 /* =========================
@@ -134,6 +147,7 @@ app.post("/create-checkout", async (req, res) => {
     });
 
     res.json({ url: session.url });
+
   } catch (err) {
     console.error("❌ ERRO CHECKOUT:", err.message);
     res.status(500).json({ error: "Erro ao criar checkout" });
@@ -141,7 +155,7 @@ app.post("/create-checkout", async (req, res) => {
 });
 
 /* =========================
-   🤖 IA (VERSÃO FINAL CORRIGIDA)
+   🤖 IA (ESTÁVEL)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -153,33 +167,47 @@ app.post("/ia", async (req, res) => {
       });
     }
 
+    console.log("📥 Requisição IA:", { user_id, emocao });
+
     const user = await validarUsuarioPremium(user_id);
 
     console.log("👤 USER:", user);
 
-    // 🔴 USUÁRIO NÃO EXISTE
+    // 🔴 USUÁRIO NÃO EXISTE → NÃO QUEBRA MAIS
     if (!user) {
-      return res.status(404).json({
-        error: "Usuário não encontrado",
-      });
+      console.log("⚠️ Criando fallback FREE");
+
+      // fallback padrão (não trava IA)
+      const fallbackUser = {
+        plano: "free",
+        is_admin: false
+      };
+
+      return executarIA(fallbackUser, texto, emocao, res);
     }
 
-    // 👑 ADMIN
+    return executarIA(user, texto, emocao, res);
+
+  } catch (err) {
+    console.error("❌ ERRO IA:", err.message);
+    res.status(500).json({ error: "Erro na IA" });
+  }
+});
+
+/* =========================
+   🤖 FUNÇÃO IA
+========================= */
+const executarIA = async (user, texto, emocao, res) => {
+  try {
+
     if (user.is_admin) {
       console.log("👑 ADMIN LIBERADO");
-    }
-
-    // 💎 PREMIUM
-    else if (user.plano === "premium") {
+    } else if (user.plano === "premium") {
       console.log("💎 PREMIUM LIBERADO");
+    } else {
+      console.log("🆓 FREE (controle no frontend)");
     }
 
-    // 🆓 FREE (NÃO BLOQUEIA NO BACKEND)
-    else {
-      console.log("🆓 FREE - permitido (controle no frontend)");
-    }
-
-    // 🤖 IA EXECUTA PARA TODOS
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -195,20 +223,22 @@ app.post("/ia", async (req, res) => {
       ],
     });
 
-    res.json({
+    return res.json({
       resposta: completion.choices[0].message.content,
     });
 
   } catch (err) {
-    console.error("❌ ERRO IA:", err.message);
-    res.status(500).json({ error: "Erro na IA" });
+    console.error("❌ ERRO OPENAI:", err.message);
+    return res.status(500).json({
+      error: "Erro ao gerar resposta",
+    });
   }
-});
+};
 
 /* =========================
    🚀 SERVER
 ========================= */
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server rodando na porta ${PORT}`);

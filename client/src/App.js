@@ -42,7 +42,7 @@ const [metrics, setMetrics] = useState(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ========================= AUTH ========================= */
+/* ================= AUTH ================= */
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
@@ -55,7 +55,7 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
-/* ========================= RESET DIÁRIO ========================= */
+/* RESET */
 useEffect(() => {
   const hoje = new Date().toDateString();
   const ultimo = localStorage.getItem("ultimoUso");
@@ -69,7 +69,7 @@ useEffect(() => {
   }
 }, []);
 
-/* ========================= USER ========================= */
+/* USER */
 useEffect(() => {
   if (session?.user) {
     buscarUsuario();
@@ -127,7 +127,7 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ========================= AUTH ACTIONS ========================= */
+/* LOGIN */
 const login = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -148,7 +148,7 @@ const cadastrar = async () => {
   setLoading(false);
 };
 
-/* ========================= IA ========================= */
+/* IA */
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
@@ -171,7 +171,6 @@ const falarComIA = async () => {
   });
 
   const data = await res.json();
-
   setResposta(data.resposta);
 
   const novo = interacoes + 1;
@@ -185,7 +184,6 @@ const falarComIA = async () => {
   }]);
 
   buscarRegistros();
-
   setLoading(false);
 };
 
@@ -194,31 +192,21 @@ const logout = async () => {
   window.location.reload();
 };
 
-/* ========================= LOGIN UI (CORRIGIDO) ========================= */
+/* LOGIN UI */
 if (!session) {
   return (
     <div style={styles.loginContainer}>
       <div style={styles.loginCard}>
         <h2>Neuro360</h2>
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-        />
+        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        <input type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
 
         <button onClick={modoCadastro ? cadastrar : login}>
           {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
         </button>
 
-        <p onClick={() => setModoCadastro(!modoCadastro)}>
+        <p onClick={()=>setModoCadastro(!modoCadastro)}>
           {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
         </p>
       </div>
@@ -226,26 +214,19 @@ if (!session) {
   );
 }
 
-/* ========================= APP ========================= */
+/* APP */
 return (
   <div style={styles.app}>
 
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
-      <p>{isPremium ? "Premium" : "Free"}</p>
+      <p>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
       {isAdmin && <p>ADMIN 👑</p>}
       <button onClick={logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
-      <h1>Dashboard</h1>
-
-      {isAdmin && metrics && (
-        <div style={styles.card}>
-          <p>Usuários: {metrics.totalUsers}</p>
-          <p>Uso hoje: {metrics.totalUsoHoje}</p>
-        </div>
-      )}
+      <h1>Dashboard Emocional</h1>
 
       <div style={styles.card}>
         <textarea
@@ -266,16 +247,60 @@ return (
           <EvolucaoChart data={grafico}/>
         </div>
       )}
+
     </div>
   </div>
 );
 }
 
+/* ===== ESTILO RESTAURADO ===== */
 const styles = {
-  app:{display:"flex"},
-  sidebar:{width:200,background:"#111",padding:20,color:"#fff"},
-  main:{flex:1,padding:20},
-  card:{background:"#222",padding:20,marginBottom:10,color:"#fff"},
-  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center"},
-  loginCard:{background:"#222",padding:20,color:"#fff"}
+  app:{
+    display:"flex",
+    height:"100vh",
+    background:"linear-gradient(135deg,#0f172a,#1e293b)"
+  },
+
+  sidebar:{
+    width:260,
+    background:"#020617",
+    padding:25,
+    color:"#fff",
+    display:"flex",
+    flexDirection:"column",
+    justifyContent:"space-between"
+  },
+
+  main:{
+    flex:1,
+    padding:40,
+    color:"#fff"
+  },
+
+  card:{
+    background:"rgba(15,23,42,0.8)",
+    padding:25,
+    borderRadius:12,
+    marginBottom:20,
+    boxShadow:"0 10px 30px rgba(0,0,0,0.4)"
+  },
+
+  loginContainer:{
+    height:"100vh",
+    display:"flex",
+    justifyContent:"center",
+    alignItems:"center",
+    background:"linear-gradient(135deg,#0f172a,#1e293b)"
+  },
+
+  loginCard:{
+    background:"#020617",
+    padding:30,
+    borderRadius:12,
+    color:"#fff",
+    display:"flex",
+    flexDirection:"column",
+    gap:10,
+    width:280
+  }
 };

@@ -25,7 +25,7 @@ const supabase = createClient(
 );
 
 /* =========================
-   ⚠️ WEBHOOK (ANTES DO JSON)
+   ⚠️ WEBHOOK
 ========================= */
 app.post(
   "/webhook",
@@ -40,33 +40,21 @@ app.post(
         process.env.STRIPE_WEBHOOK_SECRET
       );
 
-      console.log("📩 Evento Stripe:", event.type);
-
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
         const user_id = session?.metadata?.user_id;
 
-        if (!user_id) {
-          console.log("⚠️ user_id não encontrado no webhook");
-          return res.json({ received: true });
-        }
-
-        const { error } = await supabase
-          .from("profiles")
-          .update({ plano: "premium" })
-          .eq("id", user_id);
-
-        if (error) {
-          console.error("❌ Erro ao atualizar plano:", error.message);
-        } else {
-          console.log("✅ Usuário virou PREMIUM:", user_id);
+        if (user_id) {
+          await supabase
+            .from("profiles")
+            .update({ plano: "premium" })
+            .eq("id", user_id);
         }
       }
 
       res.json({ received: true });
     } catch (err) {
-      console.error("❌ ERRO WEBHOOK:", err.message);
-      res.status(400).send(`Webhook Error: ${err.message}`);
+      res.status(400).send(`Webhook Error`);
     }
   }
 );
@@ -93,14 +81,12 @@ const openai = new OpenAI({
 ========================= */
 const validarUsuarioPremium = async (user_id) => {
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("plano, is_admin")
       .eq("id", user_id);
 
-    if (error) return null;
     if (!data || data.length === 0) return null;
-
     return data[0];
 
   } catch {
@@ -109,26 +95,16 @@ const validarUsuarioPremium = async (user_id) => {
 };
 
 /* =========================
-   💳 CHECKOUT STRIPE
+   💳 CHECKOUT
 ========================= */
 app.post("/create-checkout", async (req, res) => {
   try {
     const { user_id, email } = req.body;
 
-    if (!user_id || !email) {
-      return res.status(400).json({ error: "Dados inválidos" });
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      payment_method_types: ["card"],
       customer_email: email,
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       metadata: { user_id },
       success_url: process.env.FRONTEND_URL,
       cancel_url: process.env.FRONTEND_URL,
@@ -136,8 +112,8 @@ app.post("/create-checkout", async (req, res) => {
 
     res.json({ url: session.url });
 
-  } catch (err) {
-    res.status(500).json({ error: "Erro ao criar checkout" });
+  } catch {
+    res.status(500).json({ error: "Erro checkout" });
   }
 });
 
@@ -149,37 +125,65 @@ app.post("/ia", async (req, res) => {
     const { texto, emocao, user_id } = req.body;
 
     if (!texto || !emocao || !user_id) {
-      return res.status(400).json({
-        error: "Dados incompletos",
-      });
+      return res.status(400).json({ error: "Dados incompletos" });
     }
 
     const user = await validarUsuarioPremium(user_id);
 
-    if (!user) {
-      const fallbackUser = {
-        plano: "free",
-        is_admin: false
-      };
+    const userFinal = user || { plano: "free", is_admin: false };
 
-      return executarIA(fallbackUser, texto, emocao, user_id, res);
-    }
+    return executarIA(userFinal, texto, emocao, user_id, req, res);
 
-    return executarIA(user, texto, emocao, user_id, res);
-
-  } catch (err) {
-    res.status(500).json({ error: "Erro na IA" });
+  } catch {
+    res.status(500).json({ error: "Erro IA" });
   }
 });
 
 /* =========================
-   🤖 FUNÇÃO IA (ATUALIZADA)
+   🤖 EXECUTAR IA (COM ANTI-FRAUDE)
 ========================= */
-const executarIA = async (user, texto, emocao, user_id, res) => {
+const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
 
     /* =========================
-       🧠 HISTÓRICO (IA ADAPTATIVA)
+       🔐 ANTI-FRAUDE POR IP
+    ========================= */
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress ||
+      "unknown";
+
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    if (!user.is_admin && user.plano !== "premium") {
+      const { data: usoIp } = await supabase
+        .from("uso_ip_diario")
+        .select("*")
+        .eq("ip", ip)
+        .eq("data", hoje)
+        .maybeSingle();
+
+      if (usoIp && usoIp.total >= 5) {
+        return res.status(403).json({
+          error: "Limite por IP atingido",
+          bloquear: true
+        });
+      }
+
+      if (usoIp) {
+        await supabase
+          .from("uso_ip_diario")
+          .update({ total: usoIp.total + 1 })
+          .eq("id", usoIp.id);
+      } else {
+        await supabase
+          .from("uso_ip_diario")
+          .insert([{ ip, data: hoje, total: 1 }]);
+      }
+    }
+
+    /* =========================
+       🧠 HISTÓRICO
     ========================= */
     const { data: historico } = await supabase
       .from("registros_emocionais")
@@ -190,15 +194,8 @@ const executarIA = async (user, texto, emocao, user_id, res) => {
 
     let contexto = "";
 
-    if (historico && historico.length > 0) {
-      const lista = historico.map(h => h.emocao).join(", ");
-
-      contexto = `
-O usuário tem apresentado recentemente:
-${lista}
-
-Considere esse padrão ao responder com evolução emocional.
-`;
+    if (historico?.length) {
+      contexto = historico.map(h => h.emocao).join(", ");
     }
 
     /* =========================
@@ -209,13 +206,7 @@ Considere esse padrão ao responder com evolução emocional.
       messages: [
         {
           role: "system",
-          content: `
-Você é um especialista em PNL, inteligência emocional e reprogramação mental.
-
-${contexto}
-
-Seja empático, profundo e prático.
-`,
+          content: `Você é especialista em inteligência emocional. Histórico: ${contexto}`,
         },
         {
           role: "user",
@@ -225,25 +216,18 @@ Seja empático, profundo e prático.
     });
 
     /* =========================
-       💾 SALVAR HISTÓRICO
+       💾 SALVAR
     ========================= */
     await supabase.from("registros_emocionais").insert([
-      {
-        user_id,
-        emocao,
-        texto,
-        created_at: new Date()
-      }
+      { user_id, emocao, texto, created_at: new Date() }
     ]);
 
     return res.json({
       resposta: completion.choices[0].message.content,
     });
 
-  } catch (err) {
-    return res.status(500).json({
-      error: "Erro ao gerar resposta",
-    });
+  } catch {
+    return res.status(500).json({ error: "Erro IA interna" });
   }
 };
 

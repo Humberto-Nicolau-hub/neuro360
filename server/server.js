@@ -72,12 +72,10 @@ app.post(
 );
 
 /* =========================
-   🔓 MIDDLEWARES (CORS CORRIGIDO)
+   🔓 CORS
 ========================= */
-
-// 🔥 CORREÇÃO DEFINITIVA DO SEU ERRO
 app.use(cors({
-  origin: true, // aceita qualquer origem (resolve Vercel dinâmico)
+  origin: true,
   credentials: true
 }));
 
@@ -91,7 +89,7 @@ const openai = new OpenAI({
 });
 
 /* =========================
-   🔐 VALIDAR USUÁRIO (CORRIGIDO)
+   🔐 VALIDAR USUÁRIO
 ========================= */
 const validarUsuarioPremium = async (user_id) => {
   try {
@@ -100,20 +98,12 @@ const validarUsuarioPremium = async (user_id) => {
       .select("plano, is_admin")
       .eq("id", user_id);
 
-    if (error) {
-      console.error("❌ ERRO AO BUSCAR USUÁRIO:", error.message);
-      return null;
-    }
-
-    if (!data || data.length === 0) {
-      console.log("⚠️ Usuário não encontrado:", user_id);
-      return null;
-    }
+    if (error) return null;
+    if (!data || data.length === 0) return null;
 
     return data[0];
 
-  } catch (err) {
-    console.error("❌ ERRO INTERNO VALIDAR USUÁRIO:", err.message);
+  } catch {
     return null;
   }
 };
@@ -126,9 +116,7 @@ app.post("/create-checkout", async (req, res) => {
     const { user_id, email } = req.body;
 
     if (!user_id || !email) {
-      return res.status(400).json({
-        error: "Dados inválidos",
-      });
+      return res.status(400).json({ error: "Dados inválidos" });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -141,9 +129,7 @@ app.post("/create-checkout", async (req, res) => {
           quantity: 1,
         },
       ],
-      metadata: {
-        user_id,
-      },
+      metadata: { user_id },
       success_url: process.env.FRONTEND_URL,
       cancel_url: process.env.FRONTEND_URL,
     });
@@ -151,13 +137,12 @@ app.post("/create-checkout", async (req, res) => {
     res.json({ url: session.url });
 
   } catch (err) {
-    console.error("❌ ERRO CHECKOUT:", err.message);
     res.status(500).json({ error: "Erro ao criar checkout" });
   }
 });
 
 /* =========================
-   🤖 IA (ESTÁVEL)
+   🤖 IA
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -169,52 +154,68 @@ app.post("/ia", async (req, res) => {
       });
     }
 
-    console.log("📥 Requisição IA:", { user_id, emocao });
-
     const user = await validarUsuarioPremium(user_id);
 
-    console.log("👤 USER:", user);
-
     if (!user) {
-      console.log("⚠️ Criando fallback FREE");
-
       const fallbackUser = {
         plano: "free",
         is_admin: false
       };
 
-      return executarIA(fallbackUser, texto, emocao, res);
+      return executarIA(fallbackUser, texto, emocao, user_id, res);
     }
 
-    return executarIA(user, texto, emocao, res);
+    return executarIA(user, texto, emocao, user_id, res);
 
   } catch (err) {
-    console.error("❌ ERRO IA:", err.message);
     res.status(500).json({ error: "Erro na IA" });
   }
 });
 
 /* =========================
-   🤖 FUNÇÃO IA
+   🤖 FUNÇÃO IA (ATUALIZADA)
 ========================= */
-const executarIA = async (user, texto, emocao, res) => {
+const executarIA = async (user, texto, emocao, user_id, res) => {
   try {
 
-    if (user.is_admin) {
-      console.log("👑 ADMIN LIBERADO");
-    } else if (user.plano === "premium") {
-      console.log("💎 PREMIUM LIBERADO");
-    } else {
-      console.log("🆓 FREE (controle no frontend)");
+    /* =========================
+       🧠 HISTÓRICO (IA ADAPTATIVA)
+    ========================= */
+    const { data: historico } = await supabase
+      .from("registros_emocionais")
+      .select("emocao")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    let contexto = "";
+
+    if (historico && historico.length > 0) {
+      const lista = historico.map(h => h.emocao).join(", ");
+
+      contexto = `
+O usuário tem apresentado recentemente:
+${lista}
+
+Considere esse padrão ao responder com evolução emocional.
+`;
     }
 
+    /* =========================
+       🤖 IA
+    ========================= */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content:
-            "Você é um especialista em PNL, inteligência emocional e reprogramação mental.",
+          content: `
+Você é um especialista em PNL, inteligência emocional e reprogramação mental.
+
+${contexto}
+
+Seja empático, profundo e prático.
+`,
         },
         {
           role: "user",
@@ -223,12 +224,23 @@ const executarIA = async (user, texto, emocao, res) => {
       ],
     });
 
+    /* =========================
+       💾 SALVAR HISTÓRICO
+    ========================= */
+    await supabase.from("registros_emocionais").insert([
+      {
+        user_id,
+        emocao,
+        texto,
+        created_at: new Date()
+      }
+    ]);
+
     return res.json({
       resposta: completion.choices[0].message.content,
     });
 
   } catch (err) {
-    console.error("❌ ERRO OPENAI:", err.message);
     return res.status(500).json({
       error: "Erro ao gerar resposta",
     });

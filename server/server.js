@@ -129,7 +129,6 @@ app.post("/ia", async (req, res) => {
     }
 
     const user = await validarUsuarioPremium(user_id);
-
     const userFinal = user || { plano: "free", is_admin: false };
 
     return executarIA(userFinal, texto, emocao, user_id, req, res);
@@ -145,9 +144,6 @@ app.post("/ia", async (req, res) => {
 const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
 
-    /* =========================
-       🔐 ANTI-FRAUDE POR IP
-    ========================= */
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
@@ -182,9 +178,6 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       }
     }
 
-    /* =========================
-       🧠 HISTÓRICO
-    ========================= */
     const { data: historico } = await supabase
       .from("registros_emocionais")
       .select("emocao")
@@ -193,14 +186,10 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       .limit(5);
 
     let contexto = "";
-
     if (historico?.length) {
       contexto = historico.map(h => h.emocao).join(", ");
     }
 
-    /* =========================
-       🤖 IA
-    ========================= */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -215,9 +204,6 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       ],
     });
 
-    /* =========================
-       💾 SALVAR
-    ========================= */
     await supabase.from("registros_emocionais").insert([
       { user_id, emocao, texto, created_at: new Date() }
     ]);
@@ -230,6 +216,54 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
     return res.status(500).json({ error: "Erro IA interna" });
   }
 };
+
+/* =========================
+   📊 ADMIN METRICS (NOVO)
+========================= */
+app.get("/admin-metrics", async (req, res) => {
+  try {
+
+    const { count: totalUsers } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
+
+    const { count: premiumUsers } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("plano", "premium");
+
+    const { count: freeUsers } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("plano", "free");
+
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const { data: usoHoje } = await supabase
+      .from("uso_ip_diario")
+      .select("total")
+      .eq("data", hoje);
+
+    const totalUsoHoje = usoHoje
+      ? usoHoje.reduce((acc, cur) => acc + cur.total, 0)
+      : 0;
+
+    const { count: totalInteracoes } = await supabase
+      .from("registros_emocionais")
+      .select("*", { count: "exact", head: true });
+
+    res.json({
+      totalUsers: totalUsers || 0,
+      premiumUsers: premiumUsers || 0,
+      freeUsers: freeUsers || 0,
+      totalUsoHoje,
+      totalInteracoes: totalInteracoes || 0,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Erro métricas" });
+  }
+});
 
 /* =========================
    🚀 SERVER

@@ -11,6 +11,8 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 const MAX_FREE_INTERACOES = 3;
 
+const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
+
 const MAPA = {
   Deprimido:1,
   Desmotivado:2,
@@ -38,11 +40,9 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
-const [metrics, setMetrics] = useState(null);
-
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= AUTH ================= */
+/* AUTH */
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
@@ -55,7 +55,7 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
-/* RESET */
+/* RESET DIÁRIO */
 useEffect(() => {
   const hoje = new Date().toDateString();
   const ultimo = localStorage.getItem("ultimoUso");
@@ -76,10 +76,6 @@ useEffect(() => {
     buscarRegistros();
   }
 }, [session]);
-
-useEffect(() => {
-  if (isAdmin) carregarMetrics();
-}, [isAdmin]);
 
 const buscarUsuario = async () => {
   const emailUser = session.user.email;
@@ -104,12 +100,6 @@ const buscarUsuario = async () => {
 
   setPlano(admin ? "premium" : data?.plano || "free");
   setIsAdmin(admin || data?.is_admin || false);
-};
-
-const carregarMetrics = async () => {
-  const res = await fetch(`${BACKEND_URL}/admin-metrics`);
-  const data = await res.json();
-  setMetrics(data);
 };
 
 const buscarRegistros = async () => {
@@ -197,16 +187,16 @@ if (!session) {
   return (
     <div style={styles.loginContainer}>
       <div style={styles.loginCard}>
-        <h2>Neuro360</h2>
+        <h2>NeuroMapa360</h2>
 
-        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-        <input type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
+        <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
 
-        <button onClick={modoCadastro ? cadastrar : login}>
+        <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
           {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
         </button>
 
-        <p onClick={()=>setModoCadastro(!modoCadastro)}>
+        <p style={styles.link} onClick={()=>setModoCadastro(!modoCadastro)}>
           {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
         </p>
       </div>
@@ -220,87 +210,63 @@ return (
 
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
-      <p>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
-      {isAdmin && <p>ADMIN 👑</p>}
-      <button onClick={logout}>Sair</button>
+
+      <p style={{color:"#22c55e"}}>
+        Plano: {isPremium ? "Premium ✅" : "Free"}
+      </p>
+
+      {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+
+      <button style={styles.logout} onClick={logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
       <h1>Dashboard Emocional</h1>
 
       <div style={styles.card}>
-        <textarea
-          placeholder="Como você está hoje?"
+        <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
+          {EMOCOES.map(e => <option key={e}>{e}</option>)}
+        </select>
+
+        <input
+          style={styles.input}
+          placeholder="Como você está?"
           value={texto}
-          onChange={e => setTexto(e.target.value)}
+          onChange={(e)=>setTexto(e.target.value)}
         />
 
-        <button onClick={falarComIA}>
+        <button style={styles.button} onClick={falarComIA}>
           {loading ? "Pensando..." : "Falar com IA"}
         </button>
       </div>
 
-      {resposta && <div style={styles.card}>{resposta}</div>}
+      {resposta && (
+        <div style={styles.card}>
+          <h3>Insight da IA</h3>
+          <p>{resposta}</p>
+        </div>
+      )}
 
       {grafico.length > 0 && (
         <div style={styles.card}>
           <EvolucaoChart data={grafico}/>
         </div>
       )}
-
     </div>
   </div>
 );
 }
 
-/* ===== ESTILO RESTAURADO ===== */
+/* ESTILO FINAL */
 const styles = {
-  app:{
-    display:"flex",
-    height:"100vh",
-    background:"linear-gradient(135deg,#0f172a,#1e293b)"
-  },
-
-  sidebar:{
-    width:260,
-    background:"#020617",
-    padding:25,
-    color:"#fff",
-    display:"flex",
-    flexDirection:"column",
-    justifyContent:"space-between"
-  },
-
-  main:{
-    flex:1,
-    padding:40,
-    color:"#fff"
-  },
-
-  card:{
-    background:"rgba(15,23,42,0.8)",
-    padding:25,
-    borderRadius:12,
-    marginBottom:20,
-    boxShadow:"0 10px 30px rgba(0,0,0,0.4)"
-  },
-
-  loginContainer:{
-    height:"100vh",
-    display:"flex",
-    justifyContent:"center",
-    alignItems:"center",
-    background:"linear-gradient(135deg,#0f172a,#1e293b)"
-  },
-
-  loginCard:{
-    background:"#020617",
-    padding:30,
-    borderRadius:12,
-    color:"#fff",
-    display:"flex",
-    flexDirection:"column",
-    gap:10,
-    width:280
-  }
+  app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
+  sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
+  main:{flex:1,padding:30,overflowY:"auto"},
+  card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
+  input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
+  button:{marginTop:15,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
+  logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
+  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
+  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
+  link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}
 };

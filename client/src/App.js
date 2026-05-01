@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
@@ -40,35 +40,11 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
+/* NOVO */
 const [metricas, setMetricas] = useState(null);
-const [modoIA, setModoIA] = useState("normal");
-
-// 🔥 CHAT
-const [mensagens, setMensagens] = useState([]);
-const chatRef = useRef(null);
+const [modoIA, setModoIA] = useState("normal"); // normal | terapeutico
 
 const isPremium = plano === "premium" || isAdmin;
-
-/* ================= SCROLL CHAT ================= */
-useEffect(() => {
-  chatRef.current?.scrollIntoView({ behavior: "smooth" });
-}, [mensagens]);
-
-/* ================= PAGAMENTO ================= */
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-
-  if (params.get("sucesso")) {
-    alert("Pagamento aprovado! 🎉 Premium liberado.");
-    buscarUsuario();
-    window.history.replaceState({}, document.title, "/");
-  }
-
-  if (params.get("cancelado")) {
-    alert("Pagamento cancelado.");
-    window.history.replaceState({}, document.title, "/");
-  }
-}, []);
 
 /* ================= AUTH ================= */
 useEffect(() => {
@@ -83,7 +59,7 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
-/* RESET */
+/* RESET DIÁRIO */
 useEffect(() => {
   const hoje = new Date().toDateString();
   const ultimo = localStorage.getItem("ultimoUso");
@@ -102,12 +78,11 @@ useEffect(() => {
   if (session?.user) {
     buscarUsuario();
     buscarRegistros();
+    if (isAdmin) carregarMetricas();
   }
-}, [session]);
+}, [session, isAdmin]);
 
 const buscarUsuario = async () => {
-  if (!session?.user) return;
-
   const emailUser = session.user.email;
 
   let { data } = await supabase
@@ -134,8 +109,6 @@ const buscarUsuario = async () => {
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
-  if (!session?.user) return;
-
   const { data } = await supabase
     .from("registros_emocionais")
     .select("*")
@@ -150,69 +123,95 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ================= IA ================= */
-const falarComIA = async () => {
-
-  if (!texto) return;
-
-  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert("Limite atingido 🚀");
-    return;
-  }
-
-  // adiciona mensagem do usuário
-  setMensagens(prev => [...prev, { tipo:"user", texto }]);
-
-  setLoading(true);
-
+/* ================= ADMIN ================= */
+const carregarMetricas = async () => {
   try {
-    const res = await fetch(`${BACKEND_URL}/ia`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        texto,
-        emocao,
-        user_id: session.user.id,
-        modo: modoIA
-      })
-    });
-
+    const res = await fetch(`${BACKEND_URL}/admin-metricas`);
     const data = await res.json();
-
-    setMensagens(prev => [
-      ...prev,
-      { tipo:"ia", texto: data.resposta }
-    ]);
-
+    setMetricas(data);
   } catch {
-    setMensagens(prev => [
-      ...prev,
-      { tipo:"ia", texto: "Erro de conexão." }
-    ]);
+    console.log("Erro métricas");
   }
-
-  setTexto("");
-
-  const novo = interacoes + 1;
-  setInteracoes(novo);
-  localStorage.setItem("interacoes", novo.toString());
-
-  setLoading(false);
 };
 
 /* ================= LOGIN ================= */
 const login = async () => {
   setLoading(true);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) alert("Login inválido");
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    console.log(error.message);
+    alert("Login inválido");
+  }
+
   setLoading(false);
 };
 
 const cadastrar = async () => {
   setLoading(true);
-  const { error } = await supabase.auth.signUp({ email, password });
-  if (!error) setModoCadastro(false);
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) alert(error.message);
+  else {
+    alert("Conta criada!");
+    setModoCadastro(false);
+  }
+
   setLoading(false);
+};
+
+/* ================= IA ================= */
+const falarComIA = async () => {
+
+  if (!texto) return alert("Descreva como você está.");
+
+  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
+    alert("Limite diário atingido 🚀");
+    return;
+  }
+
+  setLoading(true);
+
+  const res = await fetch(`${BACKEND_URL}/ia`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      texto,
+      emocao,
+      user_id: session.user.id,
+      modo: modoIA // 🔥 NOVO
+    })
+  });
+
+  const data = await res.json();
+
+  setResposta(data.resposta);
+
+  const novo = interacoes + 1;
+  setInteracoes(novo);
+  localStorage.setItem("interacoes", novo.toString());
+
+  await supabase.from("registros_emocionais").insert([{
+    user_id: session.user.id,
+    emocao,
+    texto
+  }]);
+
+  buscarRegistros();
+  setLoading(false);
+};
+
+const logout = async () => {
+  await supabase.auth.signOut();
+  window.location.reload();
 };
 
 /* ================= LOGIN UI ================= */
@@ -226,11 +225,11 @@ if (!session) {
         <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
 
         <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
-          {loading ? "..." : modoCadastro ? "Criar Conta" : "Entrar"}
+          {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
         </button>
 
         <p style={styles.link} onClick={()=>setModoCadastro(!modoCadastro)}>
-          {modoCadastro ? "Login" : "Criar conta"}
+          {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
         </p>
       </div>
     </div>
@@ -243,53 +242,84 @@ return (
 
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
-      <p>{isPremium ? "Premium" : "Free"}</p>
+
+      <p style={{color:"#22c55e"}}>
+        Plano: {isPremium ? "Premium ✅" : "Free"}
+      </p>
+
+      {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+
+      {/* 🔥 NOVO MODO */}
+      {isPremium && (
+        <select
+          style={styles.input}
+          value={modoIA}
+          onChange={(e)=>setModoIA(e.target.value)}
+        >
+          <option value="normal">Modo Insight</option>
+          <option value="terapeutico">Modo Terapêutico</option>
+        </select>
+      )}
+
+      <button style={styles.logout} onClick={logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
+      <h1>Dashboard Emocional</h1>
 
-      {/* CHAT */}
-      <div style={styles.chatBox}>
-        {mensagens.map((m, i) => (
-          <div key={i} style={{
-            ...styles.msg,
-            alignSelf: m.tipo === "user" ? "flex-end" : "flex-start",
-            background: m.tipo === "user" ? "#22c55e" : "#334155"
-          }}>
-            {m.texto}
-          </div>
-        ))}
-        <div ref={chatRef} />
-      </div>
+      <div style={styles.card}>
+        <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
+          {EMOCOES.map(e => <option key={e}>{e}</option>)}
+        </select>
 
-      {/* INPUT */}
-      <div style={styles.inputArea}>
         <input
           style={styles.input}
+          placeholder="Como você está?"
           value={texto}
           onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Digite sua mensagem..."
         />
+
         <button style={styles.button} onClick={falarComIA}>
-          {loading ? "..." : "Enviar"}
+          {loading ? "Pensando..." : "Falar com IA"}
         </button>
       </div>
 
+      {resposta && (
+        <div style={styles.card}>
+          <h3>{modoIA === "terapeutico" ? "Sessão Terapêutica" : "Insight da IA"}</h3>
+          <p>{resposta}</p>
+        </div>
+      )}
+
+      {grafico.length > 0 && (
+        <div style={styles.card}>
+          <EvolucaoChart data={grafico}/>
+        </div>
+      )}
+
+      {isAdmin && metricas && (
+        <div style={styles.card}>
+          <h3>📊 Painel Admin</h3>
+          <p>Usuários: {metricas.totalUsuarios}</p>
+          <p>Registros: {metricas.totalRegistros}</p>
+          <p>IA: {metricas.totalIA}</p>
+        </div>
+      )}
     </div>
   </div>
 );
 }
 
+/* ================= ESTILO ================= */
 const styles = {
-  app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
-  sidebar:{width:220,background:"#020617",padding:20},
-  main:{flex:1,display:"flex",flexDirection:"column"},
-  chatBox:{flex:1,overflowY:"auto",padding:20,display:"flex",flexDirection:"column",gap:10},
-  msg:{padding:12,borderRadius:10,maxWidth:"70%"},
-  inputArea:{display:"flex",padding:10,gap:10},
-  input:{flex:1,padding:12,borderRadius:8,border:"none"},
-  button:{padding:12,borderRadius:8,border:"none",background:"#22c55e",color:"#fff",cursor:"pointer"},
-  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center"},
-  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10},
-  link:{cursor:"pointer"}
+  app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
+  sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
+  main:{flex:1,padding:30,overflowY:"auto"},
+  card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
+  input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
+  button:{marginTop:15,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
+  logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
+  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
+  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
+  link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}
 };

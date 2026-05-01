@@ -100,6 +100,8 @@ useEffect(() => {
 }, [session, isAdmin]);
 
 const buscarUsuario = async () => {
+  if (!session?.user) return;
+
   const emailUser = session.user.email;
 
   let { data } = await supabase
@@ -126,6 +128,8 @@ const buscarUsuario = async () => {
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
+  if (!session?.user) return;
+
   const { data } = await supabase
     .from("registros_emocionais")
     .select("*")
@@ -186,19 +190,24 @@ const falarComIA = async () => {
 
   setLoading(true);
 
-  const res = await fetch(`${BACKEND_URL}/ia`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      texto,
-      emocao,
-      user_id: session.user.id,
-      modo: modoIA // 🔥 NOVO
-    })
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session.user.id,
+        modo: modoIA
+      })
+    });
 
-  const data = await res.json();
-  setResposta(data.resposta);
+    const data = await res.json();
+    setResposta(data.resposta || "Tive um erro, mas estou aqui com você.");
+
+  } catch {
+    setResposta("Erro de conexão. Tente novamente.");
+  }
 
   const novo = interacoes + 1;
   setInteracoes(novo);
@@ -260,7 +269,6 @@ return (
     <div style={styles.main}>
       <h1>Dashboard Emocional</h1>
 
-      {/* 🔥 MODO */}
       {isPremium && (
         <div style={styles.card}>
           <h3>Modo de atendimento</h3>
@@ -359,7 +367,7 @@ const styles = {
   main:{flex:1,padding:30,overflowY:"auto"},
   card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
   input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
-  button:{marginTop:10,padding:12,width:"100%",borderRadius:8,border:"none",color:"#fff"},
+  button:{marginTop:10,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff",fontWeight:"bold",cursor:"pointer"},
   logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
   loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
   loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},

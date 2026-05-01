@@ -42,9 +42,12 @@ const [interacoes, setInteracoes] = useState(0);
 
 const [metricas, setMetricas] = useState(null);
 
+// 🔥 NOVO ESTADO
+const [modoIA, setModoIA] = useState("normal");
+
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= 🔥 DETECTAR PAGAMENTO ================= */
+/* ================= PAGAMENTO ================= */
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
 
@@ -143,9 +146,7 @@ const carregarMetricas = async () => {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
     const data = await res.json();
     setMetricas(data);
-  } catch {
-    console.log("Erro métricas");
-  }
+  } catch {}
 };
 
 /* ================= LOGIN ================= */
@@ -169,22 +170,17 @@ const cadastrar = async () => {
   setLoading(false);
 };
 
-/* ================= IA (COM CONVERSÃO) ================= */
+/* ================= IA ================= */
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
 
-  // ⚠️ PRÉ-ALERTA
   if (!isPremium && interacoes === 2) {
-    alert("⚠️ Você está na sua última interação gratuita hoje.");
+    alert("⚠️ Última interação gratuita.");
   }
 
-  // 🚫 BLOQUEIO INTELIGENTE
   if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert(
-      "Você atingiu o limite gratuito.\n\n" +
-      "Seu próximo nível está desbloqueado no Premium 🚀"
-    );
+    alert("Limite atingido. Vá para o Premium 🚀");
     return;
   }
 
@@ -196,7 +192,8 @@ const falarComIA = async () => {
     body: JSON.stringify({
       texto,
       emocao,
-      user_id: session.user.id
+      user_id: session.user.id,
+      modo: modoIA // 🔥 NOVO
     })
   });
 
@@ -263,7 +260,27 @@ return (
     <div style={styles.main}>
       <h1>Dashboard Emocional</h1>
 
-      {/* 🔥 PROGRESSO */}
+      {/* 🔥 MODO */}
+      {isPremium && (
+        <div style={styles.card}>
+          <h3>Modo de atendimento</h3>
+
+          <button
+            style={{...styles.button, background: modoIA === "normal" ? "#22c55e" : "#334155"}}
+            onClick={()=>setModoIA("normal")}
+          >
+            Resposta rápida
+          </button>
+
+          <button
+            style={{...styles.button, background: modoIA === "terapia" ? "#22c55e" : "#334155"}}
+            onClick={()=>setModoIA("terapia")}
+          >
+            Sessão guiada (PNL)
+          </button>
+        </div>
+      )}
+
       <div style={styles.card}>
         <h3>📈 Sua evolução hoje</h3>
         <p>Interações: {interacoes} / {MAX_FREE_INTERACOES}</p>
@@ -288,7 +305,7 @@ return (
 
       {resposta && (
         <div style={styles.card}>
-          <h3>Insight da IA</h3>
+          <h3>{modoIA === "terapia" ? "Sessão com IA" : "Insight da IA"}</h3>
           <p>{resposta}</p>
         </div>
       )}
@@ -299,10 +316,9 @@ return (
         </div>
       )}
 
-      {/* 💰 BOTÃO PREMIUM */}
       {!isPremium && (
         <div style={styles.card}>
-          <h3>🚀 Evolua mais rápido</h3>
+          <h3>🚀 Desbloqueie acompanhamento real</h3>
           <button
             style={{...styles.button, background:"#facc15", color:"#000"}}
             onClick={async () => {
@@ -324,7 +340,6 @@ return (
         </div>
       )}
 
-      {/* ADMIN */}
       {isAdmin && metricas && (
         <div style={styles.card}>
           <h3>📊 Painel Admin</h3>
@@ -338,14 +353,13 @@ return (
 );
 }
 
-/* ================= ESTILO ================= */
 const styles = {
   app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
   sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
   main:{flex:1,padding:30,overflowY:"auto"},
   card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
   input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
-  button:{marginTop:15,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
+  button:{marginTop:10,padding:12,width:"100%",borderRadius:8,border:"none",color:"#fff"},
   logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
   loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
   loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},

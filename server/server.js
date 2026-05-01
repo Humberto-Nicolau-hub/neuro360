@@ -89,7 +89,7 @@ const validarUsuario = async (user_id) => {
 };
 
 /* =========================
-   💳 CHECKOUT (AJUSTADO)
+   💳 CHECKOUT
 ========================= */
 app.post("/create-checkout", async (req, res) => {
   try {
@@ -109,25 +109,44 @@ app.post("/create-checkout", async (req, res) => {
         }
       ],
       metadata: { user_id },
-
-      // 🔥 ESSENCIAL PRA MONETIZAÇÃO
       success_url: `${process.env.FRONTEND_URL}?sucesso=true`,
       cancel_url: `${process.env.FRONTEND_URL}?cancelado=true`,
     });
-
-    console.log("✅ Checkout criado:", session.id);
 
     res.json({ url: session.url });
 
   } catch (err) {
     console.error("❌ Erro checkout:", err.message);
-
-    res.status(500).json({
-      error: "Erro checkout",
-      detalhe: err.message
-    });
+    res.status(500).json({ error: "Erro checkout" });
   }
 });
+
+/* =========================
+   🧠 PROMPT TERAPÊUTICO
+========================= */
+const gerarPromptTerapeutico = (texto, emocao, contexto) => {
+  return `
+Você é uma IA de acompanhamento emocional guiado baseada em PNL.
+
+Seu papel é conduzir o usuário com empatia, profundidade e presença.
+
+REGRAS:
+- Fale como um humano acolhedor
+- Valide o sentimento
+- Faça perguntas que levem à reflexão
+- Ajude a reorganizar o pensamento
+- Nunca seja robótico
+- Sempre finalize com uma pergunta
+
+CONTEXTO:
+${contexto}
+
+SITUAÇÃO:
+Estou me sentindo ${emocao}. ${texto}
+
+Conduza como uma sessão terapêutica.
+`;
+};
 
 /* =========================
    🤖 IA
@@ -151,10 +170,12 @@ app.post("/ia", async (req, res) => {
 });
 
 /* =========================
-   🧠 IA EVOLUTIVA
+   🧠 IA EVOLUTIVA + TERAPIA
 ========================= */
 const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
+
+    const modo = req.body.modo || "normal";
 
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
@@ -201,17 +222,29 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
     const contexto = memoria?.map(m => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
-    /* 🧠 NÍVEL */
-    let estilo = "Seja acolhedor";
-    if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
-    if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
+    let messages;
+
+    if (modo === "terapia") {
+      messages = [
+        {
+          role: "system",
+          content: gerarPromptTerapeutico(texto, emocao, contexto)
+        }
+      ];
+    } else {
+      let estilo = "Seja acolhedor";
+      if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
+      if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
+
+      messages = [
+        { role: "system", content: `${estilo}\n${contexto}` },
+        { role: "user", content: `Estou me sentindo ${emocao}. ${texto}` }
+      ];
+    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: `${estilo}\n${contexto}` },
-        { role: "user", content: `Estou me sentindo ${emocao}. ${texto}` }
-      ]
+      messages
     });
 
     const resposta = completion.choices[0].message.content;

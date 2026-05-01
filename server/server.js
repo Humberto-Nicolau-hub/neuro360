@@ -54,6 +54,7 @@ app.post(
 
       res.json({ received: true });
     } catch (err) {
+      console.error(err);
       res.status(400).send(`Webhook Error`);
     }
   }
@@ -62,11 +63,7 @@ app.post(
 /* =========================
    🔓 CORS
 ========================= */
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
-
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 /* =========================
@@ -79,19 +76,14 @@ const openai = new OpenAI({
 /* =========================
    🔐 VALIDAR USUÁRIO
 ========================= */
-const validarUsuarioPremium = async (user_id) => {
-  try {
-    const { data } = await supabase
-      .from("profiles")
-      .select("plano, is_admin")
-      .eq("id", user_id);
+const validarUsuario = async (user_id) => {
+  const { data } = await supabase
+    .from("profiles")
+    .select("plano, is_admin, nivel")
+    .eq("id", user_id)
+    .maybeSingle();
 
-    if (!data || data.length === 0) return null;
-    return data[0];
-
-  } catch {
-    return null;
-  }
+  return data || { plano: "free", is_admin: false, nivel: 1 };
 };
 
 /* =========================
@@ -111,14 +103,14 @@ app.post("/create-checkout", async (req, res) => {
     });
 
     res.json({ url: session.url });
-
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erro checkout" });
   }
 });
 
 /* =========================
-   🤖 IA
+   🤖 IA PRINCIPAL
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -128,18 +120,18 @@ app.post("/ia", async (req, res) => {
       return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    const user = await validarUsuarioPremium(user_id);
-    const userFinal = user || { plano: "free", is_admin: false };
+    const user = await validarUsuario(user_id);
 
-    return executarIA(userFinal, texto, emocao, user_id, req, res);
+    return executarIA(user, texto, emocao, user_id, req, res);
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erro IA" });
   }
 });
 
 /* =========================
-   🤖 EXECUTAR IA (COM ANTI-FRAUDE)
+   🧠 EXECUTAR IA EVOLUTIVA
 ========================= */
 const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
@@ -151,6 +143,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
     const hoje = new Date().toISOString().slice(0, 10);
 
+    /* 🔒 LIMITE FREE */
     if (!user.is_admin && user.plano !== "premium") {
       const { data: usoIp } = await supabase
         .from("uso_ip_diario")
@@ -178,24 +171,28 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       }
     }
 
-    const { data: historico } = await supabase
-      .from("registros_emocionais")
-      .select("emocao")
+    /* 🧠 MEMÓRIA IA */
+    const { data: memoria } = await supabase
+      .from("memoria_ia")
+      .select("emocao, texto")
       .eq("user_id", user_id)
       .order("created_at", { ascending: false })
       .limit(5);
 
-    let contexto = "";
-    if (historico?.length) {
-      contexto = historico.map(h => h.emocao).join(", ");
-    }
+    const contexto = memoria?.map(m => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
+    /* 🧠 NÍVEL DO USUÁRIO */
+    let estilo = "Seja acolhedor";
+    if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
+    if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
+
+    /* 🤖 IA */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `Você é especialista em inteligência emocional. Histórico: ${contexto}`,
+          content: `${estilo}. Histórico:\n${contexto}`,
         },
         {
           role: "user",
@@ -204,63 +201,60 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       ],
     });
 
-    await supabase.from("registros_emocionais").insert([
-      { user_id, emocao, texto, created_at: new Date() }
+    const resposta = completion.choices[0].message.content;
+
+    /* 💾 SALVAR MEMÓRIA */
+    await supabase.from("memoria_ia").insert([
+      { user_id, emocao, texto, resposta }
     ]);
 
-    return res.json({
-      resposta: completion.choices[0].message.content,
-    });
+    /* 🧠 EVOLUÇÃO DE NÍVEL */
+    const { count } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user_id);
 
-  } catch {
+    if (count && count % 5 === 0) {
+      await supabase
+        .from("profiles")
+        .update({ nivel: (user.nivel || 1) + 1 })
+        .eq("id", user_id);
+    }
+
+    return res.json({ resposta });
+
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: "Erro IA interna" });
   }
 };
 
 /* =========================
-   📊 ADMIN METRICS (NOVO)
+   📊 ADMIN METRICS
 ========================= */
-app.get("/admin-metrics", async (req, res) => {
+app.get("/admin-metricas", async (req, res) => {
   try {
 
-    const { count: totalUsers } = await supabase
+    const { count: totalUsuarios } = await supabase
       .from("profiles")
       .select("*", { count: "exact", head: true });
 
-    const { count: premiumUsers } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("plano", "premium");
-
-    const { count: freeUsers } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("plano", "free");
-
-    const hoje = new Date().toISOString().slice(0, 10);
-
-    const { data: usoHoje } = await supabase
-      .from("uso_ip_diario")
-      .select("total")
-      .eq("data", hoje);
-
-    const totalUsoHoje = usoHoje
-      ? usoHoje.reduce((acc, cur) => acc + cur.total, 0)
-      : 0;
-
-    const { count: totalInteracoes } = await supabase
+    const { count: totalRegistros } = await supabase
       .from("registros_emocionais")
       .select("*", { count: "exact", head: true });
 
+    const { count: totalIA } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true });
+
     res.json({
-      totalUsers: totalUsers || 0,
-      premiumUsers: premiumUsers || 0,
-      freeUsers: freeUsers || 0,
-      totalUsoHoje,
-      totalInteracoes: totalInteracoes || 0,
+      totalUsuarios: totalUsuarios || 0,
+      totalRegistros: totalRegistros || 0,
+      totalIA: totalIA || 0
     });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erro métricas" });
   }
 });

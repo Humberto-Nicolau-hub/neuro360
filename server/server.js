@@ -25,9 +25,14 @@ const supabase = createClient(
 );
 
 /* =========================
-   🔓 CORS + JSON
+   🔓 CORS BLINDADO
 ========================= */
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: "*", // 🔥 libera qualquer origem (Vercel incluso)
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
 /* =========================
@@ -55,45 +60,13 @@ const validarUsuario = async (user_id) => {
 };
 
 /* =========================
-   💳 CHECKOUT
-========================= */
-app.post("/create-checkout", async (req, res) => {
-  try {
-    const { user_id, email } = req.body;
-
-    if (!user_id || !email) {
-      return res.status(400).json({ error: "Dados inválidos" });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer_email: email,
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
-      metadata: { user_id },
-      success_url: `${process.env.FRONTEND_URL}?sucesso=true`,
-      cancel_url: `${process.env.FRONTEND_URL}?cancelado=true`,
-    });
-
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error("❌ Erro checkout:", err.message);
-    res.status(500).json({ error: "Erro checkout" });
-  }
-});
-
-/* =========================
    🧠 PROMPT TERAPÊUTICO
 ========================= */
 const gerarPromptTerapeutico = (texto, emocao, contexto) => {
   return `
 Você é uma IA de acompanhamento emocional guiado baseada em PNL.
 
-Seja empático, humano e profundo.
+Seja extremamente empático, humano e acolhedor.
 
 CONTEXTO:
 ${contexto || "Sem histórico anterior"}
@@ -101,15 +74,17 @@ ${contexto || "Sem histórico anterior"}
 USUÁRIO:
 Estou me sentindo ${emocao}. ${texto}
 
-Conduza como uma sessão terapêutica e finalize com uma pergunta.
+Conduza como uma sessão terapêutica real e finalize com uma pergunta.
 `;
 };
 
 /* =========================
-   🤖 IA
+   🤖 IA (VERSÃO CORRIGIDA)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
+    console.log("🔥 REQUISIÇÃO RECEBIDA:", req.body);
+
     const { texto, emocao, user_id, modo } = req.body;
 
     if (!texto || !emocao || !user_id) {
@@ -118,7 +93,7 @@ app.post("/ia", async (req, res) => {
 
     const user = await validarUsuario(user_id);
 
-    /* 🔒 CONTROLE FREE */
+    /* 🔒 CONTROLE FREE (SEM BLOQUEAR UX) */
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
@@ -136,9 +111,13 @@ app.post("/ia", async (req, res) => {
           .maybeSingle();
 
         if (usoIp && usoIp.total >= 5) {
-          return res.status(403).json({
-            error: "Limite atingido",
-            bloquear: true,
+          console.log("🚫 LIMITE FREE ATINGIDO");
+
+          // 🔥 NÃO BLOQUEIA MAIS COM 403
+          return res.json({
+            resposta:
+              "Você já utilizou suas interações gratuitas hoje. Quer continuar sua evolução desbloqueando o Premium?",
+            limite: true
           });
         }
 
@@ -152,8 +131,8 @@ app.post("/ia", async (req, res) => {
             .from("uso_ip_diario")
             .insert([{ ip, data: hoje, total: 1 }]);
         }
-      } catch (err) {
-        console.log("⚠️ erro controle free (ignorado)");
+      } catch {
+        console.log("⚠️ erro controle free ignorado");
       }
     }
 
@@ -170,35 +149,30 @@ app.post("/ia", async (req, res) => {
 
       contexto =
         data?.map((m) => `${m.emocao}: ${m.texto}`).join("\n") || "";
-    } catch {
-      contexto = "";
-    }
+    } catch {}
 
     /* 🧠 MENSAGENS */
-    let messages;
-
-    if (modo === "terapia") {
-      messages = [
-        {
-          role: "system",
-          content: gerarPromptTerapeutico(texto, emocao, contexto),
-        },
-      ];
-    } else {
-      messages = [
-        {
-          role: "system",
-          content: `Seja acolhedor.\n${contexto}`,
-        },
-        {
-          role: "user",
-          content: `Estou me sentindo ${emocao}. ${texto}`,
-        },
-      ];
-    }
+    const messages =
+      modo === "terapia"
+        ? [
+            {
+              role: "system",
+              content: gerarPromptTerapeutico(texto, emocao, contexto),
+            },
+          ]
+        : [
+            {
+              role: "system",
+              content: `Seja acolhedor.\n${contexto}`,
+            },
+            {
+              role: "user",
+              content: `Estou me sentindo ${emocao}. ${texto}`,
+            },
+          ];
 
     /* 🤖 OPENAI */
-    let resposta = "Estou aqui com você. Quer me contar mais?";
+    let resposta = "Estou aqui com você. Pode me contar mais.";
 
     try {
       const completion = await openai.chat.completions.create({
@@ -209,7 +183,7 @@ app.post("/ia", async (req, res) => {
       resposta =
         completion?.choices?.[0]?.message?.content || resposta;
     } catch (err) {
-      console.log("⚠️ erro IA fallback ativado");
+      console.log("⚠️ erro OpenAI:", err.message);
     }
 
     /* 💾 SALVAR MEMÓRIA */
@@ -217,44 +191,15 @@ app.post("/ia", async (req, res) => {
       await supabase.from("memoria_ia").insert([
         { user_id, emocao, texto, resposta },
       ]);
-    } catch {
-      console.log("⚠️ erro salvar memória (ignorado)");
-    }
+    } catch {}
 
     return res.json({ resposta });
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERRO GERAL:", err);
     return res.status(500).json({
-      resposta: "Tive um pequeno erro, mas estou aqui com você.",
+      resposta: "Tive um pequeno erro, mas continuo aqui com você.",
     });
-  }
-});
-
-/* =========================
-   📊 ADMIN
-========================= */
-app.get("/admin-metricas", async (req, res) => {
-  try {
-    const { count: totalUsuarios } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true });
-
-    const { count: totalRegistros } = await supabase
-      .from("registros_emocionais")
-      .select("*", { count: "exact", head: true });
-
-    const { count: totalIA } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true });
-
-    res.json({
-      totalUsuarios: totalUsuarios || 0,
-      totalRegistros: totalRegistros || 0,
-      totalIA: totalIA || 0,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro métricas" });
   }
 });
 

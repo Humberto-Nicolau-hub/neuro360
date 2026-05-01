@@ -40,10 +40,25 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
-/* NOVO */
 const [metricas, setMetricas] = useState(null);
 
 const isPremium = plano === "premium" || isAdmin;
+
+/* ================= 🔥 DETECTAR PAGAMENTO ================= */
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("sucesso")) {
+    alert("Pagamento aprovado! 🎉 Premium liberado.");
+    buscarUsuario();
+    window.history.replaceState({}, document.title, "/");
+  }
+
+  if (params.get("cancelado")) {
+    alert("Pagamento cancelado.");
+    window.history.replaceState({}, document.title, "/");
+  }
+}, []);
 
 /* ================= AUTH ================= */
 useEffect(() => {
@@ -154,13 +169,22 @@ const cadastrar = async () => {
   setLoading(false);
 };
 
-/* ================= IA ================= */
+/* ================= IA (COM CONVERSÃO) ================= */
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
 
+  // ⚠️ PRÉ-ALERTA
+  if (!isPremium && interacoes === 2) {
+    alert("⚠️ Você está na sua última interação gratuita hoje.");
+  }
+
+  // 🚫 BLOQUEIO INTELIGENTE
   if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert("Limite diário atingido 🚀");
+    alert(
+      "Você atingiu o limite gratuito.\n\n" +
+      "Seu próximo nível está desbloqueado no Premium 🚀"
+    );
     return;
   }
 
@@ -239,6 +263,12 @@ return (
     <div style={styles.main}>
       <h1>Dashboard Emocional</h1>
 
+      {/* 🔥 PROGRESSO */}
+      <div style={styles.card}>
+        <h3>📈 Sua evolução hoje</h3>
+        <p>Interações: {interacoes} / {MAX_FREE_INTERACOES}</p>
+      </div>
+
       <div style={styles.card}>
         <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
           {EMOCOES.map(e => <option key={e}>{e}</option>)}
@@ -269,7 +299,32 @@ return (
         </div>
       )}
 
-      {/* 🔥 ADMIN PANEL */}
+      {/* 💰 BOTÃO PREMIUM */}
+      {!isPremium && (
+        <div style={styles.card}>
+          <h3>🚀 Evolua mais rápido</h3>
+          <button
+            style={{...styles.button, background:"#facc15", color:"#000"}}
+            onClick={async () => {
+              const res = await fetch(`${BACKEND_URL}/create-checkout`, {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({
+                  user_id: session.user.id,
+                  email: session.user.email
+                })
+              });
+
+              const data = await res.json();
+              window.location.href = data.url;
+            }}
+          >
+            Virar Premium
+          </button>
+        </div>
+      )}
+
+      {/* ADMIN */}
       {isAdmin && metricas && (
         <div style={styles.card}>
           <h3>📊 Painel Admin</h3>

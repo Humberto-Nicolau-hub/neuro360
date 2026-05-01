@@ -40,9 +40,12 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
+/* NOVO */
+const [metricas, setMetricas] = useState(null);
+
 const isPremium = plano === "premium" || isAdmin;
 
-/* AUTH */
+/* ================= AUTH ================= */
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
@@ -69,13 +72,14 @@ useEffect(() => {
   }
 }, []);
 
-/* USER */
+/* ================= USER ================= */
 useEffect(() => {
   if (session?.user) {
     buscarUsuario();
     buscarRegistros();
+    if (isAdmin) carregarMetricas();
   }
-}, [session]);
+}, [session, isAdmin]);
 
 const buscarUsuario = async () => {
   const emailUser = session.user.email;
@@ -102,6 +106,7 @@ const buscarUsuario = async () => {
   setIsAdmin(admin || data?.is_admin || false);
 };
 
+/* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
   const { data } = await supabase
     .from("registros_emocionais")
@@ -117,7 +122,18 @@ const buscarRegistros = async () => {
   );
 };
 
-/* LOGIN */
+/* ================= ADMIN ================= */
+const carregarMetricas = async () => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+    const data = await res.json();
+    setMetricas(data);
+  } catch {
+    console.log("Erro métricas");
+  }
+};
+
+/* ================= LOGIN ================= */
 const login = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -138,13 +154,13 @@ const cadastrar = async () => {
   setLoading(false);
 };
 
-/* IA */
+/* ================= IA ================= */
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
 
   if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert("Limite diário atingido.");
+    alert("Limite diário atingido 🚀");
     return;
   }
 
@@ -182,7 +198,7 @@ const logout = async () => {
   window.location.reload();
 };
 
-/* LOGIN UI */
+/* ================= LOGIN UI ================= */
 if (!session) {
   return (
     <div style={styles.loginContainer}>
@@ -204,7 +220,7 @@ if (!session) {
   );
 }
 
-/* APP */
+/* ================= APP ================= */
 return (
   <div style={styles.app}>
 
@@ -252,12 +268,22 @@ return (
           <EvolucaoChart data={grafico}/>
         </div>
       )}
+
+      {/* 🔥 ADMIN PANEL */}
+      {isAdmin && metricas && (
+        <div style={styles.card}>
+          <h3>📊 Painel Admin</h3>
+          <p>Usuários: {metricas.totalUsuarios}</p>
+          <p>Registros: {metricas.totalRegistros}</p>
+          <p>IA: {metricas.totalIA}</p>
+        </div>
+      )}
     </div>
   </div>
 );
 }
 
-/* ESTILO FINAL */
+/* ================= ESTILO ================= */
 const styles = {
   app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
   sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},

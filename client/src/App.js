@@ -40,9 +40,8 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
-/* NOVO */
 const [metricas, setMetricas] = useState(null);
-const [modoIA, setModoIA] = useState("normal"); // normal | terapeutico
+const [modoIA, setModoIA] = useState("normal");
 
 const isPremium = plano === "premium" || isAdmin;
 
@@ -127,6 +126,8 @@ const buscarRegistros = async () => {
 const carregarMetricas = async () => {
   try {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+    if (!res.ok) return; // 🔥 evita quebra
+
     const data = await res.json();
     setMetricas(data);
   } catch {
@@ -143,10 +144,7 @@ const login = async () => {
     password
   });
 
-  if (error) {
-    console.log(error.message);
-    alert("Login inválido");
-  }
+  if (error) alert("Login inválido");
 
   setLoading(false);
 };
@@ -173,27 +171,37 @@ const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
 
-  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
+  if (!isPremium && !isAdmin && interacoes >= MAX_FREE_INTERACOES) {
     alert("Limite diário atingido 🚀");
     return;
   }
 
   setLoading(true);
 
-  const res = await fetch(`${BACKEND_URL}/ia`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      texto,
-      emocao,
-      user_id: session.user.id,
-      modo: modoIA // 🔥 NOVO
-    })
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session.user.id,
+        modo: modoIA
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  setResposta(data.resposta);
+    if (data?.limite) {
+      alert("Você atingiu o limite gratuito 🚀");
+    }
+
+    setResposta(data.resposta || "Estou aqui com você.");
+
+  } catch (err) {
+    console.log("Erro IA:", err.message);
+    setResposta("Tive um pequeno erro, mas continuo aqui com você.");
+  }
 
   const novo = interacoes + 1;
   setInteracoes(novo);
@@ -249,7 +257,6 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
-      {/* 🔥 NOVO MODO */}
       {isPremium && (
         <select
           style={styles.input}
@@ -300,9 +307,7 @@ return (
       {isAdmin && metricas && (
         <div style={styles.card}>
           <h3>📊 Painel Admin</h3>
-          <p>Usuários: {metricas.totalUsuarios}</p>
-          <p>Registros: {metricas.totalRegistros}</p>
-          <p>IA: {metricas.totalIA}</p>
+          <p>Interações: {metricas.total_interacoes}</p>
         </div>
       )}
     </div>

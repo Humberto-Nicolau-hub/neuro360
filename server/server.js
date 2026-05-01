@@ -28,7 +28,7 @@ const supabase = createClient(
    🔓 CORS BLINDADO
 ========================= */
 app.use(cors({
-  origin: "*", // 🔥 libera qualquer origem (Vercel incluso)
+  origin: "*",
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
@@ -43,18 +43,26 @@ const openai = new OpenAI({
 });
 
 /* =========================
-   🔐 VALIDAR USUÁRIO
+   🔐 VALIDAR USUÁRIO (CORRIGIDO)
 ========================= */
 const validarUsuario = async (user_id) => {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("plano, is_admin, nivel")
       .eq("id", user_id)
-      .maybeSingle();
+      .single();
 
-    return data || { plano: "free", is_admin: false, nivel: 1 };
-  } catch {
+    if (error || !data) {
+      console.log("⚠️ Usuário NÃO encontrado:", user_id);
+      return { plano: "free", is_admin: false, nivel: 1 };
+    }
+
+    console.log("✅ Usuário carregado:", data);
+
+    return data;
+  } catch (err) {
+    console.log("❌ Erro validarUsuario:", err.message);
     return { plano: "free", is_admin: false, nivel: 1 };
   }
 };
@@ -79,11 +87,11 @@ Conduza como uma sessão terapêutica real e finalize com uma pergunta.
 };
 
 /* =========================
-   🤖 IA (VERSÃO CORRIGIDA)
+   🤖 IA (VERSÃO BLINDADA)
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
-    console.log("🔥 REQUISIÇÃO RECEBIDA:", req.body);
+    console.log("🔥 REQUISIÇÃO:", req.body);
 
     const { texto, emocao, user_id, modo } = req.body;
 
@@ -93,7 +101,12 @@ app.post("/ia", async (req, res) => {
 
     const user = await validarUsuario(user_id);
 
-    /* 🔒 CONTROLE FREE (SEM BLOQUEAR UX) */
+    const isPremium = user?.plano === "premium";
+    const isAdmin = user?.is_admin === true;
+
+    console.log("👤 STATUS:", { isAdmin, isPremium });
+
+    /* 🔒 CONTROLE FREE (CORRIGIDO) */
     const ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.socket.remoteAddress ||
@@ -101,7 +114,7 @@ app.post("/ia", async (req, res) => {
 
     const hoje = new Date().toISOString().slice(0, 10);
 
-    if (!user.is_admin && user.plano !== "premium") {
+    if (!isAdmin && !isPremium) {
       try {
         const { data: usoIp } = await supabase
           .from("uso_ip_diario")
@@ -111,12 +124,11 @@ app.post("/ia", async (req, res) => {
           .maybeSingle();
 
         if (usoIp && usoIp.total >= 5) {
-          console.log("🚫 LIMITE FREE ATINGIDO");
+          console.log("🚫 LIMITE FREE");
 
-          // 🔥 NÃO BLOQUEIA MAIS COM 403
           return res.json({
             resposta:
-              "Você já utilizou suas interações gratuitas hoje. Quer continuar sua evolução desbloqueando o Premium?",
+              "Você já utilizou suas interações gratuitas hoje. Quer desbloquear o Premium para continuar evoluindo?",
             limite: true
           });
         }
@@ -131,8 +143,8 @@ app.post("/ia", async (req, res) => {
             .from("uso_ip_diario")
             .insert([{ ip, data: hoje, total: 1 }]);
         }
-      } catch {
-        console.log("⚠️ erro controle free ignorado");
+      } catch (err) {
+        console.log("⚠️ erro controle free:", err.message);
       }
     }
 
@@ -149,7 +161,9 @@ app.post("/ia", async (req, res) => {
 
       contexto =
         data?.map((m) => `${m.emocao}: ${m.texto}`).join("\n") || "";
-    } catch {}
+    } catch (err) {
+      console.log("⚠️ erro memória:", err.message);
+    }
 
     /* 🧠 MENSAGENS */
     const messages =
@@ -171,7 +185,7 @@ app.post("/ia", async (req, res) => {
             },
           ];
 
-    /* 🤖 OPENAI */
+    /* 🤖 OPENAI (BLINDADO) */
     let resposta = "Estou aqui com você. Pode me contar mais.";
 
     try {
@@ -182,8 +196,9 @@ app.post("/ia", async (req, res) => {
 
       resposta =
         completion?.choices?.[0]?.message?.content || resposta;
+
     } catch (err) {
-      console.log("⚠️ erro OpenAI:", err.message);
+      console.log("❌ ERRO OPENAI:", err.message);
     }
 
     /* 💾 SALVAR MEMÓRIA */
@@ -191,7 +206,9 @@ app.post("/ia", async (req, res) => {
       await supabase.from("memoria_ia").insert([
         { user_id, emocao, texto, resposta },
       ]);
-    } catch {}
+    } catch (err) {
+      console.log("⚠️ erro salvar memória:", err.message);
+    }
 
     return res.json({ resposta });
 

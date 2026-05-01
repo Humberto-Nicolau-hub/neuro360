@@ -45,6 +45,8 @@ app.post(
         const user_id = session?.metadata?.user_id;
 
         if (user_id) {
+          console.log("💰 Pagamento confirmado:", user_id);
+
           await supabase
             .from("profiles")
             .update({ plano: "premium" })
@@ -54,7 +56,7 @@ app.post(
 
       res.json({ received: true });
     } catch (err) {
-      console.error(err);
+      console.error("❌ Webhook erro:", err.message);
       res.status(400).send(`Webhook Error`);
     }
   }
@@ -87,30 +89,48 @@ const validarUsuario = async (user_id) => {
 };
 
 /* =========================
-   💳 CHECKOUT
+   💳 CHECKOUT (AJUSTADO)
 ========================= */
 app.post("/create-checkout", async (req, res) => {
   try {
     const { user_id, email } = req.body;
 
+    if (!user_id || !email) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: email,
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [
+        {
+          price: process.env.STRIPE_PRICE_ID,
+          quantity: 1
+        }
+      ],
       metadata: { user_id },
-      success_url: process.env.FRONTEND_URL,
-      cancel_url: process.env.FRONTEND_URL,
+
+      // 🔥 ESSENCIAL PRA MONETIZAÇÃO
+      success_url: `${process.env.FRONTEND_URL}?sucesso=true`,
+      cancel_url: `${process.env.FRONTEND_URL}?cancelado=true`,
     });
 
+    console.log("✅ Checkout criado:", session.id);
+
     res.json({ url: session.url });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro checkout" });
+    console.error("❌ Erro checkout:", err.message);
+
+    res.status(500).json({
+      error: "Erro checkout",
+      detalhe: err.message
+    });
   }
 });
 
 /* =========================
-   🤖 IA PRINCIPAL
+   🤖 IA
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
@@ -131,7 +151,7 @@ app.post("/ia", async (req, res) => {
 });
 
 /* =========================
-   🧠 EXECUTAR IA EVOLUTIVA
+   🧠 IA EVOLUTIVA
 ========================= */
 const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
@@ -171,7 +191,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       }
     }
 
-    /* 🧠 MEMÓRIA IA */
+    /* 🧠 MEMÓRIA */
     const { data: memoria } = await supabase
       .from("memoria_ia")
       .select("emocao, texto")
@@ -181,45 +201,24 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
     const contexto = memoria?.map(m => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
-    /* 🧠 NÍVEL DO USUÁRIO */
+    /* 🧠 NÍVEL */
     let estilo = "Seja acolhedor";
     if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
     if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
 
-    /* 🤖 IA */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content: `${estilo}. Histórico:\n${contexto}`,
-        },
-        {
-          role: "user",
-          content: `Estou me sentindo ${emocao}. ${texto}`,
-        },
-      ],
+        { role: "system", content: `${estilo}\n${contexto}` },
+        { role: "user", content: `Estou me sentindo ${emocao}. ${texto}` }
+      ]
     });
 
     const resposta = completion.choices[0].message.content;
 
-    /* 💾 SALVAR MEMÓRIA */
     await supabase.from("memoria_ia").insert([
       { user_id, emocao, texto, resposta }
     ]);
-
-    /* 🧠 EVOLUÇÃO DE NÍVEL */
-    const { count } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user_id);
-
-    if (count && count % 5 === 0) {
-      await supabase
-        .from("profiles")
-        .update({ nivel: (user.nivel || 1) + 1 })
-        .eq("id", user_id);
-    }
 
     return res.json({ resposta });
 
@@ -230,7 +229,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 };
 
 /* =========================
-   📊 ADMIN METRICS
+   📊 ADMIN
 ========================= */
 app.get("/admin-metricas", async (req, res) => {
   try {

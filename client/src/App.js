@@ -40,29 +40,24 @@ const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 const [metricas, setMetricas] = useState(null);
 
-/* 🔥 CHAT */
 const [chat, setChat] = useState([]);
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
+/* ================= CHECKOUT ================= */
+const irParaCheckout = async () => {
+  const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
+  const data = await res.json();
+  window.location.href = data.url;
+};
+
 /* ================= LOGIN ================= */
 const login = async () => {
   try {
     setLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert("Erro no login");
-    }
-
-  } catch (err) {
-    console.error("Erro login:", err);
-    alert("Erro inesperado");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert("Erro no login");
   } finally {
     setLoading(false);
   }
@@ -72,22 +67,12 @@ const login = async () => {
 const cadastrar = async () => {
   try {
     setLoading(true);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert("Erro ao cadastrar");
-    } else {
-      alert("Conta criada! Faça login.");
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) alert("Erro ao cadastrar");
+    else {
+      alert("Conta criada!");
       setModoCadastro(false);
     }
-
-  } catch (err) {
-    console.error("Erro cadastro:", err);
-    alert("Erro inesperado");
   } finally {
     setLoading(false);
   }
@@ -95,9 +80,7 @@ const cadastrar = async () => {
 
 /* ================= AUTO SCROLL ================= */
 useEffect(() => {
-  if (chatRef.current) {
-    chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }
+  chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
 }, [chat]);
 
 /* ================= AUTH ================= */
@@ -111,20 +94,6 @@ useEffect(() => {
   );
 
   return () => listener?.subscription?.unsubscribe();
-}, []);
-
-/* RESET DIÁRIO */
-useEffect(() => {
-  const hoje = new Date().toDateString();
-  const ultimo = localStorage.getItem("ultimoUso");
-
-  if (ultimo !== hoje) {
-    localStorage.setItem("ultimoUso", hoje);
-    localStorage.setItem("interacoes", "0");
-    setInteracoes(0);
-  } else {
-    setInteracoes(parseInt(localStorage.getItem("interacoes") || "0"));
-  }
 }, []);
 
 /* ================= USER ================= */
@@ -189,11 +158,6 @@ const falarComIA = async () => {
 
   if (!texto) return;
 
-  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert("Limite diário atingido 🚀");
-    return;
-  }
-
   const novoChat = [...chat, { tipo: "user", texto }];
   setChat(novoChat);
   setTexto("");
@@ -212,13 +176,20 @@ const falarComIA = async () => {
     });
 
     const data = await res.json();
-    const resposta = data.resposta || "Estou aqui com você.";
 
-    setChat([...novoChat, { tipo:"ia", texto: resposta }]);
+    if (data.limite) {
+      setChat([
+        ...novoChat,
+        {
+          tipo:"ia",
+          texto:data.resposta,
+          upgrade:true
+        }
+      ]);
+      return;
+    }
 
-    const novo = interacoes + 1;
-    setInteracoes(novo);
-    localStorage.setItem("interacoes", novo.toString());
+    setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
     await supabase.from("registros_emocionais").insert([{
       user_id: session.user.id,
@@ -277,6 +248,12 @@ return (
             background: msg.tipo === "user" ? "#22c55e" : "#334155"
           }}>
             {msg.texto}
+
+            {msg.upgrade && (
+              <button onClick={irParaCheckout} style={{marginTop:10,background:"#22c55e",border:"none",padding:8,color:"#fff"}}>
+                🚀 Virar Premium
+              </button>
+            )}
           </div>
         ))}
       </div>

@@ -26,7 +26,6 @@ const MAPA = {
 
 export default function App() {
 
-/* ================= STATE ================= */
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -47,19 +46,18 @@ const [modoIA, setModoIA] = useState("normal");
 
 const [chat, setChat] = useState([]);
 
-// 🔥 NOVO REF
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= AUTO SCROLL ================= */
+/* AUTO SCROLL */
 useEffect(() => {
   if (chatRef.current) {
     chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }
 }, [chat]);
 
-/* ================= AUTH ================= */
+/* AUTH */
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
@@ -72,7 +70,7 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
-/* ================= RESET DIÁRIO ================= */
+/* RESET */
 useEffect(() => {
   const hoje = new Date().toDateString();
   const ultimo = localStorage.getItem("ultimoUso");
@@ -86,7 +84,7 @@ useEffect(() => {
   }
 }, []);
 
-/* ================= USER ================= */
+/* USER */
 useEffect(() => {
   if (session?.user) {
     buscarUsuario();
@@ -142,7 +140,7 @@ const buscarUsuario = async () => {
   }
 };
 
-/* ================= REGISTROS ================= */
+/* REGISTROS */
 const buscarRegistros = async () => {
   const { data } = await supabase
     .from("registros_emocionais")
@@ -158,7 +156,7 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ================= ADMIN ================= */
+/* ADMIN */
 const carregarMetricas = async () => {
   try {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
@@ -171,28 +169,7 @@ const carregarMetricas = async () => {
   }
 };
 
-/* ================= LOGIN ================= */
-const login = async () => {
-  setLoading(true);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) alert("Login inválido");
-  setLoading(false);
-};
-
-const cadastrar = async () => {
-  setLoading(true);
-  const { error } = await supabase.auth.signUp({ email, password });
-
-  if (error) alert(error.message);
-  else {
-    alert("Conta criada!");
-    setModoCadastro(false);
-  }
-
-  setLoading(false);
-};
-
-/* ================= IA ================= */
+/* IA */
 const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
@@ -245,33 +222,6 @@ const falarComIA = async () => {
   setLoading(false);
 };
 
-const logout = async () => {
-  await supabase.auth.signOut();
-  window.location.reload();
-};
-
-/* ================= LOGIN UI ================= */
-if (!session) {
-  return (
-    <div style={styles.loginContainer}>
-      <div style={styles.loginCard}>
-        <h2>NeuroMapa360</h2>
-
-        <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-        <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
-
-        <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
-          {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
-        </button>
-
-        <p style={styles.link} onClick={()=>setModoCadastro(!modoCadastro)}>
-          {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 /* ================= APP ================= */
 return (
   <div style={styles.app}>
@@ -284,21 +234,10 @@ return (
       </p>
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
-
-      {isPremium && (
-        <select style={styles.input} value={modoIA} onChange={(e)=>setModoIA(e.target.value)}>
-          <option value="normal">Modo Insight</option>
-          <option value="terapia">Modo Terapêutico</option>
-        </select>
-      )}
-
-      <button style={styles.logout} onClick={logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
-      <h1>Dashboard Emocional</h1>
 
-      {/* 🔥 CHAT PROFISSIONAL */}
       <div style={styles.chatContainer}>
 
         <div ref={chatRef} style={styles.chatBox}>
@@ -323,36 +262,17 @@ return (
         <div style={styles.chatInputArea}>
           <input
             style={styles.input}
-            placeholder="Escreva aqui..."
             value={texto}
             onChange={(e)=>setTexto(e.target.value)}
+            placeholder="Digite aqui..."
           />
-
           <button style={styles.button} onClick={falarComIA}>
-            {loading ? "..." : "Enviar"}
+            Enviar
           </button>
         </div>
 
       </div>
 
-      {grafico.length > 0 && (
-        <div style={styles.card}>
-          <EvolucaoChart data={grafico}/>
-        </div>
-      )}
-
-      {isAdmin && (
-        <div style={styles.card}>
-          <h3>📊 Painel Admin</h3>
-          {metricas ? (
-            <>
-              <p>👥 Usuários: {metricas.total_usuarios || 0}</p>
-              <p>🧠 Registros: {metricas.total_registros || 0}</p>
-              <p>🤖 Interações IA: {metricas.total_interacoes || 0}</p>
-            </>
-          ) : <p>Carregando métricas...</p>}
-        </div>
-      )}
     </div>
   </div>
 );
@@ -360,18 +280,32 @@ return (
 
 /* ================= ESTILO ================= */
 const styles = {
-  app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
-  sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
-  main:{flex:1,padding:30,overflowY:"auto"},
+  app:{
+    display:"flex",
+    height:"100vh",
+    overflow:"hidden",
+    background:"linear-gradient(135deg,#0f172a,#1e293b)",
+    color:"#fff"
+  },
 
-  chatContainer:{
+  sidebar:{
+    width:250,
+    background:"#020617",
+    padding:20
+  },
+
+  main:{
+    flex:1,
     display:"flex",
     flexDirection:"column",
-    height:"65vh",
-    background:"#1e293b",
-    borderRadius:12,
-    overflow:"hidden",
-    marginBottom:20
+    height:"100vh",
+    overflow:"hidden"
+  },
+
+  chatContainer:{
+    flex:1,
+    display:"flex",
+    flexDirection:"column"
   },
 
   chatBox:{
@@ -384,16 +318,25 @@ const styles = {
     display:"flex",
     gap:10,
     padding:15,
-    borderTop:"1px solid #334155",
-    background:"#020617"
+    background:"#020617",
+    position:"sticky",
+    bottom:0
   },
 
-  card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
-  input:{width:"100%",padding:12,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
-  button:{padding:12,borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
-  logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
+  input:{
+    flex:1,
+    padding:12,
+    borderRadius:8,
+    border:"none",
+    background:"#334155",
+    color:"#fff"
+  },
 
-  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
-  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
-  link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}
+  button:{
+    padding:12,
+    borderRadius:8,
+    background:"#22c55e",
+    border:"none",
+    color:"#fff"
+  }
 };

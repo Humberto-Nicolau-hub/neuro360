@@ -10,9 +10,21 @@ dotenv.config();
 const app = express();
 
 /* =========================
+   🔐 VALIDAÇÃO DE ENV (ANTI-CRASH)
+========================= */
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("❌ ERRO: Supabase ENV não definida");
+  process.exit(1);
+}
+
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("⚠️ OPENAI_API_KEY não definida");
+}
+
+/* =========================
    🔐 STRIPE CONFIG
 ========================= */
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
 });
 
@@ -32,6 +44,10 @@ app.post(
   express.raw({ type: "application/json" }),
   async (req, res) => {
     try {
+      if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        return res.status(400).send("Webhook não configurado");
+      }
+
       const sig = req.headers["stripe-signature"];
 
       const event = stripe.webhooks.constructEvent(
@@ -53,9 +69,10 @@ app.post(
       }
 
       res.json({ received: true });
+
     } catch (err) {
-      console.error(err);
-      res.status(400).send(`Webhook Error`);
+      console.error("Webhook erro:", err.message);
+      res.status(400).send("Erro webhook");
     }
   }
 );
@@ -103,21 +120,22 @@ app.post("/create-checkout", async (req, res) => {
     });
 
     res.json({ url: session.url });
+
   } catch (err) {
-    console.error(err);
+    console.error("Erro checkout:", err.message);
     res.status(500).json({ error: "Erro checkout" });
   }
 });
 
 /* =========================
-   🤖 IA PRINCIPAL
+   🤖 IA
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
     const { texto, emocao, user_id } = req.body;
 
     if (!texto || !emocao || !user_id) {
-      return res.status(400).json({ error: "Dados incompletos" });
+      return res.status(400).json({ resposta: "Fale comigo..." });
     }
 
     const user = await validarUsuario(user_id);
@@ -125,13 +143,13 @@ app.post("/ia", async (req, res) => {
     return executarIA(user, texto, emocao, user_id, req, res);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro IA" });
+    console.error("Erro IA rota:", err.message);
+    res.status(500).json({ resposta: "Erro, mas continuo com você." });
   }
 });
 
 /* =========================
-   🧠 EXECUTAR IA EVOLUTIVA
+   🧠 IA EVOLUTIVA
 ========================= */
 const executarIA = async (user, texto, emocao, user_id, req, res) => {
   try {
@@ -143,7 +161,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
     const hoje = new Date().toISOString().slice(0, 10);
 
-    /* 🔒 LIMITE FREE */
+    /* 🔒 LIMITADOR */
     if (!user.is_admin && user.plano !== "premium") {
       const { data: usoIp } = await supabase
         .from("uso_ip_diario")
@@ -154,8 +172,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
       if (usoIp && usoIp.total >= 5) {
         return res.status(403).json({
-          error: "Limite por IP atingido",
-          bloquear: true
+          resposta: "Limite atingido hoje 🚀"
         });
       }
 
@@ -171,7 +188,7 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
       }
     }
 
-    /* 🧠 MEMÓRIA IA */
+    /* 🧠 MEMÓRIA */
     const { data: memoria } = await supabase
       .from("memoria_ia")
       .select("emocao, texto")
@@ -181,81 +198,73 @@ const executarIA = async (user, texto, emocao, user_id, req, res) => {
 
     const contexto = memoria?.map(m => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
-    /* 🧠 NÍVEL DO USUÁRIO */
+    /* 🎯 ESTILO */
     let estilo = "Seja acolhedor";
-    if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
-    if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
+    if (user.nivel >= 2) estilo = "Seja profundo";
+    if (user.nivel >= 3) estilo = "Seja transformador";
 
-    /* 🤖 IA */
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `${estilo}. Histórico:\n${contexto}`,
-        },
-        {
-          role: "user",
-          content: `Estou me sentindo ${emocao}. ${texto}`,
-        },
-      ],
-    });
+    let resposta = "Estou aqui com você.";
 
-    const resposta = completion.choices[0].message.content;
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `${estilo}. Histórico:\n${contexto}`,
+          },
+          {
+            role: "user",
+            content: `Estou me sentindo ${emocao}. ${texto}`,
+          },
+        ],
+      });
 
-    /* 💾 SALVAR MEMÓRIA */
+      resposta = completion?.choices?.[0]?.message?.content || resposta;
+
+    } catch (err) {
+      console.error("Erro OpenAI:", err.message);
+    }
+
     await supabase.from("memoria_ia").insert([
       { user_id, emocao, texto, resposta }
     ]);
 
-    /* 🧠 EVOLUÇÃO DE NÍVEL */
-    const { count } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user_id);
-
-    if (count && count % 5 === 0) {
-      await supabase
-        .from("profiles")
-        .update({ nivel: (user.nivel || 1) + 1 })
-        .eq("id", user_id);
-    }
-
     return res.json({ resposta });
 
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Erro IA interna" });
+    console.error("Erro IA interna:", err.message);
+    return res.json({ resposta: "Erro, mas continuo com você." });
   }
 };
 
 /* =========================
-   📊 ADMIN METRICS
+   📊 ADMIN
 ========================= */
 app.get("/admin-metricas", async (req, res) => {
   try {
 
-    const { count: totalUsuarios } = await supabase
+    const { count: usuarios } = await supabase
       .from("profiles")
       .select("*", { count: "exact", head: true });
 
-    const { count: totalRegistros } = await supabase
+    const { count: registros } = await supabase
       .from("registros_emocionais")
       .select("*", { count: "exact", head: true });
 
-    const { count: totalIA } = await supabase
+    const { count: ia } = await supabase
       .from("memoria_ia")
       .select("*", { count: "exact", head: true });
 
     res.json({
-      totalUsuarios: totalUsuarios || 0,
-      totalRegistros: totalRegistros || 0,
-      totalIA: totalIA || 0
+      usuarios: usuarios || 0,
+      registros: registros || 0,
+      ia: ia || 0
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro métricas" });
+    console.error("Erro métricas:", err.message);
+    res.json({ usuarios: 0, registros: 0, ia: 0 });
   }
 });
 

@@ -11,298 +11,218 @@ const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 const MAX_FREE_INTERACOES = 3;
 
-const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
+const EMOCOES = [
+  "Ansioso","Triste","Feliz","Estressado",
+  "Desmotivado","Deprimido","Procrastinador"
+];
 
 const MAPA = {
-  Deprimido:1,Desmotivado:2,Triste:3,Ansioso:4,
-  Estressado:5,Procrastinador:6,Feliz:8
+  Deprimido:1,Desmotivado:2,Triste:3,
+  Ansioso:4,Estressado:5,Procrastinador:6,Feliz:8
 };
 
 export default function App() {
 
 const [session, setSession] = useState(null);
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [modoCadastro, setModoCadastro] = useState(false);
-const [loading, setLoading] = useState(false);
-
 const [texto, setTexto] = useState("");
 const [emocao, setEmocao] = useState("Ansioso");
+const [chat, setChat] = useState([]);
 const [grafico, setGrafico] = useState([]);
-
 const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
-
 const [metricas, setMetricas] = useState(null);
-const [modoIA, setModoIA] = useState("normal");
+const [loading, setLoading] = useState(false);
 
-const [chat, setChat] = useState([]);
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= AUTO SCROLL ================= */
-useEffect(() => {
-  if (chatRef.current) {
-    chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }
-}, [chat]);
-
-/* ================= MENSAGEM INICIAL ================= */
-useEffect(() => {
-  if (chat.length === 0) {
-    setChat([
-      { tipo: "ia", texto: "Estou aqui com você. Como você está se sentindo agora?" }
-    ]);
-  }
-}, []);
-
-/* ================= AUTH ================= */
-useEffect(() => {
-  supabase.auth.getSession().then(({ data }) => {
+// AUTH
+useEffect(()=>{
+  supabase.auth.getSession().then(({data})=>{
     setSession(data.session);
   });
 
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    (_, session) => setSession(session)
-  );
+  supabase.auth.onAuthStateChange((_e, session)=>{
+    setSession(session);
+  });
 
-  return () => listener?.subscription?.unsubscribe();
-}, []);
+},[]);
 
-/* ================= RESET ================= */
-useEffect(() => {
-  const hoje = new Date().toDateString();
-  const ultimo = localStorage.getItem("ultimoUso");
-
-  if (ultimo !== hoje) {
-    localStorage.setItem("ultimoUso", hoje);
-    localStorage.setItem("interacoes", "0");
-    setInteracoes(0);
-  } else {
-    setInteracoes(parseInt(localStorage.getItem("interacoes") || "0"));
-  }
-}, []);
-
-/* ================= USER ================= */
-useEffect(() => {
-  if (session?.user) {
-    buscarUsuario();
-    buscarRegistros();
-  }
-}, [session]);
-
-useEffect(() => {
-  if (isAdmin) carregarMetricas();
-}, [isAdmin]);
-
-const buscarUsuario = async () => {
-  const user = session.user;
-  const emailUser = user.email;
-
-  if (emailUser === ADMIN_EMAIL) {
-    setPlano("premium");
+// ADMIN
+useEffect(()=>{
+  if(session?.user?.email === ADMIN_EMAIL){
     setIsAdmin(true);
-
-    await supabase.from("profiles").upsert([{
-      id: user.id,
-      email: emailUser,
-      plano: "premium",
-      is_admin: true
-    }]);
-    return;
+    setPlano("premium");
   }
+},[session]);
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+// SCROLL
+useEffect(()=>{
+  chatRef.current?.scrollTo({
+    top: chatRef.current.scrollHeight,
+    behavior:"smooth"
+  });
+},[chat]);
 
-  if (!data) {
-    const { data: novo } = await supabase
-      .from("profiles")
-      .insert([{ id: user.id, email: emailUser, plano: "free", is_admin: false }])
-      .select()
-      .single();
-
-    setPlano(novo?.plano || "free");
-    setIsAdmin(false);
-  } else {
-    setPlano(data.plano || "free");
-    setIsAdmin(data.is_admin || false);
-  }
-};
-
-/* ================= REGISTROS ================= */
-const buscarRegistros = async () => {
-  const { data } = await supabase
-    .from("registros_emocionais")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .order("created_at", { ascending: true });
-
-  setGrafico(
-    data?.map(d => ({
-      data: new Date(d.created_at).toLocaleDateString(),
-      valor: MAPA[d.emocao] || 5
-    })) || []
-  );
-};
-
-/* ================= ADMIN ================= */
-const carregarMetricas = async () => {
-  try {
+// ADMIN MÉTRICAS
+const carregarMetricas = async ()=>{
+  try{
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
-    if (!res.ok) return;
-
+    if(!res.ok) return;
     const data = await res.json();
     setMetricas(data);
-  } catch {
-    console.log("Erro métricas");
-  }
+  }catch{}
 };
 
-/* ================= IA ================= */
-const falarComIA = async () => {
+useEffect(()=>{
+  if(isAdmin) carregarMetricas();
+},[isAdmin]);
 
-  if (!texto) return alert("Descreva como você está.");
+// IA
+const falarComIA = async ()=>{
 
-  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
-    alert("Limite diário atingido 🚀");
+  if(!texto) return;
+
+  if(!isPremium && interacoes >= MAX_FREE_INTERACOES){
+    alert("Limite gratuito atingido 🚫");
     return;
   }
 
   setLoading(true);
 
-  const novoChat = [...chat, { tipo: "user", texto }];
+  const novoChat = [...chat, {tipo:"user", texto}];
   setChat(novoChat);
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/ia`, {
+  try{
+
+    const res = await fetch(`${BACKEND_URL}/ia`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         texto,
         emocao,
-        user_id: session.user?.id,
-        modo: modoIA,
+        user_id: session?.user?.id,
         historico: novoChat
       })
     });
 
     const data = await res.json();
-    const respostaIA = data.resposta || "Estou aqui com você.";
 
-    setChat([...novoChat, { tipo: "ia", texto: respostaIA }]);
+    const resposta = data.resposta || "Estou aqui com você.";
 
-  } catch {
-    setChat([...novoChat, { tipo: "ia", texto: "Erro, mas continuo aqui com você." }]);
+    setChat([...novoChat,{tipo:"ia",texto:resposta}]);
+
+    // SALVAR REGISTRO NO BANCO
+    if(session?.user?.id){
+      await supabase.from("registros").insert({
+        user_id: session.user.id,
+        emocao,
+        texto
+      });
+    }
+
+    // atualizar gráfico
+    const valor = MAPA[emocao] || 0;
+    setGrafico(prev=>[...prev,valor]);
+
+    setInteracoes(prev=>prev+1);
+
+  }catch{
+    setChat([...novoChat,{tipo:"ia",texto:"Erro na IA."}]);
   }
 
-  const novo = interacoes + 1;
-  setInteracoes(novo);
-  localStorage.setItem("interacoes", novo.toString());
-
-  await supabase.from("registros_emocionais").insert([{
-    user_id: session.user.id,
-    emocao,
-    texto
-  }]);
-
-  buscarRegistros();
   setTexto("");
   setLoading(false);
 };
 
-/* ================= LOGIN ================= */
-if (!session) {
-  return (
-    <div style={styles.loginContainer}>
-      <div style={styles.loginCard}>
-        <h2>NeuroMapa360</h2>
+// LOGIN
+const login = async ()=>{
+  const email = prompt("Email:");
+  const password = prompt("Senha:");
 
-        <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-        <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
+  const { error } = await supabase.auth.signInWithPassword({email,password});
 
-        <button style={styles.button} onClick={modoCadastro ? cadastrar : login}>
-          {loading ? "Processando..." : modoCadastro ? "Criar Conta" : "Entrar"}
-        </button>
+  if(error) alert("Login inválido");
+};
 
-        <p style={styles.link} onClick={()=>setModoCadastro(!modoCadastro)}>
-          {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
-        </p>
-      </div>
-    </div>
-  );
-}
+const logout = async ()=>{
+  await supabase.auth.signOut();
+};
 
-/* ================= APP ================= */
-return (
-  <div style={styles.app}>
+// UI
+return(
+<div style={styles.app}>
 
-    <div style={styles.sidebar}>
-      <h2>Neuro360</h2>
-      <p style={{color:"#22c55e"}}>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
-      {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
-    </div>
+<div style={styles.sidebar}>
+<h2>Neuro360</h2>
 
-    <div style={styles.main}>
+<p>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
 
-      <h1>Dashboard Emocional</h1>
+{isAdmin && <p>ADMIN 👑</p>}
 
-      <div style={styles.chatContainer}>
+<button onClick={login}>Login</button>
+<button onClick={logout}>Sair</button>
+</div>
 
-        <div ref={chatRef} style={styles.chatBox}>
-          {chat.map((msg, i) => (
-            <div key={i} style={{
-              textAlign: msg.tipo==="user"?"right":"left",
-              marginBottom:10
-            }}>
-              <span style={{
-                display:"inline-block",
-                padding:12,
-                borderRadius:12,
-                maxWidth:"70%",
-                background: msg.tipo==="user"?"#22c55e":"#334155"
-              }}>
-                {msg.texto}
-              </span>
-            </div>
-          ))}
-        </div>
+<div style={styles.main}>
 
-        <div style={styles.chatInputArea}>
-          <input
-            style={styles.input}
-            value={texto}
-            onChange={(e)=>setTexto(e.target.value)}
-            placeholder="Digite aqui..."
-          />
-          <button style={styles.button} onClick={falarComIA}>
-            {loading ? "..." : "Enviar"}
-          </button>
-        </div>
+<div style={styles.chatBox} ref={chatRef}>
+{chat.map((msg,i)=>(
+<div key={i} style={{textAlign: msg.tipo==="user"?"right":"left"}}>
+<div style={{
+background: msg.tipo==="user"?"#22c55e":"#334155",
+padding:10,
+borderRadius:10,
+margin:5,
+display:"inline-block"
+}}>
+{msg.texto}
+</div>
+</div>
+))}
+</div>
 
-      </div>
+<div style={styles.inputArea}>
+<select value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
+{EMOCOES.map(e=><option key={e}>{e}</option>)}
+</select>
 
-    </div>
-  </div>
+<input
+style={styles.input}
+value={texto}
+onChange={(e)=>setTexto(e.target.value)}
+placeholder="Digite como você está..."
+/>
+
+<button onClick={falarComIA}>
+{loading?"...":"Enviar"}
+</button>
+</div>
+
+<EvolucaoChart dados={grafico}/>
+
+{isAdmin && metricas && (
+<div style={styles.admin}>
+<h3>Painel Admin</h3>
+<p>Usuários: {metricas.usuarios}</p>
+<p>Registros: {metricas.registros}</p>
+<p>IA: {metricas.ia}</p>
+</div>
+)}
+
+</div>
+</div>
 );
 }
 
-/* ================= ESTILO ================= */
 const styles = {
-  app:{display:"flex",height:"100vh",overflow:"hidden",background:"#0f172a",color:"#fff"},
-  sidebar:{width:250,background:"#020617",padding:20},
-  main:{flex:1,display:"flex",flexDirection:"column",padding:20,overflow:"hidden"},
-  chatContainer:{flex:1,display:"flex",flexDirection:"column"},
-  chatBox:{flex:1,overflowY:"auto",padding:20},
-  chatInputArea:{display:"flex",gap:10,padding:10,background:"#020617",position:"sticky",bottom:0},
-  input:{flex:1,padding:12,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
-  button:{padding:12,borderRadius:8,background:"#22c55e",border:"none",color:"#fff"},
-  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"#0f172a"},
-  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
-  link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}
+app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
+sidebar:{width:220,background:"#020617",padding:20},
+main:{flex:1,display:"flex",flexDirection:"column"},
+chatBox:{flex:1,overflowY:"auto",padding:20},
+inputArea:{position:"sticky",bottom:0,display:"flex",gap:10,padding:10,background:"#020617"},
+input:{flex:1,padding:10},
+admin:{padding:20}
 };

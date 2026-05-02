@@ -58,7 +58,6 @@ const validarUsuario = async (user_id) => {
       .eq("id", user_id)
       .single();
 
-    // 🔥 BUSCAR EMAIL REAL DO AUTH
     let email = null;
 
     try {
@@ -66,9 +65,7 @@ const validarUsuario = async (user_id) => {
         await supabase.auth.admin.getUserById(user_id);
 
       email = userAuth?.user?.email;
-    } catch (e) {
-      console.log("⚠️ erro ao buscar email:", e.message);
-    }
+    } catch {}
 
     const isAdminEmail = email === ADMIN_EMAIL;
 
@@ -87,7 +84,6 @@ const validarUsuario = async (user_id) => {
     };
 
   } catch (err) {
-    console.log("❌ erro validarUsuario:", err.message);
     return { plano: "free", is_admin: false, nivel: 1 };
   }
 };
@@ -97,17 +93,17 @@ const validarUsuario = async (user_id) => {
 ========================= */
 const gerarPromptTerapeutico = (texto, emocao, contexto) => {
   return `
-Você é uma IA de acompanhamento emocional guiado baseada em PNL.
+Você é uma IA terapêutica baseada em PNL.
 
-Seja extremamente empático, humano e acolhedor.
+Seja profunda, empática e conduz como um terapeuta real.
 
 CONTEXTO:
-${contexto || "Sem histórico anterior"}
+${contexto || "Sem histórico"}
 
 USUÁRIO:
 Estou me sentindo ${emocao}. ${texto}
 
-Conduza como uma sessão terapêutica real e finalize com uma pergunta.
+Responda com acolhimento + reflexão + pergunta final.
 `;
 };
 
@@ -116,7 +112,7 @@ Conduza como uma sessão terapêutica real e finalize com uma pergunta.
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao, user_id, modo } = req.body;
+    const { texto, emocao, user_id, modo, historico } = req.body;
 
     if (!texto || !emocao || !user_id) {
       return res.status(400).json({ error: "Dados incompletos" });
@@ -127,9 +123,7 @@ app.post("/ia", async (req, res) => {
     const isAdmin = user.is_admin === true;
     const isPremium = user.plano === "premium";
 
-    console.log("👤 STATUS:", { isAdmin, isPremium });
-
-    /* 🔒 BLOQUEIO FREE (ADMIN IGNORA) */
+    /* 🔒 BLOQUEIO FREE */
     if (!isAdmin && !isPremium) {
       const ip =
         req.headers["x-forwarded-for"]?.split(",")[0] ||
@@ -164,9 +158,7 @@ app.post("/ia", async (req, res) => {
       }
     }
 
-    /* 🧠 MEMÓRIA */
-    let contexto = "";
-
+    /* 🧠 MEMÓRIA BANCO */
     const { data: memoria } = await supabase
       .from("memoria_ia")
       .select("emocao, texto")
@@ -174,8 +166,14 @@ app.post("/ia", async (req, res) => {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    contexto =
+    const contextoBanco =
       memoria?.map((m) => `${m.emocao}: ${m.texto}`).join("\n") || "";
+
+    /* 🧠 HISTÓRICO FRONT */
+    const contextoChat =
+      historico?.map((m) => `${m.tipo}: ${m.texto}`).join("\n") || "";
+
+    const contexto = contextoBanco + "\n" + contextoChat;
 
     /* 🧠 MENSAGENS */
     const messages =
@@ -199,7 +197,7 @@ app.post("/ia", async (req, res) => {
         completion?.choices?.[0]?.message?.content || resposta;
 
     } catch (err) {
-      console.log("❌ erro openai:", err.message);
+      console.log("Erro OpenAI:", err.message);
     }
 
     /* 💾 SALVAR */
@@ -210,10 +208,38 @@ app.post("/ia", async (req, res) => {
     return res.json({ resposta });
 
   } catch (err) {
-    console.error("❌ ERRO:", err);
     return res.status(500).json({
-      resposta: "Tive um pequeno erro, mas continuo aqui com você.",
+      resposta: "Tive um erro, mas continuo aqui com você.",
     });
+  }
+});
+
+/* =========================
+   📊 ADMIN MÉTRICAS
+========================= */
+app.get("/admin-metricas", async (req, res) => {
+  try {
+    const { count: totalUsuarios } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
+
+    const { count: totalRegistros } = await supabase
+      .from("registros_emocionais")
+      .select("*", { count: "exact", head: true });
+
+    const { count: totalInteracoes } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true });
+
+    return res.json({
+      total_usuarios: totalUsuarios || 0,
+      total_registros: totalRegistros || 0,
+      total_interacoes: totalInteracoes || 0,
+    });
+
+  } catch (err) {
+    console.log("Erro métricas:", err.message);
+    return res.status(500).json({});
   }
 });
 

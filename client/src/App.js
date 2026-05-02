@@ -46,6 +46,53 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
+/* ================= LOGIN ================= */
+const login = async () => {
+  try {
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("Erro no login");
+    }
+
+  } catch (err) {
+    console.error("Erro login:", err);
+    alert("Erro inesperado");
+  } finally {
+    setLoading(false);
+  }
+};
+
+/* ================= CADASTRO ================= */
+const cadastrar = async () => {
+  try {
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("Erro ao cadastrar");
+    } else {
+      alert("Conta criada! Faça login.");
+      setModoCadastro(false);
+    }
+
+  } catch (err) {
+    console.error("Erro cadastro:", err);
+    alert("Erro inesperado");
+  } finally {
+    setLoading(false);
+  }
+};
+
 /* ================= AUTO SCROLL ================= */
 useEffect(() => {
   if (chatRef.current) {
@@ -137,7 +184,7 @@ const carregarMetricas = async () => {
   setMetricas(data);
 };
 
-/* ================= IA CHAT ================= */
+/* ================= IA ================= */
 const falarComIA = async () => {
 
   if (!texto) return;
@@ -222,7 +269,6 @@ return (
 
     <div style={styles.main}>
 
-      {/* CHAT */}
       <div ref={chatRef} style={styles.chatBox}>
         {chat.map((msg, i) => (
           <div key={i} style={{
@@ -235,27 +281,16 @@ return (
         ))}
       </div>
 
-      {/* INPUT FIXO */}
       <div style={styles.inputBar}>
         <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
           {EMOCOES.map(e => <option key={e}>{e}</option>)}
         </select>
 
-        <input
-          value={texto}
-          onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Digite..."
-        />
-
-        <button onClick={falarComIA}>
-          {loading ? "..." : "Enviar"}
-        </button>
+        <input value={texto} onChange={(e)=>setTexto(e.target.value)} placeholder="Digite..."/>
+        <button onClick={falarComIA}>{loading ? "..." : "Enviar"}</button>
       </div>
 
-      {/* GRÁFICO */}
-      {grafico.length > 0 && (
-        <EvolucaoChart data={grafico}/>
-      )}
+      {grafico.length > 0 && <EvolucaoChart data={grafico}/>}
 
     </div>
   </div>
@@ -270,4 +305,8 @@ const styles = {
   bubble:{padding:12,borderRadius:10,maxWidth:"60%"},
   inputBar:{display:"flex",gap:10,padding:10,background:"#1e293b"},
   input:{flex:1,padding:10},
+  loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},
+  loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:300},
+  button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
+  link:{cursor:"pointer",color:"#38bdf8"}
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
@@ -33,25 +33,16 @@ const [loading, setLoading] = useState(false);
 
 const [texto, setTexto] = useState("");
 const [emocao, setEmocao] = useState("Ansioso");
+const [resposta, setResposta] = useState("");
 const [grafico, setGrafico] = useState([]);
 
 const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
+
 const [metricas, setMetricas] = useState(null);
 
-/* 🔥 CHAT */
-const [chat, setChat] = useState([]);
-const chatRef = useRef(null);
-
 const isPremium = plano === "premium" || isAdmin;
-
-/* ================= AUTO SCROLL ================= */
-useEffect(() => {
-  if (chatRef.current) {
-    chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }
-}, [chat]);
 
 /* ================= AUTH ================= */
 useEffect(() => {
@@ -90,32 +81,39 @@ useEffect(() => {
 }, [session]);
 
 const buscarUsuario = async () => {
-  const emailUser = session.user.email;
+  try {
+    const emailUser = session.user.email;
 
-  let { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("email", emailUser)
-    .single();
-
-  const admin = emailUser === ADMIN_EMAIL;
-
-  if (!data) {
-    const { data: novo } = await supabase
+    let { data } = await supabase
       .from("profiles")
-      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
-      .select()
+      .select("*")
+      .eq("email", emailUser)
       .single();
 
-    data = novo;
-  }
+    const admin = emailUser === ADMIN_EMAIL;
 
-  setPlano(admin ? "premium" : data?.plano || "free");
-  setIsAdmin(admin || data?.is_admin || false);
+    if (!data) {
+      const { data: novo } = await supabase
+        .from("profiles")
+        .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+        .select()
+        .single();
+
+      data = novo;
+    }
+
+    setPlano(admin ? "premium" : data?.plano || "free");
+    setIsAdmin(admin || data?.is_admin || false);
+
+  } catch (err) {
+    console.log("Erro ao buscar usuário:", err.message);
+  }
 };
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
+  if (!session?.user?.id) return;
+
   const { data } = await supabase
     .from("registros_emocionais")
     .select("*")
@@ -132,42 +130,73 @@ const buscarRegistros = async () => {
 
 /* ================= ADMIN ================= */
 const carregarMetricas = async () => {
-  const res = await fetch(`${BACKEND_URL}/admin-metricas`);
-  const data = await res.json();
-  setMetricas(data);
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+    const data = await res.json();
+
+    setMetricas({
+      usuarios: data.usuarios || 0,
+      registros: data.registros || 0,
+      ia: data.ia || 0
+    });
+
+  } catch {
+    console.log("Erro métricas");
+  }
 };
 
-/* ================= IA CHAT ================= */
+/* ================= LOGIN ================= */
+const login = async () => {
+  setLoading(true);
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) alert("Login inválido");
+  setLoading(false);
+};
+
+const cadastrar = async () => {
+  setLoading(true);
+  const { error } = await supabase.auth.signUp({ email, password });
+
+  if (error) alert(error.message);
+  else {
+    alert("Conta criada!");
+    setModoCadastro(false);
+  }
+
+  setLoading(false);
+};
+
+/* ================= IA ================= */
 const falarComIA = async () => {
 
-  if (!texto) return;
+  if (!texto) return alert("Descreva como você está.");
 
   if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
     alert("Limite diário atingido 🚀");
     return;
   }
 
-  const novoChat = [...chat, { tipo: "user", texto }];
-  setChat(novoChat);
-  setTexto("");
+  if (!session?.user?.id) return;
+
   setLoading(true);
 
   try {
+
     const res = await fetch(`${BACKEND_URL}/ia`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         texto,
         emocao,
-        user_id: session.user.id,
-        historico: novoChat
+        user_id: session.user.id
       })
     });
 
     const data = await res.json();
-    const resposta = data.resposta || "Estou aqui com você.";
+    const respostaIA = data.resposta || "Estou aqui com você.";
 
-    setChat([...novoChat, { tipo:"ia", texto: resposta }]);
+    setResposta(respostaIA);
+    setTexto("");
 
     const novo = interacoes + 1;
     setInteracoes(novo);
@@ -181,11 +210,17 @@ const falarComIA = async () => {
 
     buscarRegistros();
 
-  } catch {
-    setChat([...novoChat, { tipo:"ia", texto:"Erro na IA." }]);
+  } catch (err) {
+    console.log("Erro IA:", err.message);
+    setResposta("Erro na IA, mas continuo com você.");
   }
 
   setLoading(false);
+};
+
+const logout = async () => {
+  await supabase.auth.signOut();
+  window.location.reload();
 };
 
 /* ================= LOGIN UI ================= */
@@ -216,58 +251,71 @@ return (
 
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
-      <p style={{color:"#22c55e"}}>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
+
+      <p style={{color:"#22c55e"}}>
+        Plano: {isPremium ? "Premium ✅" : "Free"}
+      </p>
+
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+
+      <button style={styles.logout} onClick={logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
+      <h1>Dashboard Emocional</h1>
 
-      {/* CHAT */}
-      <div ref={chatRef} style={styles.chatBox}>
-        {chat.map((msg, i) => (
-          <div key={i} style={{
-            ...styles.bubble,
-            alignSelf: msg.tipo === "user" ? "flex-end" : "flex-start",
-            background: msg.tipo === "user" ? "#22c55e" : "#334155"
-          }}>
-            {msg.texto}
-          </div>
-        ))}
-      </div>
-
-      {/* INPUT FIXO */}
-      <div style={styles.inputBar}>
-        <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
+      <div style={styles.card}>
+        <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
           {EMOCOES.map(e => <option key={e}>{e}</option>)}
         </select>
 
         <input
+          style={styles.input}
+          placeholder="Como você está?"
           value={texto}
           onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Digite..."
         />
 
-        <button onClick={falarComIA}>
-          {loading ? "..." : "Enviar"}
+        <button style={styles.button} onClick={falarComIA}>
+          {loading ? "Pensando..." : "Falar com IA"}
         </button>
       </div>
 
-      {/* GRÁFICO */}
-      {grafico.length > 0 && (
-        <EvolucaoChart data={grafico}/>
+      {resposta && (
+        <div style={styles.card}>
+          <h3>Insight da IA</h3>
+          <p>{resposta}</p>
+        </div>
       )}
 
+      {grafico.length > 0 && (
+        <div style={styles.card}>
+          <EvolucaoChart data={grafico}/>
+        </div>
+      )}
+
+      {isAdmin && metricas && (
+        <div style={styles.card}>
+          <h3>📊 Painel Admin</h3>
+          <p>Usuários: {metricas.usuarios}</p>
+          <p>Registros: {metricas.registros}</p>
+          <p>IA: {metricas.ia}</p>
+        </div>
+      )}
     </div>
   </div>
 );
 }
 
 const styles = {
-  app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
-  sidebar:{width:200,background:"#020617",padding:20},
-  main:{flex:1,display:"flex",flexDirection:"column"},
-  chatBox:{flex:1,overflowY:"auto",padding:20,display:"flex",flexDirection:"column",gap:10},
-  bubble:{padding:12,borderRadius:10,maxWidth:"60%"},
-  inputBar:{display:"flex",gap:10,padding:10,background:"#1e293b"},
-  input:{flex:1,padding:10},
+  app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
+  sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
+  main:{flex:1,padding:30,overflowY:"auto"},
+  card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
+  input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
+  button:{marginTop:15,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
+  logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
+  loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
+  loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
+  link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}
 };

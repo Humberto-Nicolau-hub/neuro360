@@ -10,14 +10,19 @@ dotenv.config();
 const app = express();
 
 /* =========================
-   🔐 STRIPE CONFIG
+   🔐 CONFIG
+========================= */
+const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
+
+/* =========================
+   🔐 STRIPE
 ========================= */
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
 });
 
 /* =========================
-   🔗 SUPABASE ADMIN
+   🔗 SUPABASE
 ========================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -25,7 +30,7 @@ const supabase = createClient(
 );
 
 /* =========================
-   🔓 CORS BLINDADO
+   🔓 CORS
 ========================= */
 app.use(cors({
   origin: "*",
@@ -43,7 +48,7 @@ const openai = new OpenAI({
 });
 
 /* =========================
-   🔐 VALIDAR USUÁRIO (CORRIGIDO)
+   🔐 VALIDAR USUÁRIO (BLINDADO)
 ========================= */
 const validarUsuario = async (user_id) => {
   try {
@@ -53,22 +58,42 @@ const validarUsuario = async (user_id) => {
       .eq("id", user_id)
       .single();
 
-    if (error || !data) {
-      console.log("⚠️ Usuário NÃO encontrado:", user_id);
-      return { plano: "free", is_admin: false, nivel: 1 };
+    // 🔥 BUSCAR EMAIL REAL DO AUTH
+    let email = null;
+
+    try {
+      const { data: userAuth } =
+        await supabase.auth.admin.getUserById(user_id);
+
+      email = userAuth?.user?.email;
+    } catch (e) {
+      console.log("⚠️ erro ao buscar email:", e.message);
     }
 
-    console.log("✅ Usuário carregado:", data);
+    const isAdminEmail = email === ADMIN_EMAIL;
 
-    return data;
+    if (error || !data) {
+      return {
+        plano: isAdminEmail ? "premium" : "free",
+        is_admin: isAdminEmail,
+        nivel: 1,
+      };
+    }
+
+    return {
+      plano: isAdminEmail ? "premium" : data.plano,
+      is_admin: isAdminEmail || data.is_admin,
+      nivel: data.nivel || 1,
+    };
+
   } catch (err) {
-    console.log("❌ Erro validarUsuario:", err.message);
+    console.log("❌ erro validarUsuario:", err.message);
     return { plano: "free", is_admin: false, nivel: 1 };
   }
 };
 
 /* =========================
-   🧠 PROMPT TERAPÊUTICO
+   🧠 PROMPT
 ========================= */
 const gerarPromptTerapeutico = (texto, emocao, contexto) => {
   return `
@@ -87,12 +112,10 @@ Conduza como uma sessão terapêutica real e finalize com uma pergunta.
 };
 
 /* =========================
-   🤖 IA (VERSÃO BLINDADA)
+   🤖 IA
 ========================= */
 app.post("/ia", async (req, res) => {
   try {
-    console.log("🔥 REQUISIÇÃO:", req.body);
-
     const { texto, emocao, user_id, modo } = req.body;
 
     if (!texto || !emocao || !user_id) {
@@ -101,92 +124,70 @@ app.post("/ia", async (req, res) => {
 
     const user = await validarUsuario(user_id);
 
-    const isPremium = user?.plano === "premium";
-    const isAdmin = user?.is_admin === true;
+    const isAdmin = user.is_admin === true;
+    const isPremium = user.plano === "premium";
 
     console.log("👤 STATUS:", { isAdmin, isPremium });
 
-    /* 🔒 CONTROLE FREE (CORRIGIDO) */
-    const ip =
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.socket.remoteAddress ||
-      "unknown";
-
-    const hoje = new Date().toISOString().slice(0, 10);
-
+    /* 🔒 BLOQUEIO FREE (ADMIN IGNORA) */
     if (!isAdmin && !isPremium) {
-      try {
-        const { data: usoIp } = await supabase
+      const ip =
+        req.headers["x-forwarded-for"]?.split(",")[0] ||
+        req.socket.remoteAddress;
+
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      const { data: usoIp } = await supabase
+        .from("uso_ip_diario")
+        .select("*")
+        .eq("ip", ip)
+        .eq("data", hoje)
+        .maybeSingle();
+
+      if (usoIp && usoIp.total >= 5) {
+        return res.json({
+          resposta:
+            "Você já utilizou suas interações gratuitas hoje. Quer desbloquear o Premium?",
+          limite: true,
+        });
+      }
+
+      if (usoIp) {
+        await supabase
           .from("uso_ip_diario")
-          .select("*")
-          .eq("ip", ip)
-          .eq("data", hoje)
-          .maybeSingle();
-
-        if (usoIp && usoIp.total >= 5) {
-          console.log("🚫 LIMITE FREE");
-
-          return res.json({
-            resposta:
-              "Você já utilizou suas interações gratuitas hoje. Quer desbloquear o Premium para continuar evoluindo?",
-            limite: true
-          });
-        }
-
-        if (usoIp) {
-          await supabase
-            .from("uso_ip_diario")
-            .update({ total: usoIp.total + 1 })
-            .eq("id", usoIp.id);
-        } else {
-          await supabase
-            .from("uso_ip_diario")
-            .insert([{ ip, data: hoje, total: 1 }]);
-        }
-      } catch (err) {
-        console.log("⚠️ erro controle free:", err.message);
+          .update({ total: usoIp.total + 1 })
+          .eq("id", usoIp.id);
+      } else {
+        await supabase
+          .from("uso_ip_diario")
+          .insert([{ ip, data: hoje, total: 1 }]);
       }
     }
 
     /* 🧠 MEMÓRIA */
     let contexto = "";
 
-    try {
-      const { data } = await supabase
-        .from("memoria_ia")
-        .select("emocao, texto")
-        .eq("user_id", user_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
+    const { data: memoria } = await supabase
+      .from("memoria_ia")
+      .select("emocao, texto")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-      contexto =
-        data?.map((m) => `${m.emocao}: ${m.texto}`).join("\n") || "";
-    } catch (err) {
-      console.log("⚠️ erro memória:", err.message);
-    }
+    contexto =
+      memoria?.map((m) => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
     /* 🧠 MENSAGENS */
     const messages =
       modo === "terapia"
-        ? [
-            {
-              role: "system",
-              content: gerarPromptTerapeutico(texto, emocao, contexto),
-            },
-          ]
+        ? [{ role: "system", content: gerarPromptTerapeutico(texto, emocao, contexto) }]
         : [
-            {
-              role: "system",
-              content: `Seja acolhedor.\n${contexto}`,
-            },
-            {
-              role: "user",
-              content: `Estou me sentindo ${emocao}. ${texto}`,
-            },
+            { role: "system", content: `Seja acolhedor.\n${contexto}` },
+            { role: "user", content: `Estou me sentindo ${emocao}. ${texto}` },
           ];
 
-    /* 🤖 OPENAI (BLINDADO) */
-    let resposta = "Estou aqui com você. Pode me contar mais.";
+    /* 🤖 OPENAI */
+    let resposta = "Estou aqui com você.";
 
     try {
       const completion = await openai.chat.completions.create({
@@ -198,22 +199,18 @@ app.post("/ia", async (req, res) => {
         completion?.choices?.[0]?.message?.content || resposta;
 
     } catch (err) {
-      console.log("❌ ERRO OPENAI:", err.message);
+      console.log("❌ erro openai:", err.message);
     }
 
-    /* 💾 SALVAR MEMÓRIA */
-    try {
-      await supabase.from("memoria_ia").insert([
-        { user_id, emocao, texto, resposta },
-      ]);
-    } catch (err) {
-      console.log("⚠️ erro salvar memória:", err.message);
-    }
+    /* 💾 SALVAR */
+    await supabase.from("memoria_ia").insert([
+      { user_id, emocao, texto, resposta },
+    ]);
 
     return res.json({ resposta });
 
   } catch (err) {
-    console.error("❌ ERRO GERAL:", err);
+    console.error("❌ ERRO:", err);
     return res.status(500).json({
       resposta: "Tive um pequeno erro, mas continuo aqui com você.",
     });
@@ -221,7 +218,7 @@ app.post("/ia", async (req, res) => {
 });
 
 /* =========================
-   🚀 SERVER
+   🚀 START
 ========================= */
 const PORT = process.env.PORT || 10000;
 

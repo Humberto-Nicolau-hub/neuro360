@@ -44,6 +44,9 @@ const [interacoes, setInteracoes] = useState(0);
 const [metricas, setMetricas] = useState(null);
 const [modoIA, setModoIA] = useState("normal");
 
+// 🔥 NOVO
+const [chat, setChat] = useState([]);
+
 const isPremium = plano === "premium" || isAdmin;
 
 /* ================= AUTH ================= */
@@ -89,14 +92,10 @@ const buscarUsuario = async () => {
   const user = session.user;
   const emailUser = user.email;
 
-  const isAdminEmail = emailUser === ADMIN_EMAIL;
-
-  // 🔥 ADMIN FORÇADO (PRIORIDADE MÁXIMA)
-  if (isAdminEmail) {
+  if (emailUser === ADMIN_EMAIL) {
     setPlano("premium");
     setIsAdmin(true);
 
-    // opcional: garantir que existe no banco
     await supabase.from("profiles").upsert([{
       id: user.id,
       email: emailUser,
@@ -107,7 +106,6 @@ const buscarUsuario = async () => {
     return;
   }
 
-  // 🔄 fluxo normal
   const { data } = await supabase
     .from("profiles")
     .select("*")
@@ -206,6 +204,9 @@ const falarComIA = async () => {
 
   setLoading(true);
 
+  const novoChat = [...chat, { tipo: "user", texto }];
+  setChat(novoChat);
+
   try {
     const res = await fetch(`${BACKEND_URL}/ia`, {
       method:"POST",
@@ -214,21 +215,20 @@ const falarComIA = async () => {
         texto,
         emocao,
         user_id: session.user.id,
-        modo: modoIA
+        modo: modoIA,
+        historico: novoChat
       })
     });
 
     const data = await res.json();
 
-    if (data?.limite) {
-      alert("Você atingiu o limite gratuito 🚀");
-    }
+    const respostaIA = data.resposta || "Estou aqui com você.";
 
-    setResposta(data.resposta || "Estou aqui com você.");
+    setChat([...novoChat, { tipo: "ia", texto: respostaIA }]);
+    setResposta(respostaIA);
 
-  } catch (err) {
-    console.log("Erro IA:", err.message);
-    setResposta("Tive um pequeno erro, mas continuo aqui com você.");
+  } catch {
+    setChat([...novoChat, { tipo: "ia", texto: "Erro, mas continuo aqui com você." }]);
   }
 
   const novo = interacoes + 1;
@@ -242,6 +242,7 @@ const falarComIA = async () => {
   }]);
 
   buscarRegistros();
+  setTexto("");
   setLoading(false);
 };
 
@@ -250,7 +251,7 @@ const logout = async () => {
   window.location.reload();
 };
 
-/* ================= LOGIN UI ================= */
+/* ================= LOGIN ================= */
 if (!session) {
   return (
     <div style={styles.loginContainer}>
@@ -286,11 +287,7 @@ return (
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
       {isPremium && (
-        <select
-          style={styles.input}
-          value={modoIA}
-          onChange={(e)=>setModoIA(e.target.value)}
-        >
+        <select style={styles.input} value={modoIA} onChange={(e)=>setModoIA(e.target.value)}>
           <option value="normal">Modo Insight</option>
           <option value="terapia">Modo Terapêutico</option>
         </select>
@@ -319,12 +316,23 @@ return (
         </button>
       </div>
 
-      {resposta && (
-        <div style={styles.card}>
-          <h3>{modoIA === "terapia" ? "Sessão Terapêutica" : "Insight da IA"}</h3>
-          <p>{resposta}</p>
-        </div>
-      )}
+      {/* CHAT */}
+      <div style={styles.card}>
+        <h3>💬 Sessão Terapêutica</h3>
+
+        {chat.map((msg, i) => (
+          <div key={i} style={{textAlign: msg.tipo==="user"?"right":"left",marginBottom:10}}>
+            <span style={{
+              display:"inline-block",
+              padding:10,
+              borderRadius:10,
+              background: msg.tipo==="user"?"#22c55e":"#334155"
+            }}>
+              {msg.texto}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {grafico.length > 0 && (
         <div style={styles.card}>
@@ -332,10 +340,16 @@ return (
         </div>
       )}
 
-      {isAdmin && metricas && (
+      {isAdmin && (
         <div style={styles.card}>
           <h3>📊 Painel Admin</h3>
-          <p>Interações: {metricas.total_interacoes}</p>
+          {metricas ? (
+            <>
+              <p>👥 Usuários: {metricas.total_usuarios || 0}</p>
+              <p>🧠 Registros: {metricas.total_registros || 0}</p>
+              <p>🤖 Interações IA: {metricas.total_interacoes || 0}</p>
+            </>
+          ) : <p>Carregando métricas...</p>}
         </div>
       )}
     </div>

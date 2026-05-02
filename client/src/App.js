@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// 🔥 NOVO IMPORT
+import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
 
@@ -44,10 +45,19 @@ const [interacoes, setInteracoes] = useState(0);
 const [metricas, setMetricas] = useState(null);
 const [modoIA, setModoIA] = useState("normal");
 
-// 🔥 NOVO
 const [chat, setChat] = useState([]);
 
+// 🔥 NOVO REF
+const chatRef = useRef(null);
+
 const isPremium = plano === "premium" || isAdmin;
+
+/* ================= AUTO SCROLL ================= */
+useEffect(() => {
+  if (chatRef.current) {
+    chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }
+}, [chat]);
 
 /* ================= AUTH ================= */
 useEffect(() => {
@@ -164,24 +174,14 @@ const carregarMetricas = async () => {
 /* ================= LOGIN ================= */
 const login = async () => {
   setLoading(true);
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) alert("Login inválido");
-
   setLoading(false);
 };
 
 const cadastrar = async () => {
   setLoading(true);
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password
-  });
+  const { error } = await supabase.auth.signUp({ email, password });
 
   if (error) alert(error.message);
   else {
@@ -221,7 +221,6 @@ const falarComIA = async () => {
     });
 
     const data = await res.json();
-
     const respostaIA = data.resposta || "Estou aqui com você.";
 
     setChat([...novoChat, { tipo: "ia", texto: respostaIA }]);
@@ -251,7 +250,7 @@ const logout = async () => {
   window.location.reload();
 };
 
-/* ================= LOGIN ================= */
+/* ================= LOGIN UI ================= */
 if (!session) {
   return (
     <div style={styles.loginContainer}>
@@ -299,39 +298,41 @@ return (
     <div style={styles.main}>
       <h1>Dashboard Emocional</h1>
 
-      <div style={styles.card}>
-        <select style={styles.input} value={emocao} onChange={(e)=>setEmocao(e.target.value)}>
-          {EMOCOES.map(e => <option key={e}>{e}</option>)}
-        </select>
+      {/* 🔥 CHAT PROFISSIONAL */}
+      <div style={styles.chatContainer}>
 
-        <input
-          style={styles.input}
-          placeholder="Como você está?"
-          value={texto}
-          onChange={(e)=>setTexto(e.target.value)}
-        />
-
-        <button style={styles.button} onClick={falarComIA}>
-          {loading ? "Pensando..." : "Falar com IA"}
-        </button>
-      </div>
-
-      {/* CHAT */}
-      <div style={styles.card}>
-        <h3>💬 Sessão Terapêutica</h3>
-
-        {chat.map((msg, i) => (
-          <div key={i} style={{textAlign: msg.tipo==="user"?"right":"left",marginBottom:10}}>
-            <span style={{
-              display:"inline-block",
-              padding:10,
-              borderRadius:10,
-              background: msg.tipo==="user"?"#22c55e":"#334155"
+        <div ref={chatRef} style={styles.chatBox}>
+          {chat.map((msg, i) => (
+            <div key={i} style={{
+              textAlign: msg.tipo==="user"?"right":"left",
+              marginBottom:10
             }}>
-              {msg.texto}
-            </span>
-          </div>
-        ))}
+              <span style={{
+                display:"inline-block",
+                padding:12,
+                borderRadius:12,
+                maxWidth:"70%",
+                background: msg.tipo==="user"?"#22c55e":"#334155"
+              }}>
+                {msg.texto}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.chatInputArea}>
+          <input
+            style={styles.input}
+            placeholder="Escreva aqui..."
+            value={texto}
+            onChange={(e)=>setTexto(e.target.value)}
+          />
+
+          <button style={styles.button} onClick={falarComIA}>
+            {loading ? "..." : "Enviar"}
+          </button>
+        </div>
+
       </div>
 
       {grafico.length > 0 && (
@@ -362,10 +363,36 @@ const styles = {
   app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
   sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},
   main:{flex:1,padding:30,overflowY:"auto"},
+
+  chatContainer:{
+    display:"flex",
+    flexDirection:"column",
+    height:"65vh",
+    background:"#1e293b",
+    borderRadius:12,
+    overflow:"hidden",
+    marginBottom:20
+  },
+
+  chatBox:{
+    flex:1,
+    overflowY:"auto",
+    padding:20
+  },
+
+  chatInputArea:{
+    display:"flex",
+    gap:10,
+    padding:15,
+    borderTop:"1px solid #334155",
+    background:"#020617"
+  },
+
   card:{background:"#1e293b",padding:20,borderRadius:12,marginBottom:20},
-  input:{width:"100%",padding:12,marginTop:10,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
-  button:{marginTop:15,padding:12,width:"100%",borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
+  input:{width:"100%",padding:12,borderRadius:8,border:"none",background:"#334155",color:"#fff"},
+  button:{padding:12,borderRadius:8,border:"none",background:"#22c55e",color:"#fff"},
   logout:{marginTop:"auto",background:"#ef4444",padding:10,borderRadius:6,color:"#fff",border:"none"},
+
   loginContainer:{height:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"linear-gradient(135deg,#0f172a,#1e293b)"},
   loginCard:{background:"#1e293b",padding:40,borderRadius:12,display:"flex",flexDirection:"column",gap:10,width:300},
   link:{marginTop:10,cursor:"pointer",color:"#38bdf8"}

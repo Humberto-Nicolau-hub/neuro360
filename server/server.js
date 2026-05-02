@@ -10,26 +10,17 @@ const app = express();
 
 /* ================= CONFIG ================= */
 
-// CORS seguro (evita erro no Vercel)
 app.use(cors({
   origin: process.env.FRONTEND_URL || "*",
 }));
 
 app.use(express.json());
 
-/* ================= VALIDAÇÃO DE ENV ================= */
+/* ================= VALIDAÇÃO ================= */
 
-if (!process.env.SUPABASE_URL) {
-  throw new Error("SUPABASE_URL não definida");
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY não definida");
-}
-
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY não definida");
-}
+if (!process.env.SUPABASE_URL) throw new Error("SUPABASE_URL não definida");
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY não definida");
+if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY não definida");
 
 /* ================= CLIENTES ================= */
 
@@ -42,7 +33,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/* ================= HEALTH CHECK ================= */
+/* ================= HEALTH ================= */
+
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -51,59 +43,86 @@ app.get("/", (req, res) => {
 
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao, user_id, historico } = req.body;
+    let { texto, emocao, user_id, historico } = req.body;
 
     if (!texto) {
       return res.json({ resposta: "Fale comigo..." });
     }
 
-    /* ================= MEMÓRIA BANCO ================= */
+    // fallback seguro
+    if (!user_id) user_id = "anon";
+
+    /* ================= CONTROLE FREE ================= */
+
+    let totalInteracoes = 0;
+
+    try {
+      const { count } = await supabase
+        .from("registros_emocionais")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user_id);
+
+      totalInteracoes = count || 0;
+    } catch {}
+
+    if (totalInteracoes >= 30) {
+      return res.json({
+        resposta: "Você atingiu o limite do plano free. Faça upgrade para continuar 🚀",
+      });
+    }
+
+    /* ================= MEMÓRIA ================= */
+
     let memoriaTexto = "";
 
     try {
-      const { data: memoria } = await supabase
+      const { data } = await supabase
         .from("memoria_ia")
         .select("texto")
         .eq("user_id", user_id)
         .order("created_at", { ascending: false })
         .limit(5);
 
-      memoriaTexto = memoria?.map(m => m.texto).join("\n") || "";
-    } catch (err) {
-      console.log("Erro ao buscar memória:", err.message);
-    }
+      memoriaTexto = data?.map(m => m.texto).join("\n") || "";
+    } catch {}
 
-    /* ================= HISTÓRICO CHAT ================= */
-    const historicoTexto = historico
-      ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
-      .join("\n") || "";
+    /* ================= HISTÓRICO ================= */
+
+    let historicoTexto = "";
+
+    try {
+      historicoTexto = historico
+        ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
+        .join("\n") || "";
+    } catch {}
 
     /* ================= PROMPT ================= */
+
     const promptSistema = `
 Você é uma IA terapêutica, empática e acolhedora.
 
 Regras:
-- Fale como um humano, não como robô
-- Seja emocional, mas não exagerado
-- Faça perguntas inteligentes
-- Ajude a pessoa a refletir
-- Use o histórico para continuidade
+- Fale como humano
+- Seja emocional e inteligente
+- Faça perguntas
+- Use continuidade da conversa
 
-Memória do usuário:
+Memória:
 ${memoriaTexto}
 
-Histórico da conversa:
+Histórico:
 ${historicoTexto}
 `;
 
     /* ================= OPENAI ================= */
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: promptSistema },
         {
           role: "user",
-          content: `Estou me sentindo ${emocao}. ${texto}`,
+          content: `Estou me sentindo ${emocao || "neutro"}. ${texto}`,
         },
       ],
     });
@@ -112,22 +131,29 @@ ${historicoTexto}
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* ================= SALVAR MEMÓRIA ================= */
+    /* ================= SALVAR ================= */
+
     try {
       await supabase.from("memoria_ia").insert({
         user_id,
         texto,
       });
-    } catch (err) {
-      console.log("Erro ao salvar memória:", err.message);
-    }
+    } catch {}
+
+    try {
+      await supabase.from("registros_emocionais").insert({
+        user_id,
+        emocao,
+        texto,
+      });
+    } catch {}
 
     return res.json({ resposta });
 
   } catch (err) {
     console.error("ERRO IA:", err);
 
-    return res.status(200).json({
+    return res.json({
       resposta: "Tive um pequeno erro, mas continuo aqui com você.",
     });
   }
@@ -155,9 +181,7 @@ app.get("/admin-metricas", async (req, res) => {
       ia: ia || 0,
     });
 
-  } catch (err) {
-    console.error("Erro admin:", err);
-
+  } catch {
     return res.json({
       usuarios: 0,
       registros: 0,
@@ -168,7 +192,6 @@ app.get("/admin-metricas", async (req, res) => {
 
 /* ================= FALLBACK ================= */
 
-// evita crash silencioso
 app.use((err, req, res, next) => {
   console.error("Erro global:", err.stack);
   res.status(500).json({ error: "Erro interno" });

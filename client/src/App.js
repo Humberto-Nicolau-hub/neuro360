@@ -40,7 +40,6 @@ const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
 const [interacoes, setInteracoes] = useState(0);
 
-/* NOVO */
 const [metricas, setMetricas] = useState(null);
 
 const isPremium = plano === "premium" || isAdmin;
@@ -77,37 +76,44 @@ useEffect(() => {
   if (session?.user) {
     buscarUsuario();
     buscarRegistros();
-    if (isAdmin) carregarMetricas();
+    if (session.user.email === ADMIN_EMAIL) carregarMetricas();
   }
-}, [session, isAdmin]);
+}, [session]);
 
 const buscarUsuario = async () => {
-  const emailUser = session.user.email;
+  try {
+    const emailUser = session.user.email;
 
-  let { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("email", emailUser)
-    .single();
-
-  const admin = emailUser === ADMIN_EMAIL;
-
-  if (!data) {
-    const { data: novo } = await supabase
+    let { data } = await supabase
       .from("profiles")
-      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
-      .select()
+      .select("*")
+      .eq("email", emailUser)
       .single();
 
-    data = novo;
-  }
+    const admin = emailUser === ADMIN_EMAIL;
 
-  setPlano(admin ? "premium" : data?.plano || "free");
-  setIsAdmin(admin || data?.is_admin || false);
+    if (!data) {
+      const { data: novo } = await supabase
+        .from("profiles")
+        .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+        .select()
+        .single();
+
+      data = novo;
+    }
+
+    setPlano(admin ? "premium" : data?.plano || "free");
+    setIsAdmin(admin || data?.is_admin || false);
+
+  } catch (err) {
+    console.log("Erro ao buscar usuário:", err.message);
+  }
 };
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
+  if (!session?.user?.id) return;
+
   const { data } = await supabase
     .from("registros_emocionais")
     .select("*")
@@ -127,7 +133,13 @@ const carregarMetricas = async () => {
   try {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
     const data = await res.json();
-    setMetricas(data);
+
+    setMetricas({
+      usuarios: data.usuarios || 0,
+      registros: data.registros || 0,
+      ia: data.ia || 0
+    });
+
   } catch {
     console.log("Erro métricas");
   }
@@ -164,32 +176,45 @@ const falarComIA = async () => {
     return;
   }
 
+  if (!session?.user?.id) return;
+
   setLoading(true);
 
-  const res = await fetch(`${BACKEND_URL}/ia`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      texto,
+  try {
+
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session.user.id
+      })
+    });
+
+    const data = await res.json();
+    const respostaIA = data.resposta || "Estou aqui com você.";
+
+    setResposta(respostaIA);
+    setTexto("");
+
+    const novo = interacoes + 1;
+    setInteracoes(novo);
+    localStorage.setItem("interacoes", novo.toString());
+
+    await supabase.from("registros_emocionais").insert([{
+      user_id: session.user.id,
       emocao,
-      user_id: session.user.id
-    })
-  });
+      texto
+    }]);
 
-  const data = await res.json();
-  setResposta(data.resposta);
+    buscarRegistros();
 
-  const novo = interacoes + 1;
-  setInteracoes(novo);
-  localStorage.setItem("interacoes", novo.toString());
+  } catch (err) {
+    console.log("Erro IA:", err.message);
+    setResposta("Erro na IA, mas continuo com você.");
+  }
 
-  await supabase.from("registros_emocionais").insert([{
-    user_id: session.user.id,
-    emocao,
-    texto
-  }]);
-
-  buscarRegistros();
   setLoading(false);
 };
 
@@ -269,13 +294,12 @@ return (
         </div>
       )}
 
-      {/* 🔥 ADMIN PANEL */}
       {isAdmin && metricas && (
         <div style={styles.card}>
           <h3>📊 Painel Admin</h3>
-          <p>Usuários: {metricas.totalUsuarios}</p>
-          <p>Registros: {metricas.totalRegistros}</p>
-          <p>IA: {metricas.totalIA}</p>
+          <p>Usuários: {metricas.usuarios}</p>
+          <p>Registros: {metricas.registros}</p>
+          <p>IA: {metricas.ia}</p>
         </div>
       )}
     </div>
@@ -283,7 +307,6 @@ return (
 );
 }
 
-/* ================= ESTILO ================= */
 const styles = {
   app:{display:"flex",height:"100vh",background:"linear-gradient(135deg,#0f172a,#1e293b)",color:"#fff"},
   sidebar:{width:250,background:"#020617",padding:20,display:"flex",flexDirection:"column",gap:10},

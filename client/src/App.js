@@ -25,6 +25,7 @@ const MAPA = {
 
 export default function App() {
 
+/* ================= STATE ================= */
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -58,7 +59,7 @@ useEffect(() => {
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
-/* RESET DIÁRIO */
+/* ================= RESET DIÁRIO ================= */
 useEffect(() => {
   const hoje = new Date().toDateString();
   const ultimo = localStorage.getItem("ultimoUso");
@@ -77,33 +78,60 @@ useEffect(() => {
   if (session?.user) {
     buscarUsuario();
     buscarRegistros();
-    if (isAdmin) carregarMetricas();
   }
-}, [session, isAdmin]);
+}, [session]);
+
+useEffect(() => {
+  if (isAdmin) carregarMetricas();
+}, [isAdmin]);
 
 const buscarUsuario = async () => {
-  const emailUser = session.user.email;
+  const user = session.user;
+  const emailUser = user.email;
 
-  let { data } = await supabase
+  const isAdminEmail = emailUser === ADMIN_EMAIL;
+
+  // 🔥 ADMIN FORÇADO (PRIORIDADE MÁXIMA)
+  if (isAdminEmail) {
+    setPlano("premium");
+    setIsAdmin(true);
+
+    // opcional: garantir que existe no banco
+    await supabase.from("profiles").upsert([{
+      id: user.id,
+      email: emailUser,
+      plano: "premium",
+      is_admin: true
+    }]);
+
+    return;
+  }
+
+  // 🔄 fluxo normal
+  const { data } = await supabase
     .from("profiles")
     .select("*")
-    .eq("email", emailUser)
-    .single();
-
-  const admin = emailUser === ADMIN_EMAIL;
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!data) {
     const { data: novo } = await supabase
       .from("profiles")
-      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+      .insert([{
+        id: user.id,
+        email: emailUser,
+        plano: "free",
+        is_admin: false
+      }])
       .select()
       .single();
 
-    data = novo;
+    setPlano(novo?.plano || "free");
+    setIsAdmin(false);
+  } else {
+    setPlano(data.plano || "free");
+    setIsAdmin(data.is_admin || false);
   }
-
-  setPlano(admin ? "premium" : data?.plano || "free");
-  setIsAdmin(admin || data?.is_admin || false);
 };
 
 /* ================= REGISTROS ================= */
@@ -126,7 +154,7 @@ const buscarRegistros = async () => {
 const carregarMetricas = async () => {
   try {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
-    if (!res.ok) return; // 🔥 evita quebra
+    if (!res.ok) return;
 
     const data = await res.json();
     setMetricas(data);
@@ -171,7 +199,7 @@ const falarComIA = async () => {
 
   if (!texto) return alert("Descreva como você está.");
 
-  if (!isPremium && !isAdmin && interacoes >= MAX_FREE_INTERACOES) {
+  if (!isPremium && interacoes >= MAX_FREE_INTERACOES) {
     alert("Limite diário atingido 🚀");
     return;
   }
@@ -264,7 +292,7 @@ return (
           onChange={(e)=>setModoIA(e.target.value)}
         >
           <option value="normal">Modo Insight</option>
-          <option value="terapeutico">Modo Terapêutico</option>
+          <option value="terapia">Modo Terapêutico</option>
         </select>
       )}
 
@@ -293,7 +321,7 @@ return (
 
       {resposta && (
         <div style={styles.card}>
-          <h3>{modoIA === "terapeutico" ? "Sessão Terapêutica" : "Insight da IA"}</h3>
+          <h3>{modoIA === "terapia" ? "Sessão Terapêutica" : "Insight da IA"}</h3>
           <p>{resposta}</p>
         </div>
       )}

@@ -1,112 +1,269 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
+import Stripe from "stripe";
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
+/* =========================
+   🔐 STRIPE CONFIG
+========================= */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-06-20",
+});
+
+/* =========================
+   🔗 SUPABASE ADMIN
+========================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+/* =========================
+   ⚠️ WEBHOOK
+========================= */
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
+      const sig = req.headers["stripe-signature"];
+
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const user_id = session?.metadata?.user_id;
+
+        if (user_id) {
+          await supabase
+            .from("profiles")
+            .update({ plano: "premium" })
+            .eq("id", user_id);
+        }
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error(err);
+      res.status(400).send(`Webhook Error`);
+    }
+  }
+);
+
+/* =========================
+   🔓 CORS
+========================= */
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+
+/* =========================
+   🤖 OPENAI
+========================= */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// IA
+/* =========================
+   🔐 VALIDAR USUÁRIO
+========================= */
+const validarUsuario = async (user_id) => {
+  const { data } = await supabase
+    .from("profiles")
+    .select("plano, is_admin, nivel")
+    .eq("id", user_id)
+    .maybeSingle();
+
+  return data || { plano: "free", is_admin: false, nivel: 1 };
+};
+
+/* =========================
+   💳 CHECKOUT
+========================= */
+app.post("/create-checkout", async (req, res) => {
+  try {
+    const { user_id, email } = req.body;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer_email: email,
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      metadata: { user_id },
+      success_url: process.env.FRONTEND_URL,
+      cancel_url: process.env.FRONTEND_URL,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro checkout" });
+  }
+});
+
+/* =========================
+   🤖 IA PRINCIPAL
+========================= */
 app.post("/ia", async (req, res) => {
   try {
-    const { texto, emocao, user_id, historico } = req.body;
+    const { texto, emocao, user_id } = req.body;
 
-    if (!texto) {
-      return res.json({ resposta: "Fale comigo..." });
+    if (!texto || !emocao || !user_id) {
+      return res.status(400).json({ error: "Dados incompletos" });
     }
 
-    // memória
+    const user = await validarUsuario(user_id);
+
+    return executarIA(user, texto, emocao, user_id, req, res);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro IA" });
+  }
+});
+
+/* =========================
+   🧠 EXECUTAR IA EVOLUTIVA
+========================= */
+const executarIA = async (user, texto, emocao, user_id, req, res) => {
+  try {
+
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress ||
+      "unknown";
+
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    /* 🔒 LIMITE FREE */
+    if (!user.is_admin && user.plano !== "premium") {
+      const { data: usoIp } = await supabase
+        .from("uso_ip_diario")
+        .select("*")
+        .eq("ip", ip)
+        .eq("data", hoje)
+        .maybeSingle();
+
+      if (usoIp && usoIp.total >= 5) {
+        return res.status(403).json({
+          error: "Limite por IP atingido",
+          bloquear: true
+        });
+      }
+
+      if (usoIp) {
+        await supabase
+          .from("uso_ip_diario")
+          .update({ total: usoIp.total + 1 })
+          .eq("id", usoIp.id);
+      } else {
+        await supabase
+          .from("uso_ip_diario")
+          .insert([{ ip, data: hoje, total: 1 }]);
+      }
+    }
+
+    /* 🧠 MEMÓRIA IA */
     const { data: memoria } = await supabase
       .from("memoria_ia")
-      .select("texto")
+      .select("emocao, texto")
       .eq("user_id", user_id)
       .order("created_at", { ascending: false })
       .limit(5);
 
-    const contextoMemoria = memoria?.map(m => m.texto).join("\n") || "";
+    const contexto = memoria?.map(m => `${m.emocao}: ${m.texto}`).join("\n") || "";
 
-    const contextoChat = historico
-      ?.map(m => `${m.tipo}: ${m.texto}`)
-      .join("\n") || "";
+    /* 🧠 NÍVEL DO USUÁRIO */
+    let estilo = "Seja acolhedor";
+    if (user.nivel >= 2) estilo = "Seja profundo e reflexivo";
+    if (user.nivel >= 3) estilo = "Seja estratégico e transformador";
 
+    /* 🤖 IA */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `Você é uma IA terapêutica empática. Use o histórico e contexto abaixo:\n${contextoMemoria}\n${contextoChat}`
+          content: `${estilo}. Histórico:\n${contexto}`,
         },
         {
           role: "user",
-          content: `${emocao}: ${texto}`
-        }
+          content: `Estou me sentindo ${emocao}. ${texto}`,
+        },
       ],
     });
 
-    const resposta =
-      completion?.choices?.[0]?.message?.content ||
-      "Estou aqui com você.";
+    const resposta = completion.choices[0].message.content;
 
-    // salvar memória
-    if(user_id){
-      await supabase.from("memoria_ia").insert({
-        user_id,
-        texto
-      });
+    /* 💾 SALVAR MEMÓRIA */
+    await supabase.from("memoria_ia").insert([
+      { user_id, emocao, texto, resposta }
+    ]);
+
+    /* 🧠 EVOLUÇÃO DE NÍVEL */
+    const { count } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user_id);
+
+    if (count && count % 5 === 0) {
+      await supabase
+        .from("profiles")
+        .update({ nivel: (user.nivel || 1) + 1 })
+        .eq("id", user_id);
     }
 
     return res.json({ resposta });
 
   } catch (err) {
-
-    console.log("ERRO IA:", err);
-
-    return res.json({
-      resposta: "Tive um erro, mas continuo aqui com você."
-    });
+    console.error(err);
+    return res.status(500).json({ error: "Erro IA interna" });
   }
-});
+};
 
-// ADMIN
+/* =========================
+   📊 ADMIN METRICS
+========================= */
 app.get("/admin-metricas", async (req, res) => {
   try {
 
-    const { count: usuarios } = await supabase
+    const { count: totalUsuarios } = await supabase
       .from("profiles")
       .select("*", { count: "exact", head: true });
 
-    const { count: registros } = await supabase
-      .from("registros")
+    const { count: totalRegistros } = await supabase
+      .from("registros_emocionais")
       .select("*", { count: "exact", head: true });
 
-    const { count: ia } = await supabase
+    const { count: totalIA } = await supabase
       .from("memoria_ia")
       .select("*", { count: "exact", head: true });
 
-    res.json({ usuarios, registros, ia });
+    res.json({
+      totalUsuarios: totalUsuarios || 0,
+      totalRegistros: totalRegistros || 0,
+      totalIA: totalIA || 0
+    });
 
-  } catch {
-
-    res.json({ usuarios: 0, registros: 0, ia: 0 });
-
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro métricas" });
   }
 });
 
+/* =========================
+   🚀 SERVER
+========================= */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log("Servidor rodando");
+  console.log(`🚀 Server rodando na porta ${PORT}`);
 });

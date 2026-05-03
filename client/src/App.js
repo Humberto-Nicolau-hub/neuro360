@@ -238,12 +238,21 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
-      <div style={{marginTop:15}}>
-        <label>Modo:</label>
-        <select value={modo} onChange={(e)=>setModo(e.target.value)} style={styles.input}>
-          <option value="terapeutico">Modo Terapêutico</option>
-          <option value="normal">Modo Normal</option>
-        </select>
+      {/* NOVO MODO */}
+      <div style={styles.modeToggle}>
+        <button
+          onClick={() => setModo("normal")}
+          style={modo === "normal" ? styles.modeActive : styles.modeBtn}
+        >
+          Normal
+        </button>
+
+        <button
+          onClick={() => setModo("terapeutico")}
+          style={modo === "terapeutico" ? styles.modeActive : styles.modeBtn}
+        >
+          Terapêutico
+        </button>
       </div>
 
       <button onClick={logout} style={styles.logout}>
@@ -275,14 +284,16 @@ return (
 
         {loading && (
           <div style={{...styles.bubble, background:"#334155"}}>
-            IA está pensando...
+            🧠 IA está analisando e escrevendo...
           </div>
         )}
       </div>
 
       <div style={styles.inputBar}>
         <div>
-          <label style={{fontSize:12}}>Como você está se sentindo?</label>
+          <span style={{fontSize:12,color:"#94a3b8"}}>
+            Selecione sua emoção
+          </span>
           <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
             {EMOCOES.map(e => <option key={e}>{e}</option>)}
           </select>
@@ -291,7 +302,7 @@ return (
         <input
           value={texto}
           onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Escreva o que está sentindo..."
+          placeholder="Descreva o que está acontecendo com você..."
         />
 
         <button onClick={falarComIA}>
@@ -321,5 +332,28 @@ const styles = {
   logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
   upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
   boxUpgrade:{marginTop:15,padding:10,background:"#111",borderRadius:8},
-  adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12}
+  adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12},
+
+  modeToggle:{
+    display:"flex",
+    gap:5,
+    marginTop:15
+  },
+  modeBtn:{
+    flex:1,
+    padding:8,
+    background:"#1e293b",
+    border:"1px solid #334155",
+    color:"#94a3b8",
+    cursor:"pointer",
+    borderRadius:6
+  },
+  modeActive:{
+    flex:1,
+    padding:8,
+    background:"#22c55e",
+    color:"#000",
+    fontWeight:"bold",
+    borderRadius:6
+  }
 };

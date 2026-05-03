@@ -11,14 +11,8 @@ const app = express();
 
 /* ================= CORS ================= */
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "http://localhost:3000"
-].filter(Boolean);
-
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
     return callback(null, true);
   }
 }));
@@ -42,7 +36,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 app.post("/ia", async (req, res) => {
   try {
-    let { texto, emocao, user_id, historico, modo } = req.body;
+    let { texto, emocao, user_id, historico, modo, modoProfundo } = req.body;
 
     if (!texto) return res.json({ resposta: "Fale comigo..." });
     if (!user_id) user_id = "anon";
@@ -94,29 +88,70 @@ app.post("/ia", async (req, res) => {
       ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
       .join("\n") || "";
 
-    /* ===== PROMPT PROFISSIONAL ===== */
-    const promptSistema = modo === "terapeutico"
-      ? `
+    /* ================= PROMPT ================= */
+
+    let promptSistema = "";
+
+    /* 🔥 MODO TERAPIA GUIADA INTELIGENTE */
+    if (modoProfundo && isPremium) {
+      promptSistema = `
 Você é um terapeuta especialista em:
 - PNL (Programação Neurolinguística)
 - Terapia Neuro Sistêmica
 
-Siga este fluxo:
-1. Valide a emoção
-2. Identifique o padrão emocional
-3. Conduza com perguntas inteligentes
-4. Aplique uma técnica prática (ressignificação, foco, quebra de padrão)
+Você NÃO é um chatbot.
+Você conduz uma sessão terapêutica real.
 
-Seja humano, profundo e estratégico.
-Nunca seja genérico.
+Siga EXATAMENTE este fluxo:
+
+1. Valide profundamente a emoção do usuário
+2. Identifique o padrão emocional oculto
+3. Nomeie o padrão (ex: autossabotagem, ansiedade antecipatória, rejeição)
+4. Conduza com 1 pergunta estratégica
+5. Aplique uma técnica prática de PNL
+6. Gere um micro exercício aplicável agora
+
+REGRAS:
+- Seja humano e empático
+- Evite respostas genéricas
+- Use linguagem emocional e estratégica
+- Sempre conduza (não apenas responda)
+- Máximo 12 linhas
 
 Memória:
 ${memoriaTexto}
 
 Histórico:
 ${historicoTexto}
-`
-      : "Responda de forma clara, objetiva e útil.";
+`;
+    }
+
+    /* 🔥 MODO TERAPÊUTICO PADRÃO */
+    else if (modo === "terapeutico") {
+      promptSistema = `
+Você é um terapeuta especialista em:
+- PNL
+- Terapia Neuro Sistêmica
+
+Responda com:
+- Empatia real
+- Perguntas inteligentes
+- Direcionamento leve
+
+Evite respostas genéricas.
+
+Memória:
+${memoriaTexto}
+
+Histórico:
+${historicoTexto}
+`;
+    }
+
+    /* 🔥 MODO NORMAL */
+    else {
+      promptSistema = "Responda de forma clara, objetiva e útil.";
+    }
 
     /* ===== OPENAI ===== */
     const completion = await openai.chat.completions.create({
@@ -131,9 +166,13 @@ ${historicoTexto}
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* ===== GATILHO DE CONVERSÃO ===== */
-    if (!isPremium) {
-      resposta += "\n\n💡 Você pode aprofundar esse processo com acompanhamento completo no plano Premium.";
+    /* 🔥 GATILHO DE CONVERSÃO INTELIGENTE */
+    if (!isPremium && modo === "terapeutico") {
+      resposta += `
+
+💡 Existe um nível mais profundo de acompanhamento que ajuda você a sair desse padrão emocional com mais rapidez.
+
+Se fizer sentido para você, posso te guiar nisso.`;
     }
 
     /* ===== SALVAR ===== */
@@ -144,7 +183,7 @@ ${historicoTexto}
 
   } catch (err) {
     console.error(err);
-    res.json({ resposta: "Erro, mas continuo com você." });
+    res.json({ resposta: "Tive um pequeno erro, mas continuo com você." });
   }
 });
 
@@ -172,4 +211,6 @@ app.get("/admin-metricas", async (req, res) => {
   res.json({ usuarios, registros, ia });
 });
 
-app.listen(process.env.PORT || 10000);
+app.listen(process.env.PORT || 10000, () => {
+  console.log("🚀 Server rodando");
+});

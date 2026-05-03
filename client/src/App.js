@@ -42,6 +42,9 @@ const [metricas, setMetricas] = useState(null);
 const [chat, setChat] = useState([]);
 const [modo, setModo] = useState("terapeutico");
 
+/* 🔥 NOVO: Terapia Guiada Inteligente */
+const [modoProfundo, setModoProfundo] = useState(false);
+
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
@@ -173,7 +176,8 @@ const falarComIA = async () => {
       emocao,
       user_id: session.user.id,
       historico: novoChat,
-      modo
+      modo,
+      modoProfundo // 🔥 NOVO
     })
   });
 
@@ -238,7 +242,7 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
-      {/* NOVO MODO */}
+      {/* MODO */}
       <div style={styles.modeToggle}>
         <button
           onClick={() => setModo("normal")}
@@ -254,6 +258,24 @@ return (
           Terapêutico
         </button>
       </div>
+
+      {/* 🔥 TERAPIA GUIADA */}
+      {isPremium && (
+        <button
+          onClick={() => setModoProfundo(!modoProfundo)}
+          style={{
+            marginTop: 10,
+            background: modoProfundo ? "#6c5ce7" : "#1e293b",
+            border: "1px solid #6c5ce7",
+            color: "#fff",
+            padding: 10,
+            borderRadius: 6,
+            cursor: "pointer"
+          }}
+        >
+          🧠 Terapia Guiada Inteligente {modoProfundo ? "ON" : "OFF"}
+        </button>
+      )}
 
       <button onClick={logout} style={styles.logout}>
         Sair
@@ -284,7 +306,7 @@ return (
 
         {loading && (
           <div style={{...styles.bubble, background:"#334155"}}>
-            🧠 IA está analisando e escrevendo...
+            🧠 IA está conduzindo sua análise...
           </div>
         )}
       </div>
@@ -292,7 +314,7 @@ return (
       <div style={styles.inputBar}>
         <div>
           <span style={{fontSize:12,color:"#94a3b8"}}>
-            Selecione sua emoção
+            Como você está se sentindo?
           </span>
           <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
             {EMOCOES.map(e => <option key={e}>{e}</option>)}
@@ -302,7 +324,7 @@ return (
         <input
           value={texto}
           onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Descreva o que está acontecendo com você..."
+          placeholder="Escreva o que você está sentindo..."
         />
 
         <button onClick={falarComIA}>

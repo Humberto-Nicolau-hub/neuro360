@@ -103,12 +103,21 @@ const cadastrar = async () => {
   }
 };
 
-/* ================= CHECKOUT ================= */
-const irParaCheckout = async () => {
+/* ================= 🔥 UPGRADE STRIPE ================= */
+const handleUpgrade = async () => {
   try {
-    const res = await fetch(`${BACKEND_URL}/criar-checkout`);
+    const res = await fetch(`${BACKEND_URL}/criar-checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+
     const data = await res.json();
-    window.location.href = data.url;
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Erro ao iniciar pagamento");
+    }
   } catch {
     alert("Erro pagamento");
   }
@@ -123,7 +132,7 @@ const buscarUsuario = async () => {
       .from("profiles")
       .select("*")
       .eq("email", emailUser)
-      .maybeSingle(); // 🔥 CORREÇÃO AQUI
+      .maybeSingle();
 
     const admin = emailUser === ADMIN_EMAIL;
 
@@ -201,6 +210,10 @@ const falarComIA = async () => {
 
     const data = await res.json();
 
+    if (data.limite) {
+      alert("Você atingiu o limite do plano free 🚀");
+    }
+
     setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
     buscarRegistros();
@@ -245,11 +258,27 @@ return (
         Plano: {isPremium ? "Premium ✅" : "Free"}
       </p>
 
+      {!isPremium && (
+        <button onClick={handleUpgrade} style={styles.upgrade}>
+          🚀 Upgrade
+        </button>
+      )}
+
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
       <button onClick={logout} style={styles.logout}>
         Sair
       </button>
+
+      {/* 🔥 PAINEL ADMIN */}
+      {isAdmin && metricas && (
+        <div style={styles.adminBox}>
+          <h4>📊 Admin</h4>
+          <p>Usuários: {metricas.usuarios}</p>
+          <p>Registros: {metricas.registros}</p>
+          <p>IA: {metricas.ia}</p>
+        </div>
+      )}
     </div>
 
     <div style={styles.main}>
@@ -294,5 +323,7 @@ const styles = {
   loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:300},
   button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
   link:{cursor:"pointer",color:"#38bdf8"},
-  logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"}
+  logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
+  upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
+  adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12}
 };

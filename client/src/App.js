@@ -7,7 +7,7 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// 🔥 IMPORTANTE: use o backend correto do Render
+// 🔥 BACKEND CORRETO
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
@@ -45,43 +45,6 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= CHECKOUT ================= */
-const irParaCheckout = async () => {
-  try {
-    const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
-    const data = await res.json();
-    window.location.href = data.url;
-  } catch {
-    alert("Erro ao iniciar pagamento");
-  }
-};
-
-/* ================= LOGIN ================= */
-const login = async () => {
-  try {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Erro no login");
-  } finally {
-    setLoading(false);
-  }
-};
-
-/* ================= CADASTRO ================= */
-const cadastrar = async () => {
-  try {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) alert("Erro ao cadastrar");
-    else {
-      alert("Conta criada!");
-      setModoCadastro(false);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
 /* ================= SCROLL ================= */
 useEffect(() => {
   chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
@@ -109,6 +72,44 @@ useEffect(() => {
   }
 }, [session]);
 
+/* ================= LOGIN ================= */
+const login = async () => {
+  try {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert("Erro no login");
+  } finally {
+    setLoading(false);
+  }
+};
+
+/* ================= CADASTRO ================= */
+const cadastrar = async () => {
+  try {
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) alert("Erro ao cadastrar");
+    else {
+      alert("Conta criada!");
+      setModoCadastro(false);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+/* ================= CHECKOUT ================= */
+const irParaCheckout = async () => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/criar-checkout`);
+    const data = await res.json();
+    window.location.href = data.url;
+  } catch {
+    alert("Erro pagamento");
+  }
+};
+
+/* ================= USER ================= */
 const buscarUsuario = async () => {
   try {
     const emailUser = session.user.email;
@@ -134,8 +135,8 @@ const buscarUsuario = async () => {
     setPlano(admin ? "premium" : data?.plano || "free");
     setIsAdmin(admin || data?.is_admin || false);
 
-  } catch {
-    console.log("Erro ao buscar usuário");
+  } catch (err) {
+    console.log("Erro user:", err);
   }
 };
 
@@ -166,8 +167,8 @@ const carregarMetricas = async () => {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
     const data = await res.json();
     setMetricas(data);
-  } catch {
-    console.log("Erro métricas");
+  } catch (err) {
+    console.log("Erro métricas:", err);
   }
 };
 
@@ -195,22 +196,8 @@ const falarComIA = async () => {
 
     const data = await res.json();
 
-    if (data.limite) {
-      setChat([
-        ...novoChat,
-        {
-          tipo:"ia",
-          texto:data.resposta,
-          upgrade:true
-        }
-      ]);
-      setLoading(false);
-      return;
-    }
-
     setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
-    // 🔥 NÃO salvar aqui (já salva no backend)
     buscarRegistros();
 
   } catch {
@@ -262,12 +249,6 @@ return (
             background: msg.tipo === "user" ? "#22c55e" : "#334155"
           }}>
             {msg.texto}
-
-            {msg.upgrade && (
-              <button onClick={irParaCheckout} style={{marginTop:10,background:"#22c55e",border:"none",padding:8,color:"#fff"}}>
-                🚀 Virar Premium
-              </button>
-            )}
           </div>
         ))}
       </div>

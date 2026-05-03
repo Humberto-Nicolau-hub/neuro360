@@ -40,6 +40,8 @@ const [isAdmin, setIsAdmin] = useState(false);
 const [metricas, setMetricas] = useState(null);
 
 const [chat, setChat] = useState([]);
+const [modo, setModo] = useState("terapeutico");
+
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
@@ -79,111 +81,78 @@ useEffect(() => {
 
 /* ================= LOGIN ================= */
 const login = async () => {
-  try {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Erro no login");
-  } finally {
-    setLoading(false);
-  }
+  setLoading(true);
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) alert("Erro no login");
+  setLoading(false);
 };
 
 /* ================= CADASTRO ================= */
 const cadastrar = async () => {
-  try {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) alert("Erro ao cadastrar");
-    else {
-      alert("Conta criada!");
-      setModoCadastro(false);
-    }
-  } finally {
-    setLoading(false);
+  setLoading(true);
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (error) alert("Erro ao cadastrar");
+  else {
+    alert("Conta criada!");
+    setModoCadastro(false);
   }
+  setLoading(false);
 };
 
-/* ================= 🔥 UPGRADE STRIPE ================= */
+/* ================= STRIPE ================= */
 const handleUpgrade = async () => {
-  try {
-    const res = await fetch(`${BACKEND_URL}/criar-checkout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-
-    const data = await res.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Erro ao iniciar pagamento");
-    }
-  } catch {
-    alert("Erro pagamento");
-  }
+  const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
 };
 
 /* ================= USER ================= */
 const buscarUsuario = async () => {
-  try {
-    const emailUser = session.user.email;
+  const emailUser = session.user.email;
 
-    let { data } = await supabase
+  let { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", emailUser)
+    .maybeSingle();
+
+  const admin = emailUser === ADMIN_EMAIL;
+
+  if (!data) {
+    const { data: novo } = await supabase
       .from("profiles")
-      .select("*")
-      .eq("email", emailUser)
-      .maybeSingle();
+      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+      .select()
+      .single();
 
-    const admin = emailUser === ADMIN_EMAIL;
-
-    if (!data) {
-      const { data: novo } = await supabase
-        .from("profiles")
-        .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
-        .select()
-        .single();
-
-      data = novo;
-    }
-
-    setPlano(admin ? "premium" : data?.plano || "free");
-    setIsAdmin(admin || data?.is_admin || false);
-
-  } catch (err) {
-    console.log("Erro user:", err);
+    data = novo;
   }
+
+  setPlano(admin ? "premium" : data?.plano || "free");
+  setIsAdmin(admin || data?.is_admin || false);
 };
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
-  try {
-    const { data } = await supabase
-      .from("registros_emocionais")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: true });
+  const { data } = await supabase
+    .from("registros_emocionais")
+    .select("*")
+    .eq("user_id", session.user.id)
+    .order("created_at", { ascending: true });
 
-    setGrafico(
-      data?.map(d => ({
-        data: new Date(d.created_at).toLocaleDateString(),
-        valor: MAPA[d.emocao] || 5
-      })) || []
-    );
-
-  } catch {
-    console.log("Erro gráfico");
-  }
+  setGrafico(
+    data?.map(d => ({
+      data: new Date(d.created_at).toLocaleDateString(),
+      valor: MAPA[d.emocao] || 5
+    })) || []
+  );
 };
 
 /* ================= ADMIN ================= */
 const carregarMetricas = async () => {
-  try {
-    const res = await fetch(`${BACKEND_URL}/admin-metricas`);
-    const data = await res.json();
-    setMetricas(data);
-  } catch (err) {
-    console.log("Erro métricas:", err);
-  }
+  const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+  const data = await res.json();
+  setMetricas(data);
 };
 
 /* ================= IA ================= */
@@ -196,32 +165,32 @@ const falarComIA = async () => {
   setTexto("");
   setLoading(true);
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/ia`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        texto,
-        emocao,
-        user_id: session.user.id,
-        historico: novoChat
-      })
-    });
+  const res = await fetch(`${BACKEND_URL}/ia`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      texto,
+      emocao,
+      user_id: session.user.id,
+      historico: novoChat,
+      modo
+    })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.limite) {
-      alert("Você atingiu o limite do plano free 🚀");
-    }
-
-    setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
-
-    buscarRegistros();
-
-  } catch {
-    setChat([...novoChat, { tipo:"ia", texto:"Erro na IA." }]);
+  if (data.limite) {
+    setChat([
+      ...novoChat,
+      { tipo:"ia", texto:"Você atingiu o limite do plano free. Desbloqueie a versão completa 🔓" }
+    ]);
+    setLoading(false);
+    return;
   }
 
+  setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
+
+  buscarRegistros();
   setLoading(false);
 };
 
@@ -259,18 +228,28 @@ return (
       </p>
 
       {!isPremium && (
-        <button onClick={handleUpgrade} style={styles.upgrade}>
-          🚀 Upgrade
-        </button>
+        <div style={styles.boxUpgrade}>
+          <p>Seu plano está limitado</p>
+          <button onClick={handleUpgrade} style={styles.upgrade}>
+            Desbloquear versão completa 🔓
+          </button>
+        </div>
       )}
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+
+      <div style={{marginTop:15}}>
+        <label>Modo:</label>
+        <select value={modo} onChange={(e)=>setModo(e.target.value)} style={styles.input}>
+          <option value="terapeutico">Modo Terapêutico</option>
+          <option value="normal">Modo Normal</option>
+        </select>
+      </div>
 
       <button onClick={logout} style={styles.logout}>
         Sair
       </button>
 
-      {/* 🔥 PAINEL ADMIN */}
       {isAdmin && metricas && (
         <div style={styles.adminBox}>
           <h4>📊 Admin</h4>
@@ -293,15 +272,31 @@ return (
             {msg.texto}
           </div>
         ))}
+
+        {loading && (
+          <div style={{...styles.bubble, background:"#334155"}}>
+            IA está pensando...
+          </div>
+        )}
       </div>
 
       <div style={styles.inputBar}>
-        <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
-          {EMOCOES.map(e => <option key={e}>{e}</option>)}
-        </select>
+        <div>
+          <label style={{fontSize:12}}>Como você está se sentindo?</label>
+          <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
+            {EMOCOES.map(e => <option key={e}>{e}</option>)}
+          </select>
+        </div>
 
-        <input value={texto} onChange={(e)=>setTexto(e.target.value)} placeholder="Digite..."/>
-        <button onClick={falarComIA}>{loading ? "..." : "Enviar"}</button>
+        <input
+          value={texto}
+          onChange={(e)=>setTexto(e.target.value)}
+          placeholder="Escreva o que está sentindo..."
+        />
+
+        <button onClick={falarComIA}>
+          {loading ? "..." : "Enviar"}
+        </button>
       </div>
 
       {grafico.length > 0 && <EvolucaoChart data={grafico}/>}
@@ -313,17 +308,18 @@ return (
 
 const styles = {
   app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
-  sidebar:{width:200,background:"#020617",padding:20},
+  sidebar:{width:220,background:"#020617",padding:20},
   main:{flex:1,display:"flex",flexDirection:"column"},
   chatBox:{flex:1,overflowY:"auto",padding:20,display:"flex",flexDirection:"column",gap:10},
   bubble:{padding:12,borderRadius:10,maxWidth:"60%"},
   inputBar:{display:"flex",gap:10,padding:10,background:"#1e293b"},
-  input:{flex:1,padding:10},
+  input:{padding:10},
   loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},
   loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:300},
   button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
   link:{cursor:"pointer",color:"#38bdf8"},
   logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
   upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
+  boxUpgrade:{marginTop:15,padding:10,background:"#111",borderRadius:8},
   adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12}
 };

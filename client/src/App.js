@@ -7,7 +7,6 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// 🔥 BACKEND CORRETO
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
 
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
@@ -44,6 +43,12 @@ const [chat, setChat] = useState([]);
 const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
+
+/* ================= LOGOUT ================= */
+const logout = async () => {
+  await supabase.auth.signOut();
+  setSession(null);
+};
 
 /* ================= SCROLL ================= */
 useEffect(() => {
@@ -118,7 +123,7 @@ const buscarUsuario = async () => {
       .from("profiles")
       .select("*")
       .eq("email", emailUser)
-      .single();
+      .maybeSingle(); // 🔥 CORREÇÃO AQUI
 
     const admin = emailUser === ADMIN_EMAIL;
 
@@ -235,8 +240,16 @@ return (
 
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
-      <p style={{color:"#22c55e"}}>Plano: {isPremium ? "Premium ✅" : "Free"}</p>
+
+      <p style={{color:"#22c55e"}}>
+        Plano: {isPremium ? "Premium ✅" : "Free"}
+      </p>
+
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+
+      <button onClick={logout} style={styles.logout}>
+        Sair
+      </button>
     </div>
 
     <div style={styles.main}>
@@ -280,5 +293,6 @@ const styles = {
   loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},
   loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:300},
   button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
-  link:{cursor:"pointer",color:"#38bdf8"}
+  link:{cursor:"pointer",color:"#38bdf8"},
+  logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"}
 };

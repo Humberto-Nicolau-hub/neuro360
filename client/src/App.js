@@ -7,9 +7,10 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
+// 🔥 IMPORTANTE: use o backend correto do Render
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
-const MAX_FREE_INTERACOES = 3;
 
 const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
 
@@ -37,7 +38,6 @@ const [grafico, setGrafico] = useState([]);
 
 const [plano, setPlano] = useState("free");
 const [isAdmin, setIsAdmin] = useState(false);
-const [interacoes, setInteracoes] = useState(0);
 const [metricas, setMetricas] = useState(null);
 
 const [chat, setChat] = useState([]);
@@ -47,9 +47,13 @@ const isPremium = plano === "premium" || isAdmin;
 
 /* ================= CHECKOUT ================= */
 const irParaCheckout = async () => {
-  const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
-  const data = await res.json();
-  window.location.href = data.url;
+  try {
+    const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
+    const data = await res.json();
+    window.location.href = data.url;
+  } catch {
+    alert("Erro ao iniciar pagamento");
+  }
 };
 
 /* ================= LOGIN ================= */
@@ -78,7 +82,7 @@ const cadastrar = async () => {
   }
 };
 
-/* ================= AUTO SCROLL ================= */
+/* ================= SCROLL ================= */
 useEffect(() => {
   chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
 }, [chat]);
@@ -106,57 +110,71 @@ useEffect(() => {
 }, [session]);
 
 const buscarUsuario = async () => {
-  const emailUser = session.user.email;
+  try {
+    const emailUser = session.user.email;
 
-  let { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("email", emailUser)
-    .single();
-
-  const admin = emailUser === ADMIN_EMAIL;
-
-  if (!data) {
-    const { data: novo } = await supabase
+    let { data } = await supabase
       .from("profiles")
-      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
-      .select()
+      .select("*")
+      .eq("email", emailUser)
       .single();
 
-    data = novo;
-  }
+    const admin = emailUser === ADMIN_EMAIL;
 
-  setPlano(admin ? "premium" : data?.plano || "free");
-  setIsAdmin(admin || data?.is_admin || false);
+    if (!data) {
+      const { data: novo } = await supabase
+        .from("profiles")
+        .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+        .select()
+        .single();
+
+      data = novo;
+    }
+
+    setPlano(admin ? "premium" : data?.plano || "free");
+    setIsAdmin(admin || data?.is_admin || false);
+
+  } catch {
+    console.log("Erro ao buscar usuário");
+  }
 };
 
 /* ================= REGISTROS ================= */
 const buscarRegistros = async () => {
-  const { data } = await supabase
-    .from("registros_emocionais")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .order("created_at", { ascending: true });
+  try {
+    const { data } = await supabase
+      .from("registros_emocionais")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: true });
 
-  setGrafico(
-    data?.map(d => ({
-      data: new Date(d.created_at).toLocaleDateString(),
-      valor: MAPA[d.emocao] || 5
-    })) || []
-  );
+    setGrafico(
+      data?.map(d => ({
+        data: new Date(d.created_at).toLocaleDateString(),
+        valor: MAPA[d.emocao] || 5
+      })) || []
+    );
+
+  } catch {
+    console.log("Erro gráfico");
+  }
 };
 
 /* ================= ADMIN ================= */
 const carregarMetricas = async () => {
-  const res = await fetch(`${BACKEND_URL}/admin-metricas`);
-  const data = await res.json();
-  setMetricas(data);
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+    const data = await res.json();
+    setMetricas(data);
+  } catch {
+    console.log("Erro métricas");
+  }
 };
 
 /* ================= IA ================= */
 const falarComIA = async () => {
 
-  if (!texto) return;
+  if (!texto || !session?.user) return;
 
   const novoChat = [...chat, { tipo: "user", texto }];
   setChat(novoChat);
@@ -186,17 +204,13 @@ const falarComIA = async () => {
           upgrade:true
         }
       ]);
+      setLoading(false);
       return;
     }
 
     setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
-    await supabase.from("registros_emocionais").insert([{
-      user_id: session.user.id,
-      emocao,
-      texto
-    }]);
-
+    // 🔥 NÃO salvar aqui (já salva no backend)
     buscarRegistros();
 
   } catch {

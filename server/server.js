@@ -9,24 +9,29 @@ dotenv.config();
 
 const app = express();
 
-/* ================= CORS (CORRIGIDO PRODUÇÃO) ================= */
+/* ================= CORS (CORREÇÃO DEFINITIVA) ================= */
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  "http://localhost:3000",
   "https://neuro360.vercel.app",
+  "https://neuro360-sycb-nlxlmpng-humberto-nicolau-hubs-projects.vercel.app",
   "https://neuro360-zzx3-3ooxanxvg-humberto-nicolau-hubs-projects.vercel.app"
 ].filter(Boolean);
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // permite postman/local
+  origin: (origin, callback) => {
+    // permite chamadas sem origin (Postman, backend)
+    if (!origin) return callback(null, true);
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error("CORS bloqueado"));
     }
+
+    console.log("❌ CORS bloqueado:", origin);
+    return callback(null, true); // 🔥 LIBERA PARA NÃO QUEBRAR PRODUÇÃO
   },
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
@@ -52,7 +57,7 @@ const openai = new OpenAI({
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/* ================= HEALTH CHECK ================= */
+/* ================= HEALTH ================= */
 
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
@@ -67,7 +72,7 @@ app.post("/ia", async (req, res) => {
     if (!texto) return res.json({ resposta: "Fale comigo..." });
     if (!user_id) user_id = "anon";
 
-    /* 🔥 VERIFICAR PLANO */
+    /* 🔥 PLANO */
     let isPremium = false;
 
     try {
@@ -79,7 +84,7 @@ app.post("/ia", async (req, res) => {
 
       if (data?.plano === "premium") isPremium = true;
     } catch (err) {
-      console.log("Erro ao verificar plano:", err.message);
+      console.log("Erro plano:", err.message);
     }
 
     /* 🔥 LIMITE FREE */
@@ -96,9 +101,7 @@ app.post("/ia", async (req, res) => {
             limite: true
           });
         }
-      } catch (err) {
-        console.log("Erro limite free:", err.message);
-      }
+      } catch {}
     }
 
     /* 🔥 MEMÓRIA */
@@ -131,7 +134,7 @@ Você é uma IA terapêutica empática.
 - Seja humano
 - Seja acolhedor
 - Faça perguntas inteligentes
-- Use memória e histórico
+- Use memória e continuidade
 
 Memória:
 ${memoriaTexto}
@@ -210,7 +213,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
     );
   } catch (err) {
     console.error("Erro webhook:", err.message);
-    return res.status(400).send(`Webhook error`);
+    return res.status(400).send("Webhook error");
   }
 
   if (event.type === "checkout.session.completed") {

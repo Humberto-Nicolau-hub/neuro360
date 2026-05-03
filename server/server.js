@@ -9,40 +9,21 @@ dotenv.config();
 
 const app = express();
 
-/* ================= CORS (CORREÇÃO DEFINITIVA) ================= */
+/* ================= CORS ================= */
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "http://localhost:3000",
-  "https://neuro360.vercel.app",
-  "https://neuro360-sycb-nlxlmpng-humberto-nicolau-hubs-projects.vercel.app",
-  "https://neuro360-zzx3-3ooxanxvg-humberto-nicolau-hubs-projects.vercel.app"
+  "http://localhost:3000"
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // permite chamadas sem origin (Postman, backend)
     if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("❌ CORS bloqueado:", origin);
-    return callback(null, true); // 🔥 LIBERA PARA NÃO QUEBRAR PRODUÇÃO
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+    return callback(null, true);
+  }
 }));
 
 app.use(express.json());
-
-/* ================= VALIDAÇÃO ================= */
-
-if (!process.env.SUPABASE_URL) throw new Error("SUPABASE_URL não definida");
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY não definida");
-if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY não definida");
-if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY não definida");
 
 /* ================= CLIENTES ================= */
 
@@ -57,22 +38,16 @@ const openai = new OpenAI({
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/* ================= HEALTH ================= */
-
-app.get("/", (req, res) => {
-  res.json({ status: "ok" });
-});
-
 /* ================= IA ================= */
 
 app.post("/ia", async (req, res) => {
   try {
-    let { texto, emocao, user_id, historico } = req.body;
+    let { texto, emocao, user_id, historico, modo } = req.body;
 
     if (!texto) return res.json({ resposta: "Fale comigo..." });
     if (!user_id) user_id = "anon";
 
-    /* 🔥 PLANO */
+    /* ===== PLANO ===== */
     let isPremium = false;
 
     try {
@@ -83,28 +58,24 @@ app.post("/ia", async (req, res) => {
         .single();
 
       if (data?.plano === "premium") isPremium = true;
-    } catch (err) {
-      console.log("Erro plano:", err.message);
-    }
+    } catch {}
 
-    /* 🔥 LIMITE FREE */
+    /* ===== LIMITE FREE ===== */
     if (!isPremium) {
-      try {
-        const { count } = await supabase
-          .from("registros_emocionais")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user_id);
+      const { count } = await supabase
+        .from("registros_emocionais")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user_id);
 
-        if ((count || 0) >= 10) {
-          return res.json({
-            resposta: "Você atingiu o limite do plano free 🚀",
-            limite: true
-          });
-        }
-      } catch {}
+      if ((count || 0) >= 10) {
+        return res.json({
+          resposta: "Você atingiu o limite do plano free 🚀",
+          limite: true
+        });
+      }
     }
 
-    /* 🔥 MEMÓRIA */
+    /* ===== MEMÓRIA ===== */
     let memoriaTexto = "";
 
     try {
@@ -118,161 +89,87 @@ app.post("/ia", async (req, res) => {
       memoriaTexto = data?.map(m => m.texto).join("\n") || "";
     } catch {}
 
-    /* 🔥 HISTÓRICO */
-    let historicoTexto = "";
+    /* ===== HISTÓRICO ===== */
+    let historicoTexto = historico
+      ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
+      .join("\n") || "";
 
-    try {
-      historicoTexto = historico
-        ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
-        .join("\n") || "";
-    } catch {}
+    /* ===== PROMPT PROFISSIONAL ===== */
+    const promptSistema = modo === "terapeutico"
+      ? `
+Você é um terapeuta especialista em:
+- PNL (Programação Neurolinguística)
+- Terapia Neuro Sistêmica
 
-    /* 🔥 PROMPT */
-    const promptSistema = `
-Você é uma IA terapêutica empática.
+Siga este fluxo:
+1. Valide a emoção
+2. Identifique o padrão emocional
+3. Conduza com perguntas inteligentes
+4. Aplique uma técnica prática (ressignificação, foco, quebra de padrão)
 
-- Seja humano
-- Seja acolhedor
-- Faça perguntas inteligentes
-- Use memória e continuidade
+Seja humano, profundo e estratégico.
+Nunca seja genérico.
 
 Memória:
 ${memoriaTexto}
 
 Histórico:
 ${historicoTexto}
-`;
+`
+      : "Responda de forma clara, objetiva e útil.";
 
-    /* 🔥 OPENAI */
+    /* ===== OPENAI ===== */
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: promptSistema },
-        { role: "user", content: `${emocao || "neutro"}: ${texto}` }
+        { role: "user", content: `${emocao}: ${texto}` }
       ],
     });
 
-    const resposta =
+    let resposta =
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* 🔥 SALVAR */
-    try {
-      await supabase.from("memoria_ia").insert({ user_id, texto });
-    } catch {}
+    /* ===== GATILHO DE CONVERSÃO ===== */
+    if (!isPremium) {
+      resposta += "\n\n💡 Você pode aprofundar esse processo com acompanhamento completo no plano Premium.";
+    }
 
-    try {
-      await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
-    } catch {}
+    /* ===== SALVAR ===== */
+    await supabase.from("memoria_ia").insert({ user_id, texto });
+    await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
 
-    return res.json({ resposta });
+    res.json({ resposta });
 
   } catch (err) {
-    console.error("ERRO IA:", err);
-    return res.json({ resposta: "Erro, mas continuo com você." });
+    console.error(err);
+    res.json({ resposta: "Erro, mas continuo com você." });
   }
 });
 
 /* ================= STRIPE ================= */
 
 app.post("/criar-checkout", async (req, res) => {
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
-        },
-      ],
-      success_url: process.env.FRONTEND_URL,
-      cancel_url: process.env.FRONTEND_URL,
-    });
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+    success_url: process.env.FRONTEND_URL,
+    cancel_url: process.env.FRONTEND_URL,
+  });
 
-    res.json({ url: session.url });
-
-  } catch (err) {
-    console.error("Erro Stripe:", err);
-    res.status(500).json({ error: "Erro checkout" });
-  }
-});
-
-/* ================= WEBHOOK ================= */
-
-app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("Erro webhook:", err.message);
-    return res.status(400).send("Webhook error");
-  }
-
-  if (event.type === "checkout.session.completed") {
-    try {
-      const session = event.data.object;
-      const email = session.customer_details.email;
-
-      await supabase
-        .from("profiles")
-        .update({ plano: "premium" })
-        .eq("email", email);
-
-    } catch (err) {
-      console.error("Erro atualizar plano:", err.message);
-    }
-  }
-
-  res.json({ received: true });
+  res.json({ url: session.url });
 });
 
 /* ================= ADMIN ================= */
 
 app.get("/admin-metricas", async (req, res) => {
-  try {
-    const { count: usuarios } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true });
+  const { count: usuarios } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+  const { count: registros } = await supabase.from("registros_emocionais").select("*", { count: "exact", head: true });
+  const { count: ia } = await supabase.from("memoria_ia").select("*", { count: "exact", head: true });
 
-    const { count: registros } = await supabase
-      .from("registros_emocionais")
-      .select("*", { count: "exact", head: true });
-
-    const { count: ia } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true });
-
-    res.json({
-      usuarios: usuarios || 0,
-      registros: registros || 0,
-      ia: ia || 0
-    });
-
-  } catch (err) {
-    console.error("Erro admin:", err);
-    res.json({ usuarios: 0, registros: 0, ia: 0 });
-  }
+  res.json({ usuarios, registros, ia });
 });
 
-/* ================= FALLBACK ================= */
-
-app.use((err, req, res, next) => {
-  console.error("Erro global:", err.stack);
-  res.status(500).json({ error: "Erro interno" });
-});
-
-/* ================= START ================= */
-
-const PORT = process.env.PORT || 10000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server rodando na porta ${PORT}`);
-});
+app.listen(process.env.PORT || 10000);

@@ -35,10 +35,36 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
 const SUPORTE_NUMERO = "5561993338458";
 
-/* ================= FUNÇÕES AUXILIARES ================= */
+/* ================= RATE LIMIT SIMPLES ================= */
+
+const rateLimitMap = new Map();
+
+function checkRateLimit(user_id) {
+  const now = Date.now();
+  const windowTime = 60 * 1000; // 1 min
+  const maxRequests = 10;
+
+  if (!rateLimitMap.has(user_id)) {
+    rateLimitMap.set(user_id, []);
+  }
+
+  const timestamps = rateLimitMap.get(user_id).filter(t => now - t < windowTime);
+
+  if (timestamps.length >= maxRequests) {
+    return false;
+  }
+
+  timestamps.push(now);
+  rateLimitMap.set(user_id, timestamps);
+
+  return true;
+}
+
+/* ================= FUNÇÕES ================= */
 
 function validarEntrada(texto) {
   if (!texto) return false;
+  if (typeof texto !== "string") return false;
   if (texto.length > 500) return false;
   return true;
 }
@@ -91,7 +117,14 @@ app.post("/ia", async (req, res) => {
       return res.json({ resposta: "Me diga isso de forma um pouco mais simples pra eu te ajudar melhor." });
     }
 
-    if (!user_id) user_id = "anon";
+    user_id = user_id || "anon";
+
+    // 🔐 RATE LIMIT
+    if (!checkRateLimit(user_id)) {
+      return res.json({
+        resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco e vamos continuar. 🌿"
+      });
+    }
 
     if (detectarEncerramento(texto)) {
       return res.json({
@@ -112,6 +145,7 @@ app.post("/ia", async (req, res) => {
       if (data?.plano === "premium") isPremium = true;
     } catch {}
 
+    // 🔥 LIMITE FREE
     if (!isPremium) {
       const hoje = getHoje();
 
@@ -183,21 +217,24 @@ ${historicoTexto}
       promptSistema = "Responda de forma clara.";
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: promptSistema },
-        { role: "user", content: `${emocao}: ${texto}` }
-      ],
-    });
+    let resposta = "Estou aqui com você.";
 
-    let resposta =
-      completion?.choices?.[0]?.message?.content ||
-      "Estou aqui com você.";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: promptSistema },
+          { role: "user", content: `${emocao}: ${texto}` }
+        ],
+      });
+
+      resposta = completion?.choices?.[0]?.message?.content || resposta;
+    } catch {
+      resposta = "Tive uma pequena instabilidade, mas continuo com você.";
+    }
 
     const fase = detectarFase(texto);
 
-    // 🧠 PROGRESSÃO TERAPÊUTICA
     if (fase === "dor") {
       resposta += "\n\n💭 Vamos entender isso juntos. O que mais pesa dentro disso pra você agora?";
     }
@@ -214,11 +251,7 @@ ${historicoTexto}
       resposta = `
 Fico muito feliz em ter caminhado com você até aqui. 🌱
 
-Antes de encerrar, me conta:
-
 👉 Qual foi o principal insight que você leva dessa conversa?
-
-Isso fortalece ainda mais essa mudança dentro de você.
 `;
     }
 
@@ -228,9 +261,7 @@ Isso fortalece ainda mais essa mudança dentro de você.
 
 🧠 Existe um padrão emocional por trás disso.
 
-Com acompanhamento guiado, você consegue trabalhar isso de forma mais profunda e estruturada.
-
-Se quiser, posso te mostrar como funciona isso passo a passo.`;
+Com acompanhamento guiado, você consegue trabalhar isso de forma mais profunda.`;
     }
 
     if (!isPremium && fase === "clareza") {
@@ -238,9 +269,7 @@ Se quiser, posso te mostrar como funciona isso passo a passo.`;
 
 ✨ Você já começou a evoluir.
 
-Com acompanhamento contínuo, isso se torna muito mais rápido e consistente.
-
-Esse é exatamente o objetivo do plano premium.`;
+Com acompanhamento contínuo, isso acelera muito mais.`;
     }
 
     // 📞 SUPORTE

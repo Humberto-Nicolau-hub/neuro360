@@ -51,22 +51,33 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= 🔥 PERSISTÊNCIA CHAT ================= */
+/* ================= 🔥 PERSISTÊNCIA POR USUÁRIO ================= */
+
+const getChatKey = () => {
+  return session?.user?.id ? `chat_${session.user.id}` : null;
+};
+
 useEffect(() => {
-  const salvo = localStorage.getItem("chat_neuro360");
+  if (!session?.user) return;
+
+  const key = getChatKey();
+  const salvo = localStorage.getItem(key);
+
   if (salvo) setChat(JSON.parse(salvo));
-}, []);
+}, [session]);
 
 useEffect(() => {
-  localStorage.setItem("chat_neuro360", JSON.stringify(chat));
-}, [chat]);
+  const key = getChatKey();
+  if (key) localStorage.setItem(key, JSON.stringify(chat));
+}, [chat, session]);
 
-/* ================= LOGOUT (CORRIGIDO) ================= */
+/* ================= LOGOUT (CORRIGIDO FORTE) ================= */
+
 const logout = async () => {
   await supabase.auth.signOut();
 
-  localStorage.clear();
-  sessionStorage.clear();
+  const key = getChatKey();
+  if (key) localStorage.removeItem(key);
 
   setEmail("");
   setPassword("");
@@ -75,11 +86,13 @@ const logout = async () => {
 };
 
 /* ================= SCROLL ================= */
+
 useEffect(() => {
   chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
 }, [chat]);
 
 /* ================= AUTH ================= */
+
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
@@ -88,7 +101,6 @@ useEffect(() => {
   const { data: listener } = supabase.auth.onAuthStateChange(
     (_, session) => {
       setSession(session);
-      setChat([]);
       setTexto("");
       setGrafico([]);
     }
@@ -98,6 +110,7 @@ useEffect(() => {
 }, []);
 
 /* ================= USER ================= */
+
 useEffect(() => {
   if (session?.user) {
     buscarUsuario();
@@ -107,6 +120,7 @@ useEffect(() => {
 }, [session]);
 
 /* ================= LOGIN ================= */
+
 const login = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -115,6 +129,7 @@ const login = async () => {
 };
 
 /* ================= CADASTRO ================= */
+
 const cadastrar = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signUp({ email, password });
@@ -127,6 +142,7 @@ const cadastrar = async () => {
 };
 
 /* ================= STRIPE ================= */
+
 const handleUpgrade = async () => {
   const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
   const data = await res.json();
@@ -134,6 +150,7 @@ const handleUpgrade = async () => {
 };
 
 /* ================= USER ================= */
+
 const buscarUsuario = async () => {
   const emailUser = session.user.email;
 
@@ -160,6 +177,7 @@ const buscarUsuario = async () => {
 };
 
 /* ================= REGISTROS ================= */
+
 const buscarRegistros = async () => {
   const { data } = await supabase
     .from("registros_emocionais")
@@ -176,6 +194,7 @@ const buscarRegistros = async () => {
 };
 
 /* ================= ADMIN ================= */
+
 const carregarMetricas = async () => {
   const res = await fetch(`${BACKEND_URL}/admin-metricas`);
   const data = await res.json();
@@ -183,13 +202,14 @@ const carregarMetricas = async () => {
 };
 
 /* ================= IA ================= */
+
 const falarComIA = async () => {
 
   if (!texto || !session?.user) return;
 
   const textoLower = texto.toLowerCase();
 
-  /* 🔥 ENCERRAMENTO INTELIGENTE */
+  /* 🔥 ENCERRAMENTO */
   if (
     textoLower.includes("obrigado") ||
     textoLower.includes("valeu") ||
@@ -236,6 +256,7 @@ const falarComIA = async () => {
 };
 
 /* ================= LOGIN UI ================= */
+
 if (!session) {
   return (
     <div style={styles.loginContainer}>
@@ -258,6 +279,7 @@ if (!session) {
 }
 
 /* ================= APP ================= */
+
 return (
   <div style={styles.app}>
 
@@ -285,9 +307,9 @@ return (
         </div>
       )}
 
-      {/* 🔥 SUPORTE */}
+      {/* 🔥 SUPORTE REAL */}
       <a
-        href="https://wa.me/5599999999999"
+        href="https://wa.me/5561993338458"
         target="_blank"
         rel="noreferrer"
         style={{display:"block",marginTop:15,color:"#38bdf8"}}
@@ -340,6 +362,7 @@ return (
 }
 
 /* ================= STYLES ================= */
+
 const styles = {
   app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
   sidebar:{width:220,background:"#020617",padding:20},

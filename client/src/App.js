@@ -1,3 +1,4 @@
+// 🔥 IMPORTS (NÃO ALTERADO)
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
@@ -24,6 +25,8 @@ const MAPA = {
 
 export default function App() {
 
+/* ================= STATES ================= */
+
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -48,11 +51,25 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= LOGOUT ================= */
+/* ================= 🔥 PERSISTÊNCIA CHAT ================= */
+useEffect(() => {
+  const salvo = localStorage.getItem("chat_neuro360");
+  if (salvo) setChat(JSON.parse(salvo));
+}, []);
+
+useEffect(() => {
+  localStorage.setItem("chat_neuro360", JSON.stringify(chat));
+}, [chat]);
+
+/* ================= LOGOUT (CORRIGIDO) ================= */
 const logout = async () => {
   await supabase.auth.signOut();
+
   localStorage.clear();
   sessionStorage.clear();
+
+  setEmail("");
+  setPassword("");
   setChat([]);
   setSession(null);
 };
@@ -170,6 +187,23 @@ const falarComIA = async () => {
 
   if (!texto || !session?.user) return;
 
+  const textoLower = texto.toLowerCase();
+
+  /* 🔥 ENCERRAMENTO INTELIGENTE */
+  if (
+    textoLower.includes("obrigado") ||
+    textoLower.includes("valeu") ||
+    textoLower.includes("tchau")
+  ) {
+    setChat(prev => [
+      ...prev,
+      { tipo: "user", texto },
+      { tipo: "ia", texto: "Foi um prazer te ouvir. Estarei aqui sempre que precisar. 🌱" }
+    ]);
+    setTexto("");
+    return;
+  }
+
   const novoChat = [...chat, { tipo: "user", texto }];
   setChat(novoChat);
   setTexto("");
@@ -192,15 +226,7 @@ const falarComIA = async () => {
   setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
   if (!isPremium && modo === "terapeutico") {
-    const t = texto.toLowerCase();
-
-    if (
-      t.includes("ansiedade") ||
-      t.includes("triste") ||
-      t.includes("não aguento") ||
-      t.includes("cansado") ||
-      t.includes("perdido")
-    ) {
+    if (textoLower.includes("ansiedade") || textoLower.includes("triste")) {
       setMostrarCTA(true);
     }
   }
@@ -250,46 +276,29 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
-      {/* 🔥 PAINEL ADMIN RESTAURADO */}
       {isAdmin && metricas && (
         <div style={{ marginTop: 20 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 10 }}>📊 Admin</h3>
+          <h3>📊 Admin</h3>
           <p>Usuários: {metricas.usuarios}</p>
           <p>Registros: {metricas.registros}</p>
           <p>IA: {metricas.ia}</p>
         </div>
       )}
 
-      <div style={styles.modeToggle}>
-        <button onClick={() => setModo("normal")} style={modo === "normal" ? styles.modeActive : styles.modeBtn}>
-          Normal
-        </button>
-
-        <button onClick={() => setModo("terapeutico")} style={modo === "terapeutico" ? styles.modeActive : styles.modeBtn}>
-          Terapêutico
-        </button>
-      </div>
-
-      {isPremium && (
-        <button
-          onClick={() => setModoProfundo(!modoProfundo)}
-          style={{
-            marginTop: 10,
-            background: modoProfundo ? "#6c5ce7" : "#1e293b",
-            color:"#fff",
-            padding:10,
-            borderRadius:6
-          }}
-        >
-          🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
-        </button>
-      )}
+      {/* 🔥 SUPORTE */}
+      <a
+        href="https://wa.me/5599999999999"
+        target="_blank"
+        rel="noreferrer"
+        style={{display:"block",marginTop:15,color:"#38bdf8"}}
+      >
+        💬 Suporte
+      </a>
 
       <button onClick={logout} style={styles.logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
-
       <div ref={chatRef} style={styles.chatBox}>
         {chat.map((msg, i) => (
           <div key={i} style={{
@@ -304,15 +313,6 @@ return (
         {loading && (
           <div style={{...styles.bubble, background:"#334155"}}>
             🧠 IA está analisando...
-          </div>
-        )}
-
-        {mostrarCTA && !isPremium && (
-          <div style={styles.ctaBox}>
-            <p>Você não precisa passar por isso sozinho.</p>
-            <button onClick={handleUpgrade} style={styles.ctaBtn}>
-              Ativar Terapia Completa 🔓
-            </button>
           </div>
         )}
       </div>
@@ -334,12 +334,12 @@ return (
       </div>
 
       {grafico.length > 0 && <EvolucaoChart data={grafico}/>}
-
     </div>
   </div>
 );
 }
 
+/* ================= STYLES ================= */
 const styles = {
   app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
   sidebar:{width:220,background:"#020617",padding:20},
@@ -353,25 +353,5 @@ const styles = {
   button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
   link:{cursor:"pointer",color:"#38bdf8"},
   logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
-  upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
-
-  modeToggle:{display:"flex",gap:5,marginTop:15},
-  modeBtn:{flex:1,padding:8,background:"#1e293b",color:"#94a3b8"},
-  modeActive:{flex:1,padding:8,background:"#22c55e",color:"#000"},
-
-  ctaBox:{
-    background:"#111",
-    padding:15,
-    borderRadius:10,
-    marginTop:10,
-    border:"1px solid #22c55e"
-  },
-  ctaBtn:{
-    marginTop:10,
-    background:"#22c55e",
-    border:"none",
-    padding:10,
-    borderRadius:6,
-    cursor:"pointer"
-  }
+  upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"}
 };

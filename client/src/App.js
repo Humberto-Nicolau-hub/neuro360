@@ -42,7 +42,6 @@ const [metricas, setMetricas] = useState(null);
 const [chat, setChat] = useState([]);
 const [modo, setModo] = useState("terapeutico");
 
-/* 🔥 NOVO: Terapia Guiada Inteligente */
 const [modoProfundo, setModoProfundo] = useState(false);
 
 const chatRef = useRef(null);
@@ -52,6 +51,12 @@ const isPremium = plano === "premium" || isAdmin;
 /* ================= LOGOUT ================= */
 const logout = async () => {
   await supabase.auth.signOut();
+
+  // 🔥 LIMPEZA TOTAL
+  localStorage.clear();
+  sessionStorage.clear();
+
+  setChat([]);
   setSession(null);
 };
 
@@ -67,7 +72,15 @@ useEffect(() => {
   });
 
   const { data: listener } = supabase.auth.onAuthStateChange(
-    (_, session) => setSession(session)
+    (_, session) => {
+
+      setSession(session);
+
+      // 🔥 RESET TOTAL AO TROCAR USUÁRIO
+      setChat([]);
+      setTexto("");
+      setGrafico([]);
+    }
   );
 
   return () => listener?.subscription?.unsubscribe();
@@ -175,9 +188,8 @@ const falarComIA = async () => {
       texto,
       emocao,
       user_id: session.user.id,
-      historico: novoChat,
       modo,
-      modoProfundo // 🔥 NOVO
+      modoProfundo
     })
   });
 
@@ -242,24 +254,16 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
-      {/* MODO */}
       <div style={styles.modeToggle}>
-        <button
-          onClick={() => setModo("normal")}
-          style={modo === "normal" ? styles.modeActive : styles.modeBtn}
-        >
+        <button onClick={() => setModo("normal")} style={modo === "normal" ? styles.modeActive : styles.modeBtn}>
           Normal
         </button>
 
-        <button
-          onClick={() => setModo("terapeutico")}
-          style={modo === "terapeutico" ? styles.modeActive : styles.modeBtn}
-        >
+        <button onClick={() => setModo("terapeutico")} style={modo === "terapeutico" ? styles.modeActive : styles.modeBtn}>
           Terapêutico
         </button>
       </div>
 
-      {/* 🔥 TERAPIA GUIADA */}
       {isPremium && (
         <button
           onClick={() => setModoProfundo(!modoProfundo)}
@@ -355,27 +359,7 @@ const styles = {
   upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
   boxUpgrade:{marginTop:15,padding:10,background:"#111",borderRadius:8},
   adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12},
-
-  modeToggle:{
-    display:"flex",
-    gap:5,
-    marginTop:15
-  },
-  modeBtn:{
-    flex:1,
-    padding:8,
-    background:"#1e293b",
-    border:"1px solid #334155",
-    color:"#94a3b8",
-    cursor:"pointer",
-    borderRadius:6
-  },
-  modeActive:{
-    flex:1,
-    padding:8,
-    background:"#22c55e",
-    color:"#000",
-    fontWeight:"bold",
-    borderRadius:6
-  }
+  modeToggle:{display:"flex",gap:5,marginTop:15},
+  modeBtn:{flex:1,padding:8,background:"#1e293b",border:"1px solid #334155",color:"#94a3b8",cursor:"pointer",borderRadius:6},
+  modeActive:{flex:1,padding:8,background:"#22c55e",color:"#000",fontWeight:"bold",borderRadius:6}
 };

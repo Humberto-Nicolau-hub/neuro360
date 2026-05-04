@@ -32,19 +32,22 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* ================= CONFIG ================= */
 
-// 🔥 CONTROLE DE SUPORTE (ADMIN)
 const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
 const SUPORTE_NUMERO = "5561993338458";
 
 /* ================= FUNÇÕES AUXILIARES ================= */
 
-// 🔥 Detecta encerramento
+function validarEntrada(texto) {
+  if (!texto) return false;
+  if (texto.length > 500) return false;
+  return true;
+}
+
 function detectarEncerramento(texto) {
   const t = texto.toLowerCase();
   return ["obrigado", "valeu", "tchau", "até mais"].some(p => t.includes(p));
 }
 
-// 🔥 Detecta dor emocional
 function detectarDor(texto) {
   const t = texto.toLowerCase();
   return [
@@ -60,7 +63,17 @@ function detectarDor(texto) {
   ].some(p => t.includes(p));
 }
 
-// 🔥 Data segura (corrige bug do dia virar)
+function detectarFase(texto) {
+  const t = texto.toLowerCase();
+
+  if (detectarEncerramento(texto)) return "fechamento";
+  if (/não aguento|ansiedade|triste|cansado|sozinho/.test(t)) return "dor";
+  if (/entendi|faz sentido/.test(t)) return "clareza";
+  if (/vou tentar|vou fazer/.test(t)) return "ação";
+
+  return "exploracao";
+}
+
 function getHoje() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -74,10 +87,12 @@ app.post("/ia", async (req, res) => {
   try {
     let { texto, emocao, user_id, historico, modo, modoProfundo } = req.body;
 
-    if (!texto) return res.json({ resposta: "Fale comigo..." });
+    if (!validarEntrada(texto)) {
+      return res.json({ resposta: "Me diga isso de forma um pouco mais simples pra eu te ajudar melhor." });
+    }
+
     if (!user_id) user_id = "anon";
 
-    /* ===== ENCERRAMENTO INTELIGENTE ===== */
     if (detectarEncerramento(texto)) {
       return res.json({
         resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar. 🌱",
@@ -85,7 +100,6 @@ app.post("/ia", async (req, res) => {
       });
     }
 
-    /* ===== PLANO ===== */
     let isPremium = false;
 
     try {
@@ -98,7 +112,6 @@ app.post("/ia", async (req, res) => {
       if (data?.plano === "premium") isPremium = true;
     } catch {}
 
-    /* ===== LIMITE FREE (RESET CORRIGIDO) ===== */
     if (!isPremium) {
       const hoje = getHoje();
 
@@ -117,7 +130,6 @@ app.post("/ia", async (req, res) => {
       }
     }
 
-    /* ===== MEMÓRIA ===== */
     let memoriaTexto = "";
 
     try {
@@ -131,12 +143,9 @@ app.post("/ia", async (req, res) => {
       memoriaTexto = data?.map(m => m.texto).join("\n") || "";
     } catch {}
 
-    /* ===== HISTÓRICO ===== */
     let historicoTexto = historico
       ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
       .join("\n") || "";
-
-    /* ===== PROMPT ===== */
 
     let promptSistema = "";
 
@@ -174,8 +183,6 @@ ${historicoTexto}
       promptSistema = "Responda de forma clara.";
     }
 
-    /* ===== OPENAI ===== */
-
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -188,28 +195,61 @@ ${historicoTexto}
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* ===== FUNIL INVISÍVEL ===== */
+    const fase = detectarFase(texto);
 
+    // 🧠 PROGRESSÃO TERAPÊUTICA
+    if (fase === "dor") {
+      resposta += "\n\n💭 Vamos entender isso juntos. O que mais pesa dentro disso pra você agora?";
+    }
+
+    if (fase === "clareza") {
+      resposta += "\n\n✨ Percebe como sua mente já começou a organizar isso?";
+    }
+
+    if (fase === "ação") {
+      resposta += "\n\n🚀 Qual é o menor passo que você consegue dar hoje?";
+    }
+
+    if (fase === "fechamento") {
+      resposta = `
+Fico muito feliz em ter caminhado com você até aqui. 🌱
+
+Antes de encerrar, me conta:
+
+👉 Qual foi o principal insight que você leva dessa conversa?
+
+Isso fortalece ainda mais essa mudança dentro de você.
+`;
+    }
+
+    // 💰 FUNIL
     if (!isPremium && detectarDor(texto) && modo === "terapeutico") {
       resposta += `
 
 🧠 Existe um padrão emocional por trás disso.
 
-Eu posso te guiar de forma mais profunda nesse processo.
+Com acompanhamento guiado, você consegue trabalhar isso de forma mais profunda e estruturada.
 
-Se quiser, posso te acompanhar passo a passo.`;
+Se quiser, posso te mostrar como funciona isso passo a passo.`;
     }
 
-    /* ===== SUPORTE ===== */
+    if (!isPremium && fase === "clareza") {
+      resposta += `
 
+✨ Você já começou a evoluir.
+
+Com acompanhamento contínuo, isso se torna muito mais rápido e consistente.
+
+Esse é exatamente o objetivo do plano premium.`;
+    }
+
+    // 📞 SUPORTE
     if (SUPORTE_ATIVO && detectarDor(texto)) {
       resposta += `
 
-📞 Se quiser falar com alguém humano:
+📞 Fale com suporte humano:
 https://wa.me/${SUPORTE_NUMERO}`;
     }
-
-    /* ===== SALVAR ===== */
 
     await supabase.from("memoria_ia").insert({ user_id, texto });
     await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });

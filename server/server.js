@@ -54,16 +54,21 @@ app.post("/ia", async (req, res) => {
       if (data?.plano === "premium") isPremium = true;
     } catch {}
 
-    /* ===== LIMITE FREE ===== */
+    /* ===== LIMITE FREE (CORRIGIDO COM RESET DIÁRIO) ===== */
     if (!isPremium) {
+
+      const hoje = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
       const { count } = await supabase
         .from("registros_emocionais")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", user_id);
+        .eq("user_id", user_id)
+        .gte("created_at", `${hoje}T00:00:00`)
+        .lte("created_at", `${hoje}T23:59:59`);
 
-      if ((count || 0) >= 10) {
+      if ((count || 0) >= 3) { // 🔥 LIMITE DIÁRIO = 3 (como você definiu)
         return res.json({
-          resposta: "Você atingiu o limite do plano free 🚀",
+          resposta: "Você atingiu o limite do plano free hoje 🚀",
           limite: true
         });
       }
@@ -181,7 +186,6 @@ ${historicoTexto}
 
       const detectouDor = sinaisCriticos.some(p => textoLower.includes(p));
 
-      /* 🔥 NÍVEL 1 — DOR DETECTADA */
       if (detectouDor && modo === "terapeutico") {
 
         resposta += `
@@ -193,7 +197,6 @@ Eu consigo te conduzir em um processo mais profundo, onde você não precisa enf
 Se quiser, posso te guiar passo a passo.`;
       }
 
-      /* 🔥 NÍVEL 2 — ENGAJAMENTO NORMAL */
       else if (modo === "terapeutico") {
 
         resposta += `

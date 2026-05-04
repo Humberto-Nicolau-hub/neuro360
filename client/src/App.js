@@ -42,7 +42,6 @@ const [chat, setChat] = useState([]);
 const [modo, setModo] = useState("terapeutico");
 const [modoProfundo, setModoProfundo] = useState(false);
 
-/* 🔥 NOVO: CONTROLE DE CONVERSÃO */
 const [mostrarCTA, setMostrarCTA] = useState(false);
 
 const chatRef = useRef(null);
@@ -192,7 +191,6 @@ const falarComIA = async () => {
 
   setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
-  /* 🔥 GATILHO INTELIGENTE */
   if (!isPremium && modo === "terapeutico") {
     const t = texto.toLowerCase();
 
@@ -252,6 +250,16 @@ return (
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
 
+      {/* 🔥 PAINEL ADMIN RESTAURADO */}
+      {isAdmin && metricas && (
+        <div style={{ marginTop: 20 }}>
+          <h3 style={{ fontSize: 14, marginBottom: 10 }}>📊 Admin</h3>
+          <p>Usuários: {metricas.usuarios}</p>
+          <p>Registros: {metricas.registros}</p>
+          <p>IA: {metricas.ia}</p>
+        </div>
+      )}
+
       <div style={styles.modeToggle}>
         <button onClick={() => setModo("normal")} style={modo === "normal" ? styles.modeActive : styles.modeBtn}>
           Normal
@@ -299,7 +307,6 @@ return (
           </div>
         )}
 
-        {/* 🔥 CTA */}
         {mostrarCTA && !isPremium && (
           <div style={styles.ctaBox}>
             <p>Você não precisa passar por isso sozinho.</p>

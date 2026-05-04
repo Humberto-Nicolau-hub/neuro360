@@ -47,6 +47,14 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
+/* ================= SCROLL AUTOMÁTICO ================= */
+useEffect(() => {
+  chatRef.current?.scrollTo({
+    top: chatRef.current.scrollHeight,
+    behavior: "smooth"
+  });
+}, [chat, loading]);
+
 /* ================= AUTH ================= */
 
 useEffect(() => {
@@ -145,7 +153,7 @@ const logout = async () => {
 /* ================= IA ================= */
 
 const falarComIA = async () => {
-  if (!texto) return;
+  if (!texto || loading) return;
 
   const novoChat = [...chat, { tipo: "user", texto }];
   setChat(novoChat);
@@ -198,20 +206,8 @@ if (!session) {
       <div style={styles.loginCard}>
         <h2 style={{textAlign:"center"}}>NeuroMapa360</h2>
 
-        <input
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChange={e=>setEmail(e.target.value)}
-        />
-
-        <input
-          style={styles.input}
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={e=>setPassword(e.target.value)}
-        />
+        <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
 
         {modoCadastro ? (
           <button style={styles.button} onClick={register}>
@@ -223,8 +219,7 @@ if (!session) {
           </button>
         )}
 
-        <p
-          style={{color:"#38bdf8", cursor:"pointer", textAlign:"center"}}
+        <p style={{color:"#38bdf8", cursor:"pointer", textAlign:"center"}}
           onClick={()=>setModoCadastro(!modoCadastro)}
         >
           {modoCadastro ? "Já tenho conta" : "Criar conta"}
@@ -317,22 +312,8 @@ const styles = {
   support:{marginTop:15,color:"#38bdf8"},
   button:{padding:12,background:"#22c55e",borderRadius:6,color:"#fff",border:"none"},
   input:{padding:10,borderRadius:6,border:"none"},
-  loginContainer:{
-    display:"flex",
-    justifyContent:"center",
-    alignItems:"center",
-    height:"100vh",
-    background:"#0f172a"
-  },
-  loginCard:{
-    background:"#1e293b",
-    padding:30,
-    borderRadius:10,
-    display:"flex",
-    flexDirection:"column",
-    gap:10,
-    width:320
-  },
+  loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},
+  loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:320},
   modeBtn:{marginTop:10,width:"100%",padding:10,background:"#334155",color:"#fff"},
   adminBox:{marginTop:10,background:"#020617",padding:10,borderRadius:8}
 };

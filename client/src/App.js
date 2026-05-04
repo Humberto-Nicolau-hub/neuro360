@@ -25,8 +25,6 @@ const MAPA = {
 
 export default function App() {
 
-/* ================= STATES ================= */
-
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -51,18 +49,14 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= 🔥 PERSISTÊNCIA POR USUÁRIO ================= */
+/* ================= PERSISTÊNCIA ================= */
 
-const getChatKey = () => {
-  return session?.user?.id ? `chat_${session.user.id}` : null;
-};
+const getChatKey = () => session?.user?.id ? `chat_${session.user.id}` : null;
 
 useEffect(() => {
   if (!session?.user) return;
-
   const key = getChatKey();
   const salvo = localStorage.getItem(key);
-
   if (salvo) setChat(JSON.parse(salvo));
 }, [session]);
 
@@ -71,14 +65,12 @@ useEffect(() => {
   if (key) localStorage.setItem(key, JSON.stringify(chat));
 }, [chat, session]);
 
-/* ================= LOGOUT (CORRIGIDO FORTE) ================= */
+/* ================= LOGOUT ================= */
 
 const logout = async () => {
   await supabase.auth.signOut();
-
   const key = getChatKey();
   if (key) localStorage.removeItem(key);
-
   setEmail("");
   setPassword("");
   setChat([]);
@@ -119,16 +111,12 @@ useEffect(() => {
   }
 }, [session]);
 
-/* ================= LOGIN ================= */
-
 const login = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) alert("Erro no login");
   setLoading(false);
 };
-
-/* ================= CADASTRO ================= */
 
 const cadastrar = async () => {
   setLoading(true);
@@ -141,15 +129,11 @@ const cadastrar = async () => {
   setLoading(false);
 };
 
-/* ================= STRIPE ================= */
-
 const handleUpgrade = async () => {
   const res = await fetch(`${BACKEND_URL}/criar-checkout`, { method: "POST" });
   const data = await res.json();
   if (data.url) window.location.href = data.url;
 };
-
-/* ================= USER ================= */
 
 const buscarUsuario = async () => {
   const emailUser = session.user.email;
@@ -176,8 +160,6 @@ const buscarUsuario = async () => {
   setIsAdmin(admin || data?.is_admin || false);
 };
 
-/* ================= REGISTROS ================= */
-
 const buscarRegistros = async () => {
   const { data } = await supabase
     .from("registros_emocionais")
@@ -193,8 +175,6 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ================= ADMIN ================= */
-
 const carregarMetricas = async () => {
   const res = await fetch(`${BACKEND_URL}/admin-metricas`);
   const data = await res.json();
@@ -209,16 +189,10 @@ const falarComIA = async () => {
 
   const textoLower = texto.toLowerCase();
 
-  /* 🔥 ENCERRAMENTO */
-  if (
-    textoLower.includes("obrigado") ||
-    textoLower.includes("valeu") ||
-    textoLower.includes("tchau")
-  ) {
-    setChat(prev => [
-      ...prev,
+  if (textoLower.includes("obrigado") || textoLower.includes("tchau")) {
+    setChat(prev => [...prev,
       { tipo: "user", texto },
-      { tipo: "ia", texto: "Foi um prazer te ouvir. Estarei aqui sempre que precisar. 🌱" }
+      { tipo: "ia", texto: "Foi um prazer te ouvir. 🌱" }
     ]);
     setTexto("");
     return;
@@ -245,13 +219,6 @@ const falarComIA = async () => {
 
   setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
 
-  if (!isPremium && modo === "terapeutico") {
-    if (textoLower.includes("ansiedade") || textoLower.includes("triste")) {
-      setMostrarCTA(true);
-    }
-  }
-
-  buscarRegistros();
   setLoading(false);
 };
 
@@ -271,7 +238,7 @@ if (!session) {
         </button>
 
         <p style={styles.link} onClick={()=>setModoCadastro(!modoCadastro)}>
-          {modoCadastro ? "Já tem conta? Login" : "Criar conta"}
+          Criar conta
         </p>
       </div>
     </div>
@@ -296,24 +263,23 @@ return (
         </button>
       )}
 
-      {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
+      {/* 🔥 CONTROLES RESTAURADOS */}
+      <div style={{marginTop:20}}>
+        <button onClick={()=>setModo("normal")} style={styles.modeBtn}>Normal</button>
+        <button onClick={()=>setModo("terapeutico")} style={styles.modeBtn}>Terapêutico</button>
 
-      {isAdmin && metricas && (
-        <div style={{ marginTop: 20 }}>
-          <h3>📊 Admin</h3>
-          <p>Usuários: {metricas.usuarios}</p>
-          <p>Registros: {metricas.registros}</p>
-          <p>IA: {metricas.ia}</p>
-        </div>
-      )}
+        <button
+          onClick={()=>setModoProfundo(!modoProfundo)}
+          style={{
+            ...styles.modeBtn,
+            background: modoProfundo ? "#22c55e" : "#334155"
+          }}
+        >
+          🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
+        </button>
+      </div>
 
-      {/* 🔥 SUPORTE REAL */}
-      <a
-        href="https://wa.me/5561993338458"
-        target="_blank"
-        rel="noreferrer"
-        style={{display:"block",marginTop:15,color:"#38bdf8"}}
-      >
+      <a href="https://wa.me/5561993338458" target="_blank" rel="noreferrer" style={{marginTop:15,color:"#38bdf8"}}>
         💬 Suporte
       </a>
 
@@ -334,7 +300,7 @@ return (
 
         {loading && (
           <div style={{...styles.bubble, background:"#334155"}}>
-            🧠 IA está analisando...
+            🧠 IA analisando...
           </div>
         )}
       </div>
@@ -344,15 +310,9 @@ return (
           {EMOCOES.map(e => <option key={e}>{e}</option>)}
         </select>
 
-        <input
-          value={texto}
-          onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Escreva o que está sentindo..."
-        />
+        <input value={texto} onChange={(e)=>setTexto(e.target.value)} />
 
-        <button onClick={falarComIA}>
-          {loading ? "..." : "Enviar"}
-        </button>
+        <button onClick={falarComIA}>Enviar</button>
       </div>
 
       {grafico.length > 0 && <EvolucaoChart data={grafico}/>}
@@ -375,6 +335,7 @@ const styles = {
   loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:300},
   button:{padding:10,background:"#22c55e",border:"none",borderRadius:5,color:"#fff"},
   link:{cursor:"pointer",color:"#38bdf8"},
-  logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
-  upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"}
+  logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff"},
+  upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000"},
+  modeBtn:{marginTop:10,width:"100%",padding:10,borderRadius:5,background:"#334155",color:"#fff",border:"none",cursor:"pointer"}
 };

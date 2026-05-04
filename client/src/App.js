@@ -129,19 +129,16 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ================= LOGOUT (CORRIGIDO) ================= */
+/* ================= LOGOUT ================= */
 
 const logout = async () => {
   await supabase.auth.signOut();
-
   localStorage.clear();
   sessionStorage.clear();
-
   setSession(null);
   setChat([]);
   setEmail("");
   setPassword("");
-
   window.location.reload();
 };
 
@@ -182,6 +179,17 @@ const login = async () => {
   setLoading(false);
 };
 
+/* ================= REGISTER ================= */
+
+const register = async () => {
+  setLoading(true);
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (error) alert("Erro ao cadastrar");
+  else alert("Conta criada! Faça login.");
+  setModoCadastro(false);
+  setLoading(false);
+};
+
 /* ================= UI ================= */
 
 if (!session) {
@@ -205,9 +213,22 @@ if (!session) {
           onChange={e=>setPassword(e.target.value)}
         />
 
-        <button style={styles.button} onClick={login}>
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
+        {modoCadastro ? (
+          <button style={styles.button} onClick={register}>
+            {loading ? "Criando..." : "Criar Conta"}
+          </button>
+        ) : (
+          <button style={styles.button} onClick={login}>
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+        )}
+
+        <p
+          style={{color:"#38bdf8", cursor:"pointer", textAlign:"center"}}
+          onClick={()=>setModoCadastro(!modoCadastro)}
+        >
+          {modoCadastro ? "Já tenho conta" : "Criar conta"}
+        </p>
       </div>
     </div>
   );
@@ -260,6 +281,12 @@ return (
             {msg.texto}
           </div>
         ))}
+
+        {loading && (
+          <div style={{...styles.bubble, background:"#334155"}}>
+            IA está digitando...
+          </div>
+        )}
       </div>
 
       <div style={styles.inputBar}>

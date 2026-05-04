@@ -8,7 +8,6 @@ const supabase = createClient(
 );
 
 const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
-
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
@@ -41,8 +40,10 @@ const [metricas, setMetricas] = useState(null);
 
 const [chat, setChat] = useState([]);
 const [modo, setModo] = useState("terapeutico");
-
 const [modoProfundo, setModoProfundo] = useState(false);
+
+/* 🔥 NOVO: CONTROLE DE CONVERSÃO */
+const [mostrarCTA, setMostrarCTA] = useState(false);
 
 const chatRef = useRef(null);
 
@@ -51,11 +52,8 @@ const isPremium = plano === "premium" || isAdmin;
 /* ================= LOGOUT ================= */
 const logout = async () => {
   await supabase.auth.signOut();
-
-  // 🔥 LIMPEZA TOTAL
   localStorage.clear();
   sessionStorage.clear();
-
   setChat([]);
   setSession(null);
 };
@@ -73,10 +71,7 @@ useEffect(() => {
 
   const { data: listener } = supabase.auth.onAuthStateChange(
     (_, session) => {
-
       setSession(session);
-
-      // 🔥 RESET TOTAL AO TROCAR USUÁRIO
       setChat([]);
       setTexto("");
       setGrafico([]);
@@ -195,16 +190,22 @@ const falarComIA = async () => {
 
   const data = await res.json();
 
-  if (data.limite) {
-    setChat([
-      ...novoChat,
-      { tipo:"ia", texto:"Você atingiu o limite do plano free. Desbloqueie a versão completa 🔓" }
-    ]);
-    setLoading(false);
-    return;
-  }
-
   setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
+
+  /* 🔥 GATILHO INTELIGENTE */
+  if (!isPremium && modo === "terapeutico") {
+    const t = texto.toLowerCase();
+
+    if (
+      t.includes("ansiedade") ||
+      t.includes("triste") ||
+      t.includes("não aguento") ||
+      t.includes("cansado") ||
+      t.includes("perdido")
+    ) {
+      setMostrarCTA(true);
+    }
+  }
 
   buscarRegistros();
   setLoading(false);
@@ -244,12 +245,9 @@ return (
       </p>
 
       {!isPremium && (
-        <div style={styles.boxUpgrade}>
-          <p>Seu plano está limitado</p>
-          <button onClick={handleUpgrade} style={styles.upgrade}>
-            Desbloquear versão completa 🔓
-          </button>
-        </div>
+        <button onClick={handleUpgrade} style={styles.upgrade}>
+          🚀 Desbloquear Premium
+        </button>
       )}
 
       {isAdmin && <p style={{color:"#facc15"}}>ADMIN 👑</p>}
@@ -270,29 +268,16 @@ return (
           style={{
             marginTop: 10,
             background: modoProfundo ? "#6c5ce7" : "#1e293b",
-            border: "1px solid #6c5ce7",
-            color: "#fff",
-            padding: 10,
-            borderRadius: 6,
-            cursor: "pointer"
+            color:"#fff",
+            padding:10,
+            borderRadius:6
           }}
         >
-          🧠 Terapia Guiada Inteligente {modoProfundo ? "ON" : "OFF"}
+          🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
         </button>
       )}
 
-      <button onClick={logout} style={styles.logout}>
-        Sair
-      </button>
-
-      {isAdmin && metricas && (
-        <div style={styles.adminBox}>
-          <h4>📊 Admin</h4>
-          <p>Usuários: {metricas.usuarios}</p>
-          <p>Registros: {metricas.registros}</p>
-          <p>IA: {metricas.ia}</p>
-        </div>
-      )}
+      <button onClick={logout} style={styles.logout}>Sair</button>
     </div>
 
     <div style={styles.main}>
@@ -310,25 +295,30 @@ return (
 
         {loading && (
           <div style={{...styles.bubble, background:"#334155"}}>
-            🧠 IA está conduzindo sua análise...
+            🧠 IA está analisando...
+          </div>
+        )}
+
+        {/* 🔥 CTA */}
+        {mostrarCTA && !isPremium && (
+          <div style={styles.ctaBox}>
+            <p>Você não precisa passar por isso sozinho.</p>
+            <button onClick={handleUpgrade} style={styles.ctaBtn}>
+              Ativar Terapia Completa 🔓
+            </button>
           </div>
         )}
       </div>
 
       <div style={styles.inputBar}>
-        <div>
-          <span style={{fontSize:12,color:"#94a3b8"}}>
-            Como você está se sentindo?
-          </span>
-          <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
-            {EMOCOES.map(e => <option key={e}>{e}</option>)}
-          </select>
-        </div>
+        <select value={emocao} onChange={e=>setEmocao(e.target.value)}>
+          {EMOCOES.map(e => <option key={e}>{e}</option>)}
+        </select>
 
         <input
           value={texto}
           onChange={(e)=>setTexto(e.target.value)}
-          placeholder="Escreva o que você está sentindo..."
+          placeholder="Escreva o que está sentindo..."
         />
 
         <button onClick={falarComIA}>
@@ -357,9 +347,24 @@ const styles = {
   link:{cursor:"pointer",color:"#38bdf8"},
   logout:{marginTop:20,background:"#ef4444",border:"none",padding:10,borderRadius:5,color:"#fff",cursor:"pointer"},
   upgrade:{marginTop:10,background:"#22c55e",border:"none",padding:10,borderRadius:5,color:"#000",cursor:"pointer"},
-  boxUpgrade:{marginTop:15,padding:10,background:"#111",borderRadius:8},
-  adminBox:{marginTop:20,background:"#111",padding:10,borderRadius:8,fontSize:12},
+
   modeToggle:{display:"flex",gap:5,marginTop:15},
-  modeBtn:{flex:1,padding:8,background:"#1e293b",border:"1px solid #334155",color:"#94a3b8",cursor:"pointer",borderRadius:6},
-  modeActive:{flex:1,padding:8,background:"#22c55e",color:"#000",fontWeight:"bold",borderRadius:6}
+  modeBtn:{flex:1,padding:8,background:"#1e293b",color:"#94a3b8"},
+  modeActive:{flex:1,padding:8,background:"#22c55e",color:"#000"},
+
+  ctaBox:{
+    background:"#111",
+    padding:15,
+    borderRadius:10,
+    marginTop:10,
+    border:"1px solid #22c55e"
+  },
+  ctaBtn:{
+    marginTop:10,
+    background:"#22c55e",
+    border:"none",
+    padding:10,
+    borderRadius:6,
+    cursor:"pointer"
+  }
 };

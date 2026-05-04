@@ -71,13 +71,11 @@ useEffect(() => {
     buscarRegistros();
 
     if (session.user.email === ADMIN_EMAIL) {
-      setIsAdmin(true); // 🔥 GARANTE ADMIN
+      setIsAdmin(true);
       carregarMetricas();
     }
   }
 }, [session]);
-
-/* ================= USER ================= */
 
 const buscarUsuario = async () => {
   const emailUser = session.user.email;
@@ -131,17 +129,25 @@ const buscarRegistros = async () => {
   );
 };
 
-/* ================= LOGOUT ================= */
+/* ================= LOGOUT (CORRIGIDO) ================= */
 
 const logout = async () => {
   await supabase.auth.signOut();
+
+  localStorage.clear();
+  sessionStorage.clear();
+
   setSession(null);
+  setChat([]);
+  setEmail("");
+  setPassword("");
+
+  window.location.reload();
 };
 
 /* ================= IA ================= */
 
 const falarComIA = async () => {
-
   if (!texto) return;
 
   const novoChat = [...chat, { tipo: "user", texto }];
@@ -182,10 +188,26 @@ if (!session) {
   return (
     <div style={styles.loginContainer}>
       <div style={styles.loginCard}>
-        <h2>NeuroMapa360</h2>
-        <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
-        <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
-        <button style={styles.button} onClick={login}>Entrar</button>
+        <h2 style={{textAlign:"center"}}>NeuroMapa360</h2>
+
+        <input
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChange={e=>setEmail(e.target.value)}
+        />
+
+        <input
+          style={styles.input}
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={e=>setPassword(e.target.value)}
+        />
+
+        <button style={styles.button} onClick={login}>
+          {loading ? "Entrando..." : "Entrar"}
+        </button>
       </div>
     </div>
   );
@@ -195,7 +217,6 @@ if (!session) {
 
 return (
   <div style={styles.app}>
-
     <div style={styles.sidebar}>
       <h2>Neuro360</h2>
 
@@ -203,11 +224,9 @@ return (
         Plano: {isPremium ? "Premium ✅" : "Free"}
       </p>
 
-      {/* 🔥 ADMIN RESTAURADO */}
       {isAdmin && (
         <>
           <p style={{color:"#facc15", marginTop:10}}>ADMIN 👑</p>
-
           <div style={styles.adminBox}>
             <p>Usuários: {metricas?.usuarios || 0}</p>
             <p>Registros: {metricas?.registros || 0}</p>
@@ -216,19 +235,14 @@ return (
         </>
       )}
 
-      <div style={{marginTop:20}}>
-        <button onClick={()=>setModo("normal")} style={styles.modeBtn}>Normal</button>
-        <button onClick={()=>setModo("terapeutico")} style={styles.modeBtn}>Terapêutico</button>
+      <button onClick={()=>setModo("normal")} style={styles.modeBtn}>Normal</button>
+      <button onClick={()=>setModo("terapeutico")} style={styles.modeBtn}>Terapêutico</button>
 
-        <button
-          onClick={()=>setModoProfundo(!modoProfundo)}
-          style={styles.modeBtn}
-        >
-          🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
-        </button>
-      </div>
+      <button onClick={()=>setModoProfundo(!modoProfundo)} style={styles.modeBtn}>
+        🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
+      </button>
 
-      <a href="https://wa.me/5561993338458" target="_blank" rel="noreferrer" style={{marginTop:15,color:"#38bdf8"}}>
+      <a href="https://wa.me/5561993338458" target="_blank" rel="noreferrer" style={styles.support}>
         💬 Suporte
       </a>
 
@@ -263,6 +277,8 @@ return (
 );
 }
 
+/* ================= STYLES ================= */
+
 const styles = {
   app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
   sidebar:{width:220,background:"#020617",padding:20},
@@ -271,10 +287,25 @@ const styles = {
   bubble:{padding:12,borderRadius:10,maxWidth:"60%"},
   inputBar:{display:"flex",gap:10,padding:10,background:"#1e293b"},
   logout:{marginTop:20,background:"#ef4444",padding:10,borderRadius:5,color:"#fff"},
-  button:{padding:10,background:"#22c55e"},
-  input:{padding:10},
-  loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh"},
-  loginCard:{padding:20,background:"#1e293b"},
+  support:{marginTop:15,color:"#38bdf8"},
+  button:{padding:12,background:"#22c55e",borderRadius:6,color:"#fff",border:"none"},
+  input:{padding:10,borderRadius:6,border:"none"},
+  loginContainer:{
+    display:"flex",
+    justifyContent:"center",
+    alignItems:"center",
+    height:"100vh",
+    background:"#0f172a"
+  },
+  loginCard:{
+    background:"#1e293b",
+    padding:30,
+    borderRadius:10,
+    display:"flex",
+    flexDirection:"column",
+    gap:10,
+    width:320
+  },
   modeBtn:{marginTop:10,width:"100%",padding:10,background:"#334155",color:"#fff"},
   adminBox:{marginTop:10,background:"#020617",padding:10,borderRadius:8}
 };

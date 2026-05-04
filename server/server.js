@@ -92,31 +92,26 @@ app.post("/ia", async (req, res) => {
 
     let promptSistema = "";
 
-    /* 🔥 MODO TERAPIA GUIADA INTELIGENTE */
+    /* 🔥 TERAPIA GUIADA INTELIGENTE (PREMIUM) */
     if (modoProfundo && isPremium) {
       promptSistema = `
 Você é um terapeuta especialista em:
 - PNL (Programação Neurolinguística)
 - Terapia Neuro Sistêmica
 
-Você NÃO é um chatbot.
-Você conduz uma sessão terapêutica real.
+Você conduz transformação emocional.
 
-Siga EXATAMENTE este fluxo:
+Siga este fluxo:
 
-1. Valide profundamente a emoção do usuário
+1. Valide profundamente a dor
 2. Identifique o padrão emocional oculto
-3. Nomeie o padrão (ex: autossabotagem, ansiedade antecipatória, rejeição)
-4. Conduza com 1 pergunta estratégica
-5. Aplique uma técnica prática de PNL
-6. Gere um micro exercício aplicável agora
+3. Nomeie o padrão (ex: abandono, ansiedade antecipatória, autossabotagem)
+4. Faça 1 pergunta estratégica
+5. Aplique técnica prática de PNL
+6. Dê um micro exercício imediato
 
-REGRAS:
-- Seja humano e empático
-- Evite respostas genéricas
-- Use linguagem emocional e estratégica
-- Sempre conduza (não apenas responda)
-- Máximo 12 linhas
+Seja humano, direto e profundo.
+Nunca genérico.
 
 Memória:
 ${memoriaTexto}
@@ -126,19 +121,17 @@ ${historicoTexto}
 `;
     }
 
-    /* 🔥 MODO TERAPÊUTICO PADRÃO */
+    /* 🔥 MODO TERAPÊUTICO */
     else if (modo === "terapeutico") {
       promptSistema = `
-Você é um terapeuta especialista em:
-- PNL
-- Terapia Neuro Sistêmica
+Você é um terapeuta com base em PNL.
 
 Responda com:
 - Empatia real
-- Perguntas inteligentes
-- Direcionamento leve
+- Clareza emocional
+- Pergunta inteligente
 
-Evite respostas genéricas.
+Sem respostas genéricas.
 
 Memória:
 ${memoriaTexto}
@@ -150,7 +143,7 @@ ${historicoTexto}
 
     /* 🔥 MODO NORMAL */
     else {
-      promptSistema = "Responda de forma clara, objetiva e útil.";
+      promptSistema = "Responda de forma clara e objetiva.";
     }
 
     /* ===== OPENAI ===== */
@@ -166,13 +159,47 @@ ${historicoTexto}
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* 🔥 GATILHO DE CONVERSÃO INTELIGENTE */
-    if (!isPremium && modo === "terapeutico") {
-      resposta += `
+    /* ================= VENDA INTELIGENTE ================= */
 
-💡 Existe um nível mais profundo de acompanhamento que ajuda você a sair desse padrão emocional com mais rapidez.
+    if (!isPremium) {
 
-Se fizer sentido para você, posso te guiar nisso.`;
+      const textoLower = texto.toLowerCase();
+
+      const sinaisCriticos = [
+        "não aguento",
+        "não consigo",
+        "cansado",
+        "perdido",
+        "sem sentido",
+        "ansiedade",
+        "depress",
+        "triste",
+        "sozinho",
+        "não tenho força",
+        "vontade de viver"
+      ];
+
+      const detectouDor = sinaisCriticos.some(p => textoLower.includes(p));
+
+      /* 🔥 NÍVEL 1 — DOR DETECTADA */
+      if (detectouDor && modo === "terapeutico") {
+
+        resposta += `
+
+🧠 O que você está vivendo não é só emoção — existe um padrão por trás disso.
+
+Eu consigo te conduzir em um processo mais profundo, onde você não precisa enfrentar isso sozinho.
+
+Se quiser, posso te guiar passo a passo.`;
+      }
+
+      /* 🔥 NÍVEL 2 — ENGAJAMENTO NORMAL */
+      else if (modo === "terapeutico") {
+
+        resposta += `
+
+💡 Existe uma forma mais avançada de trabalhar isso emocionalmente, com acompanhamento guiado.`;
+      }
     }
 
     /* ===== SALVAR ===== */

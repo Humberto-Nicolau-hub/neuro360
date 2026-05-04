@@ -12,9 +12,7 @@ const app = express();
 /* ================= CORS ================= */
 
 app.use(cors({
-  origin: (origin, callback) => {
-    return callback(null, true);
-  }
+  origin: (origin, callback) => callback(null, true)
 }));
 
 app.use(express.json());
@@ -32,6 +30,44 @@ const openai = new OpenAI({
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+/* ================= CONFIG ================= */
+
+// 🔥 CONTROLE DE SUPORTE (ADMIN)
+const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
+const SUPORTE_NUMERO = "5561993338458";
+
+/* ================= FUNÇÕES AUXILIARES ================= */
+
+// 🔥 Detecta encerramento
+function detectarEncerramento(texto) {
+  const t = texto.toLowerCase();
+  return ["obrigado", "valeu", "tchau", "até mais"].some(p => t.includes(p));
+}
+
+// 🔥 Detecta dor emocional
+function detectarDor(texto) {
+  const t = texto.toLowerCase();
+  return [
+    "não aguento",
+    "não consigo",
+    "cansado",
+    "perdido",
+    "ansiedade",
+    "depress",
+    "triste",
+    "sozinho",
+    "sem sentido"
+  ].some(p => t.includes(p));
+}
+
+// 🔥 Data segura (corrige bug do dia virar)
+function getHoje() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60000);
+  return local.toISOString().split("T")[0];
+}
+
 /* ================= IA ================= */
 
 app.post("/ia", async (req, res) => {
@@ -40,6 +76,14 @@ app.post("/ia", async (req, res) => {
 
     if (!texto) return res.json({ resposta: "Fale comigo..." });
     if (!user_id) user_id = "anon";
+
+    /* ===== ENCERRAMENTO INTELIGENTE ===== */
+    if (detectarEncerramento(texto)) {
+      return res.json({
+        resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar. 🌱",
+        encerrado: true
+      });
+    }
 
     /* ===== PLANO ===== */
     let isPremium = false;
@@ -54,10 +98,9 @@ app.post("/ia", async (req, res) => {
       if (data?.plano === "premium") isPremium = true;
     } catch {}
 
-    /* ===== LIMITE FREE (CORRIGIDO COM RESET DIÁRIO) ===== */
+    /* ===== LIMITE FREE (RESET CORRIGIDO) ===== */
     if (!isPremium) {
-
-      const hoje = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const hoje = getHoje();
 
       const { count } = await supabase
         .from("registros_emocionais")
@@ -66,7 +109,7 @@ app.post("/ia", async (req, res) => {
         .gte("created_at", `${hoje}T00:00:00`)
         .lte("created_at", `${hoje}T23:59:59`);
 
-      if ((count || 0) >= 3) { // 🔥 LIMITE DIÁRIO = 3 (como você definiu)
+      if ((count || 0) >= 3) {
         return res.json({
           resposta: "Você atingiu o limite do plano free hoje 🚀",
           limite: true
@@ -93,30 +136,19 @@ app.post("/ia", async (req, res) => {
       ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
       .join("\n") || "";
 
-    /* ================= PROMPT ================= */
+    /* ===== PROMPT ===== */
 
     let promptSistema = "";
 
-    /* 🔥 TERAPIA GUIADA INTELIGENTE (PREMIUM) */
     if (modoProfundo && isPremium) {
       promptSistema = `
-Você é um terapeuta especialista em:
-- PNL (Programação Neurolinguística)
-- Terapia Neuro Sistêmica
+Você é terapeuta especialista em PNL.
 
-Você conduz transformação emocional.
-
-Siga este fluxo:
-
-1. Valide profundamente a dor
-2. Identifique o padrão emocional oculto
-3. Nomeie o padrão (ex: abandono, ansiedade antecipatória, autossabotagem)
-4. Faça 1 pergunta estratégica
-5. Aplique técnica prática de PNL
-6. Dê um micro exercício imediato
-
-Seja humano, direto e profundo.
-Nunca genérico.
+1. Valide
+2. Identifique padrão
+3. Nomeie
+4. Pergunte
+5. Técnica prática
 
 Memória:
 ${memoriaTexto}
@@ -124,19 +156,13 @@ ${memoriaTexto}
 Histórico:
 ${historicoTexto}
 `;
-    }
-
-    /* 🔥 MODO TERAPÊUTICO */
-    else if (modo === "terapeutico") {
+    } else if (modo === "terapeutico") {
       promptSistema = `
-Você é um terapeuta com base em PNL.
+Você é terapeuta com base em PNL.
 
-Responda com:
 - Empatia real
-- Clareza emocional
-- Pergunta inteligente
-
-Sem respostas genéricas.
+- Clareza
+- Pergunta estratégica
 
 Memória:
 ${memoriaTexto}
@@ -144,14 +170,12 @@ ${memoriaTexto}
 Histórico:
 ${historicoTexto}
 `;
-    }
-
-    /* 🔥 MODO NORMAL */
-    else {
-      promptSistema = "Responda de forma clara e objetiva.";
+    } else {
+      promptSistema = "Responda de forma clara.";
     }
 
     /* ===== OPENAI ===== */
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -164,48 +188,29 @@ ${historicoTexto}
       completion?.choices?.[0]?.message?.content ||
       "Estou aqui com você.";
 
-    /* ================= VENDA INTELIGENTE ================= */
+    /* ===== FUNIL INVISÍVEL ===== */
 
-    if (!isPremium) {
+    if (!isPremium && detectarDor(texto) && modo === "terapeutico") {
+      resposta += `
 
-      const textoLower = texto.toLowerCase();
+🧠 Existe um padrão emocional por trás disso.
 
-      const sinaisCriticos = [
-        "não aguento",
-        "não consigo",
-        "cansado",
-        "perdido",
-        "sem sentido",
-        "ansiedade",
-        "depress",
-        "triste",
-        "sozinho",
-        "não tenho força",
-        "vontade de viver"
-      ];
+Eu posso te guiar de forma mais profunda nesse processo.
 
-      const detectouDor = sinaisCriticos.some(p => textoLower.includes(p));
+Se quiser, posso te acompanhar passo a passo.`;
+    }
 
-      if (detectouDor && modo === "terapeutico") {
+    /* ===== SUPORTE ===== */
 
-        resposta += `
+    if (SUPORTE_ATIVO && detectarDor(texto)) {
+      resposta += `
 
-🧠 O que você está vivendo não é só emoção — existe um padrão por trás disso.
-
-Eu consigo te conduzir em um processo mais profundo, onde você não precisa enfrentar isso sozinho.
-
-Se quiser, posso te guiar passo a passo.`;
-      }
-
-      else if (modo === "terapeutico") {
-
-        resposta += `
-
-💡 Existe uma forma mais avançada de trabalhar isso emocionalmente, com acompanhamento guiado.`;
-      }
+📞 Se quiser falar com alguém humano:
+https://wa.me/${SUPORTE_NUMERO}`;
     }
 
     /* ===== SALVAR ===== */
+
     await supabase.from("memoria_ia").insert({ user_id, texto });
     await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
 

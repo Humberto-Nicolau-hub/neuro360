@@ -47,7 +47,7 @@ const chatRef = useRef(null);
 
 const isPremium = plano === "premium" || isAdmin;
 
-/* ================= SCROLL AUTOMÁTICO ================= */
+/* ================= SCROLL ================= */
 useEffect(() => {
   chatRef.current?.scrollTo({
     top: chatRef.current.scrollHeight,
@@ -198,7 +198,7 @@ const register = async () => {
   setLoading(false);
 };
 
-/* ================= UI ================= */
+/* ================= UI LOGIN ================= */
 
 if (!session) {
   return (
@@ -209,15 +209,9 @@ if (!session) {
         <input style={styles.input} placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
         <input style={styles.input} type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)}/>
 
-        {modoCadastro ? (
-          <button style={styles.button} onClick={register}>
-            {loading ? "Criando..." : "Criar Conta"}
-          </button>
-        ) : (
-          <button style={styles.button} onClick={login}>
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        )}
+        <button style={styles.button} onClick={modoCadastro ? register : login}>
+          {loading ? "Carregando..." : modoCadastro ? "Criar Conta" : "Entrar"}
+        </button>
 
         <p style={{color:"#38bdf8", cursor:"pointer", textAlign:"center"}}
           onClick={()=>setModoCadastro(!modoCadastro)}
@@ -251,10 +245,34 @@ return (
         </>
       )}
 
-      <button onClick={()=>setModo("normal")} style={styles.modeBtn}>Normal</button>
-      <button onClick={()=>setModo("terapeutico")} style={styles.modeBtn}>Terapêutico</button>
+      {/* 🔥 BOTÕES COM ESTADO VISUAL */}
+      <button
+        onClick={()=>setModo("normal")}
+        style={{
+          ...styles.modeBtn,
+          background: modo === "normal" ? "#22c55e" : "#334155"
+        }}
+      >
+        Normal
+      </button>
 
-      <button onClick={()=>setModoProfundo(!modoProfundo)} style={styles.modeBtn}>
+      <button
+        onClick={()=>setModo("terapeutico")}
+        style={{
+          ...styles.modeBtn,
+          background: modo === "terapeutico" ? "#22c55e" : "#334155"
+        }}
+      >
+        Terapêutico
+      </button>
+
+      <button
+        onClick={()=>setModoProfundo(!modoProfundo)}
+        style={{
+          ...styles.modeBtn,
+          background: modoProfundo ? "#22c55e" : "#334155"
+        }}
+      >
         🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
       </button>
 
@@ -314,6 +332,6 @@ const styles = {
   input:{padding:10,borderRadius:6,border:"none"},
   loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},
   loginCard:{background:"#1e293b",padding:30,borderRadius:10,display:"flex",flexDirection:"column",gap:10,width:320},
-  modeBtn:{marginTop:10,width:"100%",padding:10,background:"#334155",color:"#fff"},
+  modeBtn:{marginTop:10,width:"100%",padding:10,color:"#fff",border:"none",borderRadius:6,cursor:"pointer"},
   adminBox:{marginTop:10,background:"#020617",padding:10,borderRadius:8}
 };

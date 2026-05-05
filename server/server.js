@@ -10,7 +10,6 @@ dotenv.config();
 const app = express();
 
 /* ================= CORS ================= */
-
 app.use(cors({
   origin: (origin, callback) => callback(null, true)
 }));
@@ -18,7 +17,6 @@ app.use(cors({
 app.use(express.json());
 
 /* ================= CLIENTES ================= */
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -31,17 +29,15 @@ const openai = new OpenAI({
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* ================= CONFIG ================= */
-
 const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
 const SUPORTE_NUMERO = "5561993338458";
 
-/* ================= RATE LIMIT SIMPLES ================= */
-
+/* ================= RATE LIMIT ================= */
 const rateLimitMap = new Map();
 
 function checkRateLimit(user_id) {
   const now = Date.now();
-  const windowTime = 60 * 1000; // 1 min
+  const windowTime = 60000;
   const maxRequests = 10;
 
   if (!rateLimitMap.has(user_id)) {
@@ -50,9 +46,7 @@ function checkRateLimit(user_id) {
 
   const timestamps = rateLimitMap.get(user_id).filter(t => now - t < windowTime);
 
-  if (timestamps.length >= maxRequests) {
-    return false;
-  }
+  if (timestamps.length >= maxRequests) return false;
 
   timestamps.push(now);
   rateLimitMap.set(user_id, timestamps);
@@ -61,11 +55,8 @@ function checkRateLimit(user_id) {
 }
 
 /* ================= FUNÇÕES ================= */
-
 function validarEntrada(texto) {
-  if (!texto) return false;
-  if (typeof texto !== "string") return false;
-  if (texto.length > 500) return false;
+  if (!texto || typeof texto !== "string" || texto.length > 500) return false;
   return true;
 }
 
@@ -77,15 +68,8 @@ function detectarEncerramento(texto) {
 function detectarDor(texto) {
   const t = texto.toLowerCase();
   return [
-    "não aguento",
-    "não consigo",
-    "cansado",
-    "perdido",
-    "ansiedade",
-    "depress",
-    "triste",
-    "sozinho",
-    "sem sentido"
+    "não aguento","não consigo","cansado","perdido",
+    "ansiedade","depress","triste","sozinho","sem sentido"
   ].some(p => t.includes(p));
 }
 
@@ -108,7 +92,6 @@ function getHoje() {
 }
 
 /* ================= IA ================= */
-
 app.post("/ia", async (req, res) => {
   try {
     let { texto, emocao, user_id, historico, modo, modoProfundo } = req.body;
@@ -119,7 +102,6 @@ app.post("/ia", async (req, res) => {
 
     user_id = user_id || "anon";
 
-    // 🔐 RATE LIMIT
     if (!checkRateLimit(user_id)) {
       return res.json({
         resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco e vamos continuar. 🌿"
@@ -145,7 +127,6 @@ app.post("/ia", async (req, res) => {
       if (data?.plano === "premium") isPremium = true;
     } catch {}
 
-    // 🔥 LIMITE FREE
     if (!isPremium) {
       const hoje = getHoje();
 
@@ -184,35 +165,9 @@ app.post("/ia", async (req, res) => {
     let promptSistema = "";
 
     if (modoProfundo && isPremium) {
-      promptSistema = `
-Você é terapeuta especialista em PNL.
-
-1. Valide
-2. Identifique padrão
-3. Nomeie
-4. Pergunte
-5. Técnica prática
-
-Memória:
-${memoriaTexto}
-
-Histórico:
-${historicoTexto}
-`;
+      promptSistema = `Você é terapeuta especialista em PNL.\n\nMemória:\n${memoriaTexto}\n\nHistórico:\n${historicoTexto}`;
     } else if (modo === "terapeutico") {
-      promptSistema = `
-Você é terapeuta com base em PNL.
-
-- Empatia real
-- Clareza
-- Pergunta estratégica
-
-Memória:
-${memoriaTexto}
-
-Histórico:
-${historicoTexto}
-`;
+      promptSistema = `Você é terapeuta com base em PNL.\n\nMemória:\n${memoriaTexto}\n\nHistórico:\n${historicoTexto}`;
     } else {
       promptSistema = "Responda de forma clara.";
     }
@@ -235,49 +190,15 @@ ${historicoTexto}
 
     const fase = detectarFase(texto);
 
-    if (fase === "dor") {
-      resposta += "\n\n💭 Vamos entender isso juntos. O que mais pesa dentro disso pra você agora?";
-    }
-
-    if (fase === "clareza") {
-      resposta += "\n\n✨ Percebe como sua mente já começou a organizar isso?";
-    }
-
-    if (fase === "ação") {
-      resposta += "\n\n🚀 Qual é o menor passo que você consegue dar hoje?";
-    }
-
+    if (fase === "dor") resposta += "\n\n💭 O que mais pesa nisso pra você agora?";
+    if (fase === "clareza") resposta += "\n\n✨ Você já começou a organizar isso.";
+    if (fase === "ação") resposta += "\n\n🚀 Qual o menor passo hoje?";
     if (fase === "fechamento") {
-      resposta = `
-Fico muito feliz em ter caminhado com você até aqui. 🌱
-
-👉 Qual foi o principal insight que você leva dessa conversa?
-`;
+      resposta = `Fico feliz em caminhar com você. 🌱\n\n👉 Qual foi seu principal insight?`;
     }
 
-    // 💰 FUNIL
-    if (!isPremium && detectarDor(texto) && modo === "terapeutico") {
-      resposta += `
-
-🧠 Existe um padrão emocional por trás disso.
-
-Com acompanhamento guiado, você consegue trabalhar isso de forma mais profunda.`;
-    }
-
-    if (!isPremium && fase === "clareza") {
-      resposta += `
-
-✨ Você já começou a evoluir.
-
-Com acompanhamento contínuo, isso acelera muito mais.`;
-    }
-
-    // 📞 SUPORTE
     if (SUPORTE_ATIVO && detectarDor(texto)) {
-      resposta += `
-
-📞 Fale com suporte humano:
-https://wa.me/${SUPORTE_NUMERO}`;
+      resposta += `\n\n📞 https://wa.me/${SUPORTE_NUMERO}`;
     }
 
     await supabase.from("memoria_ia").insert({ user_id, texto });
@@ -287,12 +208,11 @@ https://wa.me/${SUPORTE_NUMERO}`;
 
   } catch (err) {
     console.error(err);
-    res.json({ resposta: "Tive um pequeno erro, mas continuo com você." });
+    res.json({ resposta: "Erro interno, mas continuo com você." });
   }
 });
 
 /* ================= STRIPE ================= */
-
 app.post("/criar-checkout", async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -306,7 +226,6 @@ app.post("/criar-checkout", async (req, res) => {
 });
 
 /* ================= ADMIN ================= */
-
 app.get("/admin-metricas", async (req, res) => {
   const { count: usuarios } = await supabase.from("profiles").select("*", { count: "exact", head: true });
   const { count: registros } = await supabase.from("registros_emocionais").select("*", { count: "exact", head: true });
@@ -315,6 +234,9 @@ app.get("/admin-metricas", async (req, res) => {
   res.json({ usuarios, registros, ia });
 });
 
-app.listen(process.env.PORT || 10000, () => {
-  console.log("🚀 Server rodando");
+/* ================= START ================= */
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server rodando na porta ${PORT}`);
 });

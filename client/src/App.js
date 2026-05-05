@@ -1,4 +1,4 @@
-// 🔥 IMPORTS (NÃO ALTERADO)
+// 🔥 IMPORTS (MANTIDO)
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
@@ -8,7 +8,6 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-// ✅ CORREÇÃO AQUI
 const BACKEND_URL = "https://backend-neuro360.onrender.com";
 
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
@@ -58,23 +57,19 @@ useEffect(() => {
 }, [chat, loading]);
 
 /* ================= AUTH ================= */
-
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setSession(data.session);
   });
 
   const { data: listener } = supabase.auth.onAuthStateChange(
-    (_, session) => {
-      setSession(session);
-    }
+    (_, session) => setSession(session)
   );
 
   return () => listener?.subscription?.unsubscribe();
 }, []);
 
 /* ================= USER ================= */
-
 useEffect(() => {
   if (session?.user) {
     buscarUsuario();
@@ -88,100 +83,123 @@ useEffect(() => {
 }, [session]);
 
 const buscarUsuario = async () => {
-  const emailUser = session.user.email;
-  const admin = emailUser === ADMIN_EMAIL;
+  try {
+    const emailUser = session.user.email;
+    const admin = emailUser === ADMIN_EMAIL;
 
-  let { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("email", emailUser)
-    .maybeSingle();
-
-  if (!data) {
-    const { data: novo } = await supabase
+    let { data } = await supabase
       .from("profiles")
-      .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
-      .select()
-      .single();
+      .select("*")
+      .eq("email", emailUser)
+      .maybeSingle();
 
-    data = novo;
+    if (!data) {
+      const { data: novo } = await supabase
+        .from("profiles")
+        .insert([{ email: emailUser, plano: admin ? "premium":"free", is_admin: admin }])
+        .select()
+        .single();
+
+      data = novo;
+    }
+
+    setPlano(admin ? "premium" : data?.plano || "free");
+    setIsAdmin(admin || data?.is_admin || false);
+
+  } catch (e) {
+    console.log("Erro usuário:", e.message);
   }
-
-  setPlano(admin ? "premium" : data?.plano || "free");
-  setIsAdmin(admin || data?.is_admin || false);
 };
 
 /* ================= ADMIN ================= */
-
 const carregarMetricas = async () => {
   try {
     const res = await fetch(`${BACKEND_URL}/admin-metricas`);
+    if (!res.ok) throw new Error("Erro backend");
+
     const data = await res.json();
     setMetricas(data);
+
   } catch (e) {
-    console.log("Erro métricas");
+    console.log("Erro métricas:", e.message);
   }
 };
 
 /* ================= REGISTROS ================= */
-
 const buscarRegistros = async () => {
-  const { data } = await supabase
-    .from("registros_emocionais")
-    .select("*")
-    .eq("user_id", session.user.id);
+  try {
+    const { data } = await supabase
+      .from("registros_emocionais")
+      .select("*")
+      .eq("user_id", session.user.id);
 
-  setGrafico(
-    data?.map(d => ({
-      data: new Date(d.created_at).toLocaleDateString(),
-      valor: MAPA[d.emocao] || 5
-    })) || []
-  );
+    setGrafico(
+      data?.map(d => ({
+        data: new Date(d.created_at).toLocaleDateString(),
+        valor: MAPA[d.emocao] || 5
+      })) || []
+    );
+
+  } catch (e) {
+    console.log("Erro registros:", e.message);
+  }
 };
 
 /* ================= LOGOUT ================= */
-
 const logout = async () => {
   await supabase.auth.signOut();
   localStorage.clear();
   sessionStorage.clear();
-  setSession(null);
-  setChat([]);
-  setEmail("");
-  setPassword("");
   window.location.reload();
 };
 
 /* ================= IA ================= */
-
 const falarComIA = async () => {
   if (!texto || loading) return;
+  if (!session?.user?.id) return alert("Sessão inválida");
 
   const novoChat = [...chat, { tipo: "user", texto }];
   setChat(novoChat);
   setTexto("");
   setLoading(true);
 
-  const res = await fetch(`${BACKEND_URL}/ia`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      texto,
-      emocao,
-      user_id: session.user.id,
-      modo,
-      modoProfundo
-    })
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/ia`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        texto,
+        emocao,
+        user_id: session.user.id,
+        modo,
+        modoProfundo
+      })
+    });
 
-  const data = await res.json();
+    if (!res.ok) throw new Error("Erro servidor");
 
-  setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
+    const data = await res.json();
+
+    const respostaIA = data?.resposta || "Estou aqui com você.";
+
+    setChat([...novoChat, { tipo:"ia", texto: respostaIA }]);
+
+  } catch (e) {
+    console.log("Erro IA:", e.message);
+
+    setChat([
+      ...novoChat,
+      {
+        tipo:"ia",
+        texto:"⚠️ Tive uma instabilidade, mas continuo com você. Tente novamente."
+      }
+    ]);
+  }
+
   setLoading(false);
 };
 
 /* ================= LOGIN ================= */
-
 const login = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -190,7 +208,6 @@ const login = async () => {
 };
 
 /* ================= REGISTER ================= */
-
 const register = async () => {
   setLoading(true);
   const { error } = await supabase.auth.signUp({ email, password });
@@ -201,7 +218,6 @@ const register = async () => {
 };
 
 /* ================= UI LOGIN ================= */
-
 if (!session) {
   return (
     <div style={styles.loginContainer}>
@@ -226,7 +242,6 @@ if (!session) {
 }
 
 /* ================= APP ================= */
-
 return (
   <div style={styles.app}>
     <div style={styles.sidebar}>

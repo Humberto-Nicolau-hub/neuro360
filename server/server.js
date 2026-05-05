@@ -11,7 +11,7 @@ const app = express();
 
 /* ================= CORS ================= */
 app.use(cors({
-  origin: (origin, callback) => callback(null, true)
+  origin: "*", // pode restringir depois
 }));
 
 app.use(express.json());
@@ -56,8 +56,7 @@ function checkRateLimit(user_id) {
 
 /* ================= FUNÇÕES ================= */
 function validarEntrada(texto) {
-  if (!texto || typeof texto !== "string" || texto.length > 500) return false;
-  return true;
+  return texto && typeof texto === "string" && texto.length <= 500;
 }
 
 function detectarEncerramento(texto) {
@@ -91,26 +90,39 @@ function getHoje() {
   return local.toISOString().split("T")[0];
 }
 
+/* ================= HEALTH CHECK ================= */
+app.get("/", (req, res) => {
+  res.json({ status: "ok", mensagem: "Neuro360 backend ativo 🚀" });
+});
+
+/* ================= TESTE IA (IMPORTANTE) ================= */
+app.get("/ia", (req, res) => {
+  res.json({
+    status: "ok",
+    mensagem: "Endpoint /ia ativo. Use POST para interação."
+  });
+});
+
 /* ================= IA ================= */
 app.post("/ia", async (req, res) => {
   try {
     let { texto, emocao, user_id, historico, modo, modoProfundo } = req.body;
 
     if (!validarEntrada(texto)) {
-      return res.json({ resposta: "Me diga isso de forma um pouco mais simples pra eu te ajudar melhor." });
+      return res.json({ resposta: "Me diga isso de forma mais simples pra eu te ajudar melhor." });
     }
 
     user_id = user_id || "anon";
 
     if (!checkRateLimit(user_id)) {
       return res.json({
-        resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco e vamos continuar. 🌿"
+        resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco 🌿"
       });
     }
 
     if (detectarEncerramento(texto)) {
       return res.json({
-        resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar. 🌱",
+        resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar 🌱",
         encerrado: true
       });
     }
@@ -125,7 +137,9 @@ app.post("/ia", async (req, res) => {
         .single();
 
       if (data?.plano === "premium") isPremium = true;
-    } catch {}
+    } catch (e) {
+      console.log("Erro plano:", e.message);
+    }
 
     if (!isPremium) {
       const hoje = getHoje();
@@ -145,93 +159,79 @@ app.post("/ia", async (req, res) => {
       }
     }
 
-    let memoriaTexto = "";
-
-    try {
-      const { data } = await supabase
-        .from("memoria_ia")
-        .select("texto")
-        .eq("user_id", user_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      memoriaTexto = data?.map(m => m.texto).join("\n") || "";
-    } catch {}
-
-    let historicoTexto = historico
-      ?.map(m => `${m.tipo === "user" ? "Usuário" : "IA"}: ${m.texto}`)
-      .join("\n") || "";
-
-    let promptSistema = "";
-
-    if (modoProfundo && isPremium) {
-      promptSistema = `Você é terapeuta especialista em PNL.\n\nMemória:\n${memoriaTexto}\n\nHistórico:\n${historicoTexto}`;
-    } else if (modo === "terapeutico") {
-      promptSistema = `Você é terapeuta com base em PNL.\n\nMemória:\n${memoriaTexto}\n\nHistórico:\n${historicoTexto}`;
-    } else {
-      promptSistema = "Responda de forma clara.";
-    }
-
     let resposta = "Estou aqui com você.";
 
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: promptSistema },
+          { role: "system", content: "Você é um terapeuta com PNL." },
           { role: "user", content: `${emocao}: ${texto}` }
         ],
       });
 
       resposta = completion?.choices?.[0]?.message?.content || resposta;
-    } catch {
-      resposta = "Tive uma pequena instabilidade, mas continuo com você.";
+    } catch (e) {
+      console.log("Erro OpenAI:", e.message);
+      resposta = "Tive uma instabilidade, mas continuo com você.";
     }
 
     const fase = detectarFase(texto);
 
-    if (fase === "dor") resposta += "\n\n💭 O que mais pesa nisso pra você agora?";
-    if (fase === "clareza") resposta += "\n\n✨ Você já começou a organizar isso.";
-    if (fase === "ação") resposta += "\n\n🚀 Qual o menor passo hoje?";
-    if (fase === "fechamento") {
-      resposta = `Fico feliz em caminhar com você. 🌱\n\n👉 Qual foi seu principal insight?`;
-    }
+    if (fase === "dor") resposta += "\n\n💭 O que mais pesa nisso?";
+    if (fase === "ação") resposta += "\n\n🚀 Qual o menor passo agora?";
 
     if (SUPORTE_ATIVO && detectarDor(texto)) {
       resposta += `\n\n📞 https://wa.me/${SUPORTE_NUMERO}`;
     }
 
-    await supabase.from("memoria_ia").insert({ user_id, texto });
-    await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
+    try {
+      await supabase.from("memoria_ia").insert({ user_id, texto });
+      await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
+    } catch (e) {
+      console.log("Erro salvar:", e.message);
+    }
 
     res.json({ resposta });
 
   } catch (err) {
-    console.error(err);
-    res.json({ resposta: "Erro interno, mas continuo com você." });
+    console.error("ERRO GERAL:", err);
+    res.status(500).json({ resposta: "Erro interno." });
+  }
+});
+
+/* ================= ADMIN ================= */
+app.get("/admin-metricas", async (req, res) => {
+  try {
+    const { count: usuarios } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+    const { count: registros } = await supabase.from("registros_emocionais").select("*", { count: "exact", head: true });
+    const { count: ia } = await supabase.from("memoria_ia").select("*", { count: "exact", head: true });
+
+    res.json({ usuarios, registros, ia });
+
+  } catch (err) {
+    console.error("Erro métricas:", err);
+    res.status(500).json({ error: "Erro ao buscar métricas" });
   }
 });
 
 /* ================= STRIPE ================= */
 app.post("/criar-checkout", async (req, res) => {
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
-    success_url: process.env.FRONTEND_URL,
-    cancel_url: process.env.FRONTEND_URL,
-  });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      success_url: process.env.FRONTEND_URL,
+      cancel_url: process.env.FRONTEND_URL,
+    });
 
-  res.json({ url: session.url });
-});
+    res.json({ url: session.url });
 
-/* ================= ADMIN ================= */
-app.get("/admin-metricas", async (req, res) => {
-  const { count: usuarios } = await supabase.from("profiles").select("*", { count: "exact", head: true });
-  const { count: registros } = await supabase.from("registros_emocionais").select("*", { count: "exact", head: true });
-  const { count: ia } = await supabase.from("memoria_ia").select("*", { count: "exact", head: true });
-
-  res.json({ usuarios, registros, ia });
+  } catch (err) {
+    console.error("Erro Stripe:", err);
+    res.status(500).json({ error: "Erro checkout" });
+  }
 });
 
 /* ================= START ================= */

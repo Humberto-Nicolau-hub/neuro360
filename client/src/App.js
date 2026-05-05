@@ -8,7 +8,9 @@ const supabase = createClient(
   "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
 );
 
-const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+// ✅ CORREÇÃO AQUI
+const BACKEND_URL = "https://backend-neuro360.onrender.com";
+
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
@@ -245,34 +247,11 @@ return (
         </>
       )}
 
-      {/* 🔥 BOTÕES COM ESTADO VISUAL */}
-      <button
-        onClick={()=>setModo("normal")}
-        style={{
-          ...styles.modeBtn,
-          background: modo === "normal" ? "#22c55e" : "#334155"
-        }}
-      >
-        Normal
-      </button>
+      <button onClick={()=>setModo("normal")} style={{...styles.modeBtn, background: modo === "normal" ? "#22c55e" : "#334155"}}>Normal</button>
 
-      <button
-        onClick={()=>setModo("terapeutico")}
-        style={{
-          ...styles.modeBtn,
-          background: modo === "terapeutico" ? "#22c55e" : "#334155"
-        }}
-      >
-        Terapêutico
-      </button>
+      <button onClick={()=>setModo("terapeutico")} style={{...styles.modeBtn, background: modo === "terapeutico" ? "#22c55e" : "#334155"}}>Terapêutico</button>
 
-      <button
-        onClick={()=>setModoProfundo(!modoProfundo)}
-        style={{
-          ...styles.modeBtn,
-          background: modoProfundo ? "#22c55e" : "#334155"
-        }}
-      >
+      <button onClick={()=>setModoProfundo(!modoProfundo)} style={{...styles.modeBtn, background: modoProfundo ? "#22c55e" : "#334155"}}>
         🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
       </button>
 

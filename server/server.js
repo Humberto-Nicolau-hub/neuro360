@@ -415,6 +415,33 @@ app.post(
     }
   }
 );
+app.get("/admin-metricas", async (req, res) => {
+  try {
+    const { count: usuarios } = await supabase
+      .from("usuarios")
+      .select("*", { count: "exact", head: true });
+
+    const { count: registros } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true });
+
+    const { count: ia } = await supabase
+      .from("memoria_ia")
+      .select("*", { count: "exact", head: true });
+
+    res.json({
+      usuarios: usuarios || 0,
+      registros: registros || 0,
+      ia: ia || 0,
+    });
+  } catch (error) {
+    console.error("Erro admin métricas:", error);
+
+    res.status(500).json({
+      erro: "Erro backend",
+    });
+  }
+});
 
 /* =========================
    START

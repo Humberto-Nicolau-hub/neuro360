@@ -9,11 +9,15 @@ dotenv.config();
 
 const app = express();
 
-/* ================= CORS ================= */
-app.use(cors({ origin: "*" }));
-app.use(express.json());
+/* =========================
+   CONFIG
+========================= */
 
-/* ================= CLIENTES ================= */
+app.use(cors({ origin: "*" }));
+app.use(express.json({ limit: "2mb" }));
+
+const PORT = process.env.PORT || 10000;
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -25,197 +29,399 @@ const openai = new OpenAI({
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/* ================= CONFIG ================= */
-const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
-const SUPORTE_NUMERO = "5561993338458";
+/* =========================
+   RATE LIMIT
+========================= */
 
-/* ================= RATE LIMIT ================= */
-const rateLimitMap = new Map();
+const rateMap = new Map();
 
-function checkRateLimit(user_id) {
+function checkRateLimit(userId) {
   const now = Date.now();
-  const windowTime = 60000;
-  const maxRequests = 10;
 
-  if (!rateLimitMap.has(user_id)) {
-    rateLimitMap.set(user_id, []);
+  if (!rateMap.has(userId)) {
+    rateMap.set(userId, []);
   }
 
-  const timestamps = rateLimitMap.get(user_id).filter(t => now - t < windowTime);
+  const requests = rateMap
+    .get(userId)
+    .filter((t) => now - t < 60000);
 
-  if (timestamps.length >= maxRequests) return false;
+  if (requests.length >= 15) {
+    return false;
+  }
 
-  timestamps.push(now);
-  rateLimitMap.set(user_id, timestamps);
+  requests.push(now);
+  rateMap.set(userId, requests);
 
   return true;
 }
 
-/* ================= FUNÇÕES ================= */
-function validarEntrada(texto) {
-  return texto && typeof texto === "string" && texto.length <= 500;
-}
+/* =========================
+   HELPERS
+========================= */
 
-function detectarEncerramento(texto) {
+function detectarDor(texto = "") {
   const t = texto.toLowerCase();
-  return ["obrigado", "valeu", "tchau", "até mais"].some(p => t.includes(p));
-}
 
-function detectarDor(texto) {
-  const t = texto.toLowerCase();
   return [
-    "não aguento","não consigo","cansado","perdido",
-    "ansiedade","depress","triste","sozinho","sem sentido"
-  ].some(p => t.includes(p));
+    "ansiedade",
+    "depress",
+    "triste",
+    "sozinho",
+    "medo",
+    "angustia",
+    "cansado",
+    "sem sentido",
+    "não aguento",
+  ].some((p) => t.includes(p));
 }
 
-function detectarFase(texto) {
+function detectarFase(texto = "") {
   const t = texto.toLowerCase();
 
-  if (detectarEncerramento(texto)) return "fechamento";
-  if (/não aguento|ansiedade|triste|cansado|sozinho/.test(t)) return "dor";
-  if (/entendi|faz sentido/.test(t)) return "clareza";
-  if (/vou tentar|vou fazer/.test(t)) return "ação";
+  if (/vou tentar|vou fazer|vou mudar/.test(t)) {
+    return "acao";
+  }
+
+  if (/entendi|faz sentido|compreendi/.test(t)) {
+    return "clareza";
+  }
+
+  if (detectarDor(texto)) {
+    return "dor";
+  }
 
   return "exploracao";
 }
 
-function getHoje() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60000);
-  return local.toISOString().split("T")[0];
+function gerarRecomendacao(emocao) {
+  const mapa = {
+    Ansioso:
+      "Experimente respiração guiada por 2 minutos antes de dormir.",
+    Triste:
+      "Tente escrever 3 pequenas vitórias do seu dia.",
+    Estressado:
+      "Seu corpo pede desaceleração. Caminhada leve pode ajudar.",
+    Desmotivado:
+      "Comece apenas pelo menor passo possível.",
+    Deprimido:
+      "Busque conexão humana hoje. Não enfrente isso sozinho.",
+    Feliz:
+      "Excelente momento para reforçar hábitos positivos.",
+  };
+
+  return mapa[emocao] || "Continue cuidando da sua mente.";
 }
 
-/* ================= HEALTH ================= */
+/* =========================
+   HEALTH
+========================= */
+
 app.get("/", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok",
+    servidor: "Neuro360 IA",
+  });
 });
 
 app.get("/ia", (req, res) => {
-  res.json({ status: "ok", msg: "Use POST" });
+  res.json({
+    status: "ok",
+    metodo: "POST",
+  });
 });
 
-/* ================= IA ================= */
+/* =========================
+   IA
+========================= */
+
 app.post("/ia", async (req, res) => {
   try {
-    let { texto, emocao, user_id, contexto, modo, modoProfundo } = req.body;
+    const {
+      texto,
+      emocao,
+      user_id,
+      modo,
+      modoProfundo,
+    } = req.body;
 
-    if (!validarEntrada(texto)) {
-      return res.json({ resposta: "Me diga isso de forma mais simples pra eu te ajudar melhor." });
-    }
-
-    user_id = user_id || "anon";
-
-    if (!checkRateLimit(user_id)) {
-      return res.json({
-        resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco 🌿"
+    if (!texto || typeof texto !== "string") {
+      return res.status(400).json({
+        resposta: "Texto inválido.",
       });
     }
 
-    if (detectarEncerramento(texto)) {
+    const userId = user_id || "anon";
+
+    if (!checkRateLimit(userId)) {
       return res.json({
-        resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar 🌱",
-        encerrado: true
+        resposta:
+          "Muitas mensagens seguidas. Respire um pouco 🌿",
       });
     }
 
-    let resposta = "Estou aqui com você.";
+    let memoriaResumo = "";
 
-    /* ================= IA ================= */
+    /* =========================
+       BUSCA MEMÓRIA
+    ========================= */
+
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Você é um terapeuta com PNL, empático e prático." },
-          { role: "user", content: `${emocao}: ${texto}` }
-        ],
-      });
+      const { data } = await supabase
+        .from("memoria_ia")
+        .select("texto, resposta, emocao")
+        .eq("user_id", userId)
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(5);
 
-      resposta = completion?.choices?.[0]?.message?.content || resposta;
+      if (data?.length) {
+        memoriaResumo = data
+          .map(
+            (m) =>
+              `Usuário: ${m.texto}\nIA:${m.resposta}`
+          )
+          .join("\n");
+      }
+    } catch (e) {
+      console.log("Memória:", e.message);
+    }
 
+    /* =========================
+       SYSTEM PROMPT
+    ========================= */
+
+    const systemPrompt = `
+Você é a Neuro360 IA.
+
+Especialista em:
+- PNL
+- inteligência emocional
+- neurociência
+- terapia conversacional
+- apoio emocional
+
+REGRAS:
+- Seja humano
+- Respostas naturais
+- Nunca muito longas
+- Ajude emocionalmente
+- Crie sensação de evolução
+- Faça o usuário se sentir compreendido
+
+Modo atual: ${modo}
+
+Terapia profunda:
+${modoProfundo ? "ATIVADA" : "DESATIVADA"}
+
+Memória do usuário:
+${memoriaResumo}
+`;
+
+    /* =========================
+       OPENAI
+    ========================= */
+
+    let respostaIA =
+      "Estou aqui com você.";
+
+    try {
+      const completion =
+        await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          temperature: 0.8,
+          max_tokens: 300,
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt,
+            },
+            {
+              role: "user",
+              content: `
+Emoção: ${emocao}
+
+Mensagem:
+${texto}
+`,
+            },
+          ],
+        });
+
+      respostaIA =
+        completion?.choices?.[0]?.message
+          ?.content || respostaIA;
     } catch (e) {
       console.log("Erro OpenAI:", e.message);
-      resposta = "Tive uma instabilidade, mas continuo com você.";
+
+      respostaIA =
+        "Tive uma instabilidade agora, mas continuo aqui com você 🌱";
     }
+
+    /* =========================
+       EVOLUÇÃO
+    ========================= */
 
     const fase = detectarFase(texto);
 
-    if (fase === "dor") resposta += "\n\n💭 O que mais pesa nisso?";
-    if (fase === "ação") resposta += "\n\n🚀 Qual o menor passo agora?";
-
-    if (SUPORTE_ATIVO && detectarDor(texto)) {
-      resposta += `\n\n📞 https://wa.me/${SUPORTE_NUMERO}`;
+    if (fase === "dor") {
+      respostaIA +=
+        "\n\n💭 Me conte o que mais pesa nisso.";
     }
 
-    /* ================= SALVAR (CORRIGIDO CIRÚRGICO) ================= */
-    try {
-      await supabase.from("memoria_ia").insert([
-        {
-          user_id,
-          texto,
-          emocao,
-          resposta
-        }
-      ]);
-    } catch (e) {
-      console.log("Erro memoria_ia:", e.message);
+    if (fase === "acao") {
+      respostaIA +=
+        "\n\n🚀 Você já começou sua mudança.";
     }
 
-    try {
-      await supabase.from("registros_emocionais").insert([
-        {
-          user_id,
-          emocao,
-          texto
-        }
-      ]);
-    } catch (e) {
-      console.log("Erro registros:", e.message);
-    }
+    respostaIA += `
 
-    res.json({ resposta });
+✨ Recomendação:
+${gerarRecomendacao(emocao)}
+`;
 
-  } catch (err) {
-    console.error("ERRO GERAL:", err);
-    res.status(500).json({ resposta: "Erro interno." });
-  }
-});
+    /* =========================
+       RESPONDE PRIMEIRO
+    ========================= */
 
-/* ================= ADMIN ================= */
-app.get("/admin-metricas", async (req, res) => {
-  try {
-    const { count: usuarios } = await supabase.from("profiles").select("*", { count: "exact", head: true });
-    const { count: registros } = await supabase.from("registros_emocionais").select("*", { count: "exact", head: true });
-    const { count: ia } = await supabase.from("memoria_ia").select("*", { count: "exact", head: true });
-
-    res.json({ usuarios, registros, ia });
-
-  } catch {
-    res.status(500).json({ error: "Erro métricas" });
-  }
-});
-
-/* ================= STRIPE ================= */
-app.post("/criar-checkout", async (req, res) => {
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
-      success_url: process.env.FRONTEND_URL,
-      cancel_url: process.env.FRONTEND_URL,
+    res.json({
+      resposta: respostaIA,
     });
 
-    res.json({ url: session.url });
+    /* =========================
+       SALVA ASSÍNCRONO
+    ========================= */
 
-  } catch {
-    res.status(500).json({ error: "Erro checkout" });
+    Promise.allSettled([
+      supabase.from("memoria_ia").insert([
+        {
+          user_id: userId,
+          texto,
+          emocao,
+          resposta: respostaIA,
+          modo,
+        },
+      ]),
+
+      supabase
+        .from("registros_emocionais")
+        .insert([
+          {
+            user_id: userId,
+            emocao,
+            texto,
+          },
+        ]),
+    ]).then((results) => {
+      results.forEach((r) => {
+        if (r.status === "rejected") {
+          console.log(
+            "Erro Supabase:",
+            r.reason?.message
+          );
+        }
+      });
+    });
+  } catch (err) {
+    console.log("ERRO GERAL:", err.message);
+
+    res.status(500).json({
+      resposta:
+        "Erro interno no servidor.",
+    });
   }
 });
 
-const PORT = process.env.PORT || 10000;
+/* =========================
+   ADMIN
+========================= */
+
+app.get("/admin-metricas", async (req, res) => {
+  try {
+    const { count: usuarios } =
+      await supabase
+        .from("profiles")
+        .select("*", {
+          count: "exact",
+          head: true,
+        });
+
+    const { count: registros } =
+      await supabase
+        .from("registros_emocionais")
+        .select("*", {
+          count: "exact",
+          head: true,
+        });
+
+    const { count: ia } =
+      await supabase
+        .from("memoria_ia")
+        .select("*", {
+          count: "exact",
+          head: true,
+        });
+
+    res.json({
+      usuarios: usuarios || 0,
+      registros: registros || 0,
+      ia: ia || 0,
+    });
+  } catch (e) {
+    console.log(e.message);
+
+    res.status(500).json({
+      error: "Erro métricas",
+    });
+  }
+});
+
+/* =========================
+   STRIPE
+========================= */
+
+app.post(
+  "/criar-checkout",
+  async (req, res) => {
+    try {
+      const session =
+        await stripe.checkout.sessions.create({
+          mode: "subscription",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price:
+                process.env
+                  .STRIPE_PRICE_ID,
+              quantity: 1,
+            },
+          ],
+          success_url:
+            process.env.FRONTEND_URL,
+          cancel_url:
+            process.env.FRONTEND_URL,
+        });
+
+      res.json({
+        url: session.url,
+      });
+    } catch (e) {
+      console.log(e.message);
+
+      res.status(500).json({
+        error: "Erro checkout",
+      });
+    }
+  }
+);
+
+/* =========================
+   START
+========================= */
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server rodando na porta ${PORT}`);
+  console.log(
+    `🚀 Neuro360 backend rodando na porta ${PORT}`
+  );
 });

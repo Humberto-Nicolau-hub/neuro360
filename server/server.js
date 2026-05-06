@@ -9,14 +9,9 @@ dotenv.config();
 
 const app = express();
 
-/* ================= CORS ================= */
-app.use(cors({
-  origin: "*", // pode restringir depois
-}));
-
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-/* ================= CLIENTES ================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -29,7 +24,6 @@ const openai = new OpenAI({
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* ================= CONFIG ================= */
-const SUPORTE_ATIVO = process.env.SUPORTE_ATIVO !== "false";
 const SUPORTE_NUMERO = "5561993338458";
 
 /* ================= RATE LIMIT ================= */
@@ -54,140 +48,132 @@ function checkRateLimit(user_id) {
   return true;
 }
 
-/* ================= FUNÇÕES ================= */
-function validarEntrada(texto) {
-  return texto && typeof texto === "string" && texto.length <= 500;
-}
-
-function detectarEncerramento(texto) {
-  const t = texto.toLowerCase();
-  return ["obrigado", "valeu", "tchau", "até mais"].some(p => t.includes(p));
-}
-
-function detectarDor(texto) {
-  const t = texto.toLowerCase();
-  return [
-    "não aguento","não consigo","cansado","perdido",
-    "ansiedade","depress","triste","sozinho","sem sentido"
-  ].some(p => t.includes(p));
-}
+/* ================= HELPERS ================= */
 
 function detectarFase(texto) {
   const t = texto.toLowerCase();
 
-  if (detectarEncerramento(texto)) return "fechamento";
-  if (/não aguento|ansiedade|triste|cansado|sozinho/.test(t)) return "dor";
+  if (/obrigado|valeu|tchau/.test(t)) return "fechamento";
+  if (/ansiedade|triste|cansado|sozinho|não aguento/.test(t)) return "dor";
   if (/entendi|faz sentido/.test(t)) return "clareza";
   if (/vou tentar|vou fazer/.test(t)) return "ação";
 
   return "exploracao";
 }
 
-function getHoje() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60000);
-  return local.toISOString().split("T")[0];
+function gerarRecomendacao(emocao) {
+  const mapa = {
+    Ansioso: "Respire fundo por 2 minutos e foque no presente.",
+    Triste: "Escreva 3 coisas que ainda fazem sentido pra você.",
+    Desmotivado: "Faça apenas UMA pequena ação hoje.",
+    Estressado: "Pare 5 minutos e relaxe seu corpo.",
+    Deprimido: "Você não precisa resolver tudo hoje. Apenas continue.",
+  };
+
+  return mapa[emocao] || "Observe seus pensamentos sem julgamento.";
 }
 
-/* ================= HEALTH CHECK ================= */
+/* ================= HEALTH ================= */
 app.get("/", (req, res) => {
-  res.json({ status: "ok", mensagem: "Neuro360 backend ativo 🚀" });
+  res.json({ status: "ok" });
 });
 
-/* ================= TESTE IA (IMPORTANTE) ================= */
 app.get("/ia", (req, res) => {
-  res.json({
-    status: "ok",
-    mensagem: "Endpoint /ia ativo. Use POST para interação."
-  });
+  res.json({ status: "ok", msg: "Use POST" });
 });
 
 /* ================= IA ================= */
 app.post("/ia", async (req, res) => {
   try {
-    let { texto, emocao, user_id, historico, modo, modoProfundo } = req.body;
+    let { texto, emocao, user_id, contexto, modo, modoProfundo } = req.body;
 
-    if (!validarEntrada(texto)) {
-      return res.json({ resposta: "Me diga isso de forma mais simples pra eu te ajudar melhor." });
+    if (!texto) {
+      return res.json({ resposta: "Me diga um pouco mais." });
     }
-
-    user_id = user_id || "anon";
 
     if (!checkRateLimit(user_id)) {
       return res.json({
-        resposta: "Você está enviando muitas mensagens rapidamente. Respira um pouco 🌿"
+        resposta: "Respira um pouco 🌿 e vamos com calma."
       });
     }
 
-    if (detectarEncerramento(texto)) {
-      return res.json({
-        resposta: "Foi um prazer te ouvir. Estarei aqui sempre que precisar 🌱",
-        encerrado: true
-      });
-    }
+    /* ================= CONTEXTO ================= */
+    const contextoFormatado = (contexto || [])
+      .map(c => `Usuário: ${c.texto} | IA: ${c.resposta}`)
+      .join("\n");
 
-    let isPremium = false;
+    /* ================= PROMPT INTELIGENTE ================= */
+    const promptSistema = `
+Você é um especialista em PNL, inteligência emocional e terapia comportamental.
 
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("plano")
-        .eq("id", user_id)
-        .single();
+Seu papel:
+- Acolher emocionalmente
+- Gerar clareza
+- Guiar para ação leve
+- Adaptar resposta ao estado emocional
 
-      if (data?.plano === "premium") isPremium = true;
-    } catch (e) {
-      console.log("Erro plano:", e.message);
-    }
+Modo: ${modo}
+Profundo: ${modoProfundo}
 
-    if (!isPremium) {
-      const hoje = getHoje();
+Contexto recente:
+${contextoFormatado}
+`;
 
-      const { count } = await supabase
-        .from("registros_emocionais")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user_id)
-        .gte("created_at", `${hoje}T00:00:00`)
-        .lte("created_at", `${hoje}T23:59:59`);
-
-      if ((count || 0) >= 3) {
-        return res.json({
-          resposta: "Você atingiu o limite do plano free hoje 🚀",
-          limite: true
-        });
-      }
-    }
-
+    /* ================= OPENAI ================= */
     let resposta = "Estou aqui com você.";
 
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Você é um terapeuta com PNL." },
+          { role: "system", content: promptSistema },
           { role: "user", content: `${emocao}: ${texto}` }
         ],
       });
 
       resposta = completion?.choices?.[0]?.message?.content || resposta;
+
     } catch (e) {
       console.log("Erro OpenAI:", e.message);
       resposta = "Tive uma instabilidade, mas continuo com você.";
     }
 
+    /* ================= INTELIGÊNCIA EXTRA ================= */
     const fase = detectarFase(texto);
 
-    if (fase === "dor") resposta += "\n\n💭 O que mais pesa nisso?";
-    if (fase === "ação") resposta += "\n\n🚀 Qual o menor passo agora?";
+    if (fase === "dor") {
+      resposta += "\n\n💭 Me conta mais sobre isso.";
+    }
 
-    if (SUPORTE_ATIVO && detectarDor(texto)) {
+    if (fase === "ação") {
+      resposta += "\n\n🚀 Qual o próximo pequeno passo?";
+    }
+
+    /* ================= RECOMENDAÇÃO ================= */
+    const recomendacao = gerarRecomendacao(emocao);
+
+    resposta += `\n\n🧭 Sugestão: ${recomendacao}`;
+
+    /* ================= SUPORTE ================= */
+    if (/não aguento|sozinho/.test(texto.toLowerCase())) {
       resposta += `\n\n📞 https://wa.me/${SUPORTE_NUMERO}`;
     }
 
+    /* ================= SALVAR ================= */
     try {
-      await supabase.from("memoria_ia").insert({ user_id, texto });
-      await supabase.from("registros_emocionais").insert({ user_id, emocao, texto });
+      await supabase.from("memoria_ia").insert({
+        user_id,
+        texto,
+        emocao,
+        resposta
+      });
+
+      await supabase.from("registros_emocionais").insert({
+        user_id,
+        emocao,
+        texto
+      });
+
     } catch (e) {
       console.log("Erro salvar:", e.message);
     }
@@ -210,8 +196,7 @@ app.get("/admin-metricas", async (req, res) => {
     res.json({ usuarios, registros, ia });
 
   } catch (err) {
-    console.error("Erro métricas:", err);
-    res.status(500).json({ error: "Erro ao buscar métricas" });
+    res.status(500).json({ error: "Erro métricas" });
   }
 });
 
@@ -228,13 +213,11 @@ app.post("/criar-checkout", async (req, res) => {
 
     res.json({ url: session.url });
 
-  } catch (err) {
-    console.error("Erro Stripe:", err);
+  } catch {
     res.status(500).json({ error: "Erro checkout" });
   }
 });
 
-/* ================= START ================= */
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {

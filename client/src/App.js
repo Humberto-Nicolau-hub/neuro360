@@ -1,4 +1,4 @@
-// 🔥 IMPORTS (MANTIDO)
+// 🔥 IMPORTS
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import EvolucaoChart from "./EvolucaoChart";
@@ -9,7 +9,6 @@ const supabase = createClient(
 );
 
 const BACKEND_URL = "https://backend-neuro360.onrender.com";
-
 const ADMIN_EMAIL = "contatobetaoofertas@gmail.com";
 
 const EMOCOES = ["Ansioso","Triste","Feliz","Estressado","Desmotivado","Deprimido","Procrastinador"];
@@ -145,12 +144,34 @@ const buscarRegistros = async () => {
   }
 };
 
-/* ================= LOGOUT ================= */
-const logout = async () => {
-  await supabase.auth.signOut();
-  localStorage.clear();
-  sessionStorage.clear();
-  window.location.reload();
+/* ================= SALVAR MEMÓRIA ================= */
+const salvarMemoria = async (texto, emocao, resposta) => {
+  try {
+    await supabase.from("memoria_ia").insert([{
+      user_id: session.user.id,
+      texto,
+      emocao,
+      resposta
+    }]);
+  } catch (e) {
+    console.log("Erro memória:", e.message);
+  }
+};
+
+/* ================= BUSCAR CONTEXTO ================= */
+const buscarContexto = async () => {
+  try {
+    const { data } = await supabase
+      .from("memoria_ia")
+      .select("texto, emocao, resposta")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending:false })
+      .limit(5);
+
+    return data || [];
+  } catch {
+    return [];
+  }
 };
 
 /* ================= IA ================= */
@@ -164,6 +185,9 @@ const falarComIA = async () => {
   setLoading(true);
 
   try {
+
+    const contexto = await buscarContexto();
+
     const res = await fetch(`${BACKEND_URL}/ia`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -172,26 +196,28 @@ const falarComIA = async () => {
         emocao,
         user_id: session.user.id,
         modo,
-        modoProfundo
+        modoProfundo,
+        contexto
       })
     });
 
-    if (!res.ok) throw new Error("Erro servidor");
-
     const data = await res.json();
 
-    const respostaIA = data?.resposta || "Estou aqui com você.";
+    if (!data?.resposta) throw new Error("IA sem resposta");
 
-    setChat([...novoChat, { tipo:"ia", texto: respostaIA }]);
+    setChat([...novoChat, { tipo:"ia", texto: data.resposta }]);
+
+    await salvarMemoria(texto, emocao, data.resposta);
 
   } catch (e) {
+
     console.log("Erro IA:", e.message);
 
     setChat([
       ...novoChat,
       {
         tipo:"ia",
-        texto:"⚠️ Tive uma instabilidade, mas continuo com você. Tente novamente."
+        texto:"⚠️ Estou instável no momento, mas sigo com você. Tente novamente."
       }
     ]);
   }
@@ -215,6 +241,14 @@ const register = async () => {
   else alert("Conta criada! Faça login.");
   setModoCadastro(false);
   setLoading(false);
+};
+
+/* ================= LOGOUT ================= */
+const logout = async () => {
+  await supabase.auth.signOut();
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.reload();
 };
 
 /* ================= UI LOGIN ================= */
@@ -270,10 +304,6 @@ return (
         🧠 Terapia Guiada {modoProfundo ? "ON" : "OFF"}
       </button>
 
-      <a href="https://wa.me/5561993338458" target="_blank" rel="noreferrer" style={styles.support}>
-        💬 Suporte
-      </a>
-
       <button onClick={logout} style={styles.logout}>Sair</button>
     </div>
 
@@ -311,8 +341,6 @@ return (
 );
 }
 
-/* ================= STYLES ================= */
-
 const styles = {
   app:{display:"flex",height:"100vh",background:"#0f172a",color:"#fff"},
   sidebar:{width:220,background:"#020617",padding:20},
@@ -321,7 +349,6 @@ const styles = {
   bubble:{padding:12,borderRadius:10,maxWidth:"60%"},
   inputBar:{display:"flex",gap:10,padding:10,background:"#1e293b"},
   logout:{marginTop:20,background:"#ef4444",padding:10,borderRadius:5,color:"#fff"},
-  support:{marginTop:15,color:"#38bdf8"},
   button:{padding:12,background:"#22c55e",borderRadius:6,color:"#fff",border:"none"},
   input:{padding:10,borderRadius:6,border:"none"},
   loginContainer:{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f172a"},

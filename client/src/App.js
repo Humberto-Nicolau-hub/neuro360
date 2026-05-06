@@ -292,27 +292,29 @@ export default function App() {
             controller.signal,
 
           body: JSON.stringify({
-            texto: mensagem,
-            emocao,
+            mensagem: mensagem,
+            emocao: emocao,
             user_id:
               session?.user?.id ||
               "anon",
-            modo,
-            modoProfundo,
+            modo: modo,
+            modoProfundo:
+              modoProfundo,
           }),
         }
       );
 
       clearTimeout(timeout);
 
-      if (!res.ok) {
-        throw new Error(
-          "Backend indisponível"
-        );
-      }
-
       const data =
         await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data?.erro ||
+            "Backend indisponível"
+        );
+      }
 
       setChat([
         ...novoChat,
@@ -320,12 +322,14 @@ export default function App() {
           tipo: "ia",
           texto:
             data?.resposta ||
-            "Sem resposta.",
+            "Sem resposta da IA.",
         },
       ]);
 
       buscarRegistros();
+
     } catch (e) {
+
       console.log(
         "Erro IA:",
         e.message

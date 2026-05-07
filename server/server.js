@@ -2,453 +2,622 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-import Stripe from "stripe";
+
 import { createClient } from "@supabase/supabase-js";
+
+import detectarEmocao from "./detector_emocional.js";
+
+import gerarRespostaPNL from "./protocolos_pnl.js";
+
+import calcularScoreEmocional from "./score_emocional.js";
+
+import gerarHeatmapEmocional from "./heatmap_emocional.js";
+
+import gerarRecomendacoes from "./recomendacoes_automaticas.js";
+
+import gerarIntervencaoAutomatica from "./intervencoes_automaticas.js";
+
+import gerarTrilhaTerapêutica from "./trilhas_terapeuticas.js";
+
+import verificarPlano from "./controle_premium.js";
+
+import analisarArquiteturaCognitiva from "./neuro_arquitetura_cognitiva.js";
 
 dotenv.config();
 
 const app = express();
 
-/* =========================
-   CONFIG
-========================= */
+app.use(cors());
 
-app.use(cors({ origin: "*" }));
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json());
 
-const PORT = process.env.PORT || 10000;
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// =========================
+// OPENAI
+// =========================
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// =========================
+// SUPABASE
+// =========================
 
-/* =========================
-   RATE LIMIT
-========================= */
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
-const rateMap = new Map();
-
-function checkRateLimit(userId) {
-  const now = Date.now();
-
-  if (!rateMap.has(userId)) {
-    rateMap.set(userId, []);
-  }
-
-  const requests = rateMap
-    .get(userId)
-    .filter((t) => now - t < 60000);
-
-  if (requests.length >= 15) {
-    return false;
-  }
-
-  requests.push(now);
-  rateMap.set(userId, requests);
-
-  return true;
-}
-
-/* =========================
-   HELPERS
-========================= */
-
-function detectarDor(texto = "") {
-  const t = texto.toLowerCase();
-
-  return [
-    "ansiedade",
-    "depress",
-    "triste",
-    "sozinho",
-    "medo",
-    "angustia",
-    "cansado",
-    "sem sentido",
-    "não aguento",
-  ].some((p) => t.includes(p));
-}
-
-function detectarFase(texto = "") {
-  const t = texto.toLowerCase();
-
-  if (/vou tentar|vou fazer|vou mudar/.test(t)) {
-    return "acao";
-  }
-
-  if (/entendi|faz sentido|compreendi/.test(t)) {
-    return "clareza";
-  }
-
-  if (detectarDor(texto)) {
-    return "dor";
-  }
-
-  return "exploracao";
-}
-
-function gerarRecomendacao(emocao) {
-  const mapa = {
-    Ansioso:
-      "Experimente respiração guiada por 2 minutos antes de dormir.",
-    Triste:
-      "Tente escrever 3 pequenas vitórias do seu dia.",
-    Estressado:
-      "Seu corpo pede desaceleração. Caminhada leve pode ajudar.",
-    Desmotivado:
-      "Comece apenas pelo menor passo possível.",
-    Deprimido:
-      "Busque conexão humana hoje. Não enfrente isso sozinho.",
-    Feliz:
-      "Excelente momento para reforçar hábitos positivos.",
-  };
-
-  return mapa[emocao] || "Continue cuidando da sua mente.";
-}
-
-/* =========================
-   HEALTH
-========================= */
+// =========================
+// ROOT
+// =========================
 
 app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    servidor: "Neuro360 IA",
-  });
+  res.send("NeuroMapa360 Backend Online 🚀");
 });
 
-app.get("/ia", (req, res) => {
-  res.json({
-    status: "ok",
-    metodo: "POST",
-  });
+// =========================
+// DASHBOARD ADMIN
+// =========================
+
+app.get("/admin/dashboard", async (req, res) => {
+
+  try {
+
+    const { data: memorias } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*");
+
+    const scoreData =
+      calcularScoreEmocional(
+        memorias || []
+      );
+
+    const heatmapData =
+      gerarHeatmapEmocional(
+        memorias || []
+      );
+
+    const usuariosUnicos = [
+      ...new Set(
+        memorias?.map(
+          (m) => m.user_id
+        )
+      ),
+    ];
+
+    const premium = Math.floor(
+      usuariosUnicos.length * 0.25
+    );
+
+    res.json({
+      totalUsuarios:
+        usuariosUnicos.length || 0,
+
+      premium,
+
+      totalRegistros:
+        memorias?.length || 0,
+
+      totalMemorias:
+        memorias?.length || 0,
+
+      conversao:
+        usuariosUnicos.length > 0
+          ? (
+              (premium /
+                usuariosUnicos.length) *
+              100
+            ).toFixed(1)
+          : 0,
+
+      receita: premium * 47,
+
+      emocaoDominante:
+        scoreData.emocaoDominante,
+
+      scoreEmocional:
+        scoreData.score,
+
+      tendencia:
+        scoreData.tendencia,
+
+      nivel:
+        scoreData.nivel,
+
+      periodoCritico:
+        heatmapData.periodoCritico,
+
+      heatmap:
+        heatmapData.heatmap,
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      erro:
+        "Erro dashboard admin",
+    });
+  }
 });
 
-/* =========================
-   IA
-========================= */
+// =========================
+// IA TERAPÊUTICA
+// =========================
 
 app.post("/ia", async (req, res) => {
+
   try {
+
     const {
-      texto,
-      emocao,
+      mensagem,
       user_id,
-      modo,
-      modoProfundo,
     } = req.body;
 
-    if (!texto || typeof texto !== "string") {
+    if (!mensagem) {
+
       return res.status(400).json({
-        resposta: "Texto inválido.",
+        erro:
+          "Mensagem obrigatória",
       });
     }
 
-    const userId = user_id || "anon";
+    // =========================
+    // BUSCA MEMÓRIAS
+    // =========================
 
-    if (!checkRateLimit(userId)) {
-      return res.json({
-        resposta:
-          "Muitas mensagens seguidas. Respire um pouco 🌿",
-      });
-    }
-
-    let memoriaResumo = "";
-
-    /* =========================
-       BUSCA MEMÓRIA
-    ========================= */
-
-    try {
-      const { data } = await supabase
-        .from("memoria_ia")
-        .select("texto, resposta, emocao")
-        .eq("user_id", userId)
+    const { data: memoria } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*")
+        .eq(
+          "user_id",
+          user_id || "anonimo"
+        )
         .order("created_at", {
           ascending: false,
-        })
-        .limit(5);
+        });
 
-      if (data?.length) {
-        memoriaResumo = data
+    // =========================
+    // USUÁRIO
+    // =========================
+
+    const { data: usuario } =
+      await supabase
+        .from("usuarios")
+        .select("*")
+        .eq(
+          "id",
+          user_id || "anonimo"
+        )
+        .single();
+
+    // =========================
+    // CONTROLE PREMIUM
+    // =========================
+
+    const plano =
+      verificarPlano(
+        usuario || {},
+        memoria?.length || 0
+      );
+
+    // =========================
+    // LIMITE FREE
+    // =========================
+
+    if (
+      plano.limiteAtingido
+    ) {
+
+      return res.json({
+        premium: false,
+
+        limite:
+          true,
+
+        resposta: `
+Você atingiu o limite do plano gratuito do NeuroMapa360.
+
+O plano premium libera:
+✅ sessões ilimitadas
+✅ memória emocional avançada
+✅ trilhas terapêuticas premium
+✅ intervenções inteligentes
+✅ heatmap emocional
+✅ acompanhamento emocional contínuo
+
+Continue sua evolução emocional no plano premium.
+        `,
+      });
+    }
+
+    // =========================
+    // DETECÇÃO EMOCIONAL
+    // =========================
+
+    const emocaoData =
+      detectarEmocao(mensagem);
+
+    // =========================
+    // ARQUITETURA COGNITIVA
+    // =========================
+
+    const arquiteturaCognitiva =
+      analisarArquiteturaCognitiva(mensagem);
+
+    // =========================
+    // SCORE
+    // =========================
+
+    const scoreData =
+      calcularScoreEmocional(
+        memoria || []
+      );
+
+    // =========================
+    // HEATMAP
+    // =========================
+
+    const heatmapData =
+      gerarHeatmapEmocional(
+        memoria || []
+      );
+
+    // =========================
+    // RECOMENDAÇÕES
+    // =========================
+
+    const recomendacoes =
+      gerarRecomendacoes(
+        scoreData,
+        emocaoData
+      );
+
+    // =========================
+    // INTERVENÇÕES
+    // =========================
+
+    const intervencoes =
+      gerarIntervencaoAutomatica(
+        scoreData,
+        heatmapData
+      );
+
+    // =========================
+    // TRILHAS
+    // =========================
+
+    const trilha =
+      gerarTrilhaTerapêutica(
+        scoreData,
+        emocaoData
+      );
+
+    // =========================
+    // CONTEXTO
+    // =========================
+
+    let contextoAnterior = "";
+
+    if (
+      memoria &&
+      memoria.length > 0
+    ) {
+
+      contextoAnterior =
+        memoria
+          .slice(0, 5)
           .map(
             (m) =>
-              `Usuário: ${m.texto}\nIA:${m.resposta}`
+              `
+Usuário:
+${m.mensagem_usuario}
+
+IA:
+${m.resposta_ia}
+
+Emoção:
+${m.emocao}
+`
           )
           .join("\n");
-      }
-    } catch (e) {
-      console.log("Memória:", e.message);
     }
 
-    /* =========================
-       SYSTEM PROMPT
-    ========================= */
+    // =========================
+    // PROTOCOLO PNL
+    // =========================
 
-    const systemPrompt = `
-Você é a Neuro360 IA.
+    const respostaPNL =
+      gerarRespostaPNL(
+        emocaoData,
+        mensagem
+      );
 
-Especialista em:
-- PNL
-- inteligência emocional
-- neurociência
-- terapia conversacional
-- apoio emocional
+    // =========================
+    // SEGURANÇA EMOCIONAL
+    // =========================
 
-REGRAS:
-- Seja humano
-- Respostas naturais
-- Nunca muito longas
-- Ajude emocionalmente
-- Crie sensação de evolução
-- Faça o usuário se sentir compreendido
+    const mensagemLower =
+      mensagem.toLowerCase();
 
-Modo atual: ${modo}
+    const riscoElevado =
+      mensagemLower.includes("suicídio") ||
+      mensagemLower.includes("me matar") ||
+      mensagemLower.includes("não quero viver") ||
+      mensagemLower.includes("acabar com tudo");
 
-Terapia profunda:
-${modoProfundo ? "ATIVADA" : "DESATIVADA"}
+    if (riscoElevado) {
 
-Memória do usuário:
-${memoriaResumo}
+      return res.json({
+        resposta: `
+Sinto muito que você esteja passando por uma dor tão intensa neste momento.
+
+Você não precisa enfrentar isso sozinho.
+
+Agora é importante buscar apoio humano imediato:
+- alguém de confiança
+- um familiar
+- um profissional
+- ou o CVV (188)
+
+Sua vida importa.
+E esse momento pode ser atravessado com apoio adequado.
+
+Estou aqui com você.
+        `,
+      });
+    }
+
+    // =========================
+    // PROMPT SISTEMA
+    // =========================
+
+    const promptSistema = `
+Você é a IA terapêutica NeuroMapa360.
+
+Você atua como:
+- terapeuta neuro sistêmico
+- especialista em PNL
+- especialista em reestruturação emocional
+- mentor emocional profundo
+- inteligência emocional terapêutica
+
+REGRAS ABSOLUTAS:
+
+1. NUNCA responda genericamente.
+
+2. SEMPRE aprofundar:
+- emoção
+- crença
+- sabotador
+- padrão mental
+- ferida emocional
+
+3. Use:
+- acolhimento humano
+- profundidade emocional
+- perguntas inteligentes
+- PNL terapêutica
+- reestruturação cognitiva
+- consciência emocional
+- linguagem calorosa
+
+4. NÃO repetir respostas.
+
+5. NÃO parecer robótico.
+
+6. NÃO responder curto demais.
+
+7. O usuário precisa sentir:
+- compreensão
+- profundidade
+- conexão
+- acolhimento
+- expansão de consciência
+
+PLANO:
+${plano.plano}
+
+ANÁLISE EMOCIONAL:
+
+Emoção:
+${emocaoData.emocao}
+
+Intensidade:
+${emocaoData.intensidade}
+
+Categoria:
+${emocaoData.categoria}
+
+Vibração:
+${emocaoData.vibracao}
+
+Gatilhos:
+${emocaoData.gatilhos.join(", ")}
+
+ANÁLISE COGNITIVA:
+
+Crenças:
+${arquiteturaCognitiva.crencas.join(", ")}
+
+Sabotadores:
+${arquiteturaCognitiva.sabotadores.join(", ")}
+
+Distorções:
+${arquiteturaCognitiva.distorcoes.join(", ")}
+
+Feridas:
+${arquiteturaCognitiva.feridas.join(", ")}
+
+Padrão mental:
+${arquiteturaCognitiva.padraoMental.join(", ")}
+
+Resumo terapêutico:
+${arquiteturaCognitiva.resumoTerapeutico}
+
+PERFIL EMOCIONAL:
+
+Score emocional:
+${scoreData.score}/100
+
+Nível emocional:
+${scoreData.nivel}
+
+Tendência emocional:
+${scoreData.tendencia}
+
+Emoção dominante:
+${scoreData.emocaoDominante}
+
+Período crítico:
+${heatmapData.periodoCritico}
+
+CONTEXTO TERAPÊUTICO:
+${contextoAnterior}
+
+PROTOCOLO PNL:
+${respostaPNL}
+
+RECOMENDAÇÕES:
+${JSON.stringify(recomendacoes)}
+
+INTERVENÇÕES:
+${JSON.stringify(intervencoes)}
+
+TRILHA TERAPÊUTICA:
+${JSON.stringify(trilha)}
+
+MEMÓRIA TERAPÊUTICA:
+A IA deve lembrar emoções anteriores e criar continuidade emocional progressiva.
+
+Responda de forma:
+- profunda
+- humana
+- emocional
+- inteligente
+- terapêutica
+- transformadora
 `;
+    
+    // =========================
+    // OPENAI
+    // =========================
 
-    /* =========================
-       OPENAI
-    ========================= */
+    const completion =
+      await openai.chat.completions.create({
+        model: "gpt-4o-mini",
 
-    let respostaIA =
-      "Estou aqui com você.";
+        temperature: 0.95,
 
-    try {
-      const completion =
-        await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          temperature: 0.8,
-          max_tokens: 300,
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-            {
-              role: "user",
-              content: `
-Emoção: ${emocao}
+        max_tokens: 1200,
 
-Mensagem:
-${texto}
-`,
-            },
-          ],
-        });
-
-      respostaIA =
-        completion?.choices?.[0]?.message
-          ?.content || respostaIA;
-    } catch (e) {
-      console.log("Erro OpenAI:", e.message);
-
-      respostaIA =
-        "Tive uma instabilidade agora, mas continuo aqui com você 🌱";
-    }
-
-    /* =========================
-       EVOLUÇÃO
-    ========================= */
-
-    const fase = detectarFase(texto);
-
-    if (fase === "dor") {
-      respostaIA +=
-        "\n\n💭 Me conte o que mais pesa nisso.";
-    }
-
-    if (fase === "acao") {
-      respostaIA +=
-        "\n\n🚀 Você já começou sua mudança.";
-    }
-
-    respostaIA += `
-
-✨ Recomendação:
-${gerarRecomendacao(emocao)}
-`;
-
-    /* =========================
-       RESPONDE PRIMEIRO
-    ========================= */
-
-    res.json({
-      resposta: respostaIA,
-    });
-
-    /* =========================
-       SALVA ASSÍNCRONO
-    ========================= */
-
-    Promise.allSettled([
-      supabase.from("memoria_ia").insert([
-        {
-          user_id: userId,
-          texto,
-          emocao,
-          resposta: respostaIA,
-          modo,
-        },
-      ]),
-
-      supabase
-        .from("registros_emocionais")
-        .insert([
+        messages: [
           {
-            user_id: userId,
-            emocao,
-            texto,
+            role: "system",
+            content:
+              promptSistema,
           },
-        ]),
-    ]).then((results) => {
-      results.forEach((r) => {
-        if (r.status === "rejected") {
-          console.log(
-            "Erro Supabase:",
-            r.reason?.message
-          );
-        }
+
+          {
+            role: "user",
+            content: mensagem,
+          },
+        ],
       });
-    });
-  } catch (err) {
-    console.log("ERRO GERAL:", err.message);
 
-    res.status(500).json({
-      resposta:
-        "Erro interno no servidor.",
-    });
-  }
-});
+    const resposta =
+      completion
+        .choices[0]
+        .message.content;
 
-/* =========================
-   ADMIN
-========================= */
+    // =========================
+    // SALVA MEMÓRIA
+    // =========================
 
-app.get("/admin-metricas", async (req, res) => {
-  try {
-    const { count: usuarios } =
-      await supabase
-        .from("profiles")
-        .select("*", {
-          count: "exact",
-          head: true,
-        });
+    await supabase
+      .from("memoria_emocional")
+      .insert([
+        {
+          user_id:
+            user_id ||
+            "anonimo",
 
-    const { count: registros } =
-      await supabase
-        .from("registros_emocionais")
-        .select("*", {
-          count: "exact",
-          head: true,
-        });
+          mensagem_usuario:
+            mensagem,
 
-    const { count: ia } =
-      await supabase
-        .from("memoria_ia")
-        .select("*", {
-          count: "exact",
-          head: true,
-        });
+          resposta_ia:
+            resposta,
+
+          emocao:
+            emocaoData.emocao,
+
+          intensidade:
+            emocaoData.intensidade,
+        },
+      ]);
+
+    // =========================
+    // RESPOSTA FINAL
+    // =========================
 
     res.json({
-      usuarios: usuarios || 0,
-      registros: registros || 0,
-      ia: ia || 0,
+      premium:
+        plano.premium,
+
+      plano:
+        plano.plano,
+
+      restante:
+        plano.restante,
+
+      resposta,
+
+      emocao_detectada:
+        emocaoData,
+
+      arquitetura_cognitiva:
+        arquiteturaCognitiva,
+
+      perfil_emocional:
+        scoreData,
+
+      heatmap:
+        heatmapData,
+
+      recomendacoes,
+
+      intervencoes,
+
+      trilha,
+
+      memoria_ativa:
+        memoria?.length > 0,
     });
-  } catch (e) {
-    console.log(e.message);
 
-    res.status(500).json({
-      error: "Erro métricas",
-    });
-  }
-});
-
-/* =========================
-   STRIPE
-========================= */
-
-app.post(
-  "/criar-checkout",
-  async (req, res) => {
-    try {
-      const session =
-        await stripe.checkout.sessions.create({
-          mode: "subscription",
-          payment_method_types: ["card"],
-          line_items: [
-            {
-              price:
-                process.env
-                  .STRIPE_PRICE_ID,
-              quantity: 1,
-            },
-          ],
-          success_url:
-            process.env.FRONTEND_URL,
-          cancel_url:
-            process.env.FRONTEND_URL,
-        });
-
-      res.json({
-        url: session.url,
-      });
-    } catch (e) {
-      console.log(e.message);
-
-      res.status(500).json({
-        error: "Erro checkout",
-      });
-    }
-  }
-);
-app.get("/admin-metricas", async (req, res) => {
-  try {
-    const { count: usuarios } = await supabase
-      .from("usuarios")
-      .select("*", { count: "exact", head: true });
-
-    const { count: registros } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true });
-
-    const { count: ia } = await supabase
-      .from("memoria_ia")
-      .select("*", { count: "exact", head: true });
-
-    res.json({
-      usuarios: usuarios || 0,
-      registros: registros || 0,
-      ia: ia || 0,
-    });
   } catch (error) {
-    console.error("Erro admin métricas:", error);
+
+    console.log(error);
 
     res.status(500).json({
-      erro: "Erro backend",
+      erro:
+        "Erro IA terapêutica",
     });
   }
 });
 
-/* =========================
-   START
-========================= */
+// =========================
+// START
+// =========================
+
+const PORT =
+  process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log(
-    `🚀 Neuro360 backend rodando na porta ${PORT}`
+    `Servidor rodando na porta ${PORT}`
   );
 });

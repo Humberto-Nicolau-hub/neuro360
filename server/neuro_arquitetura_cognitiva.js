@@ -245,4 +245,6 @@ function analisarArquiteturaCognitiva(texto = "") {
   return analise;
 }
 
-export default analisarArquiteturaCognitiva;
+export {
+  analisarArquiteturaCognitiva,
+};

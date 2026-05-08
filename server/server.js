@@ -4,17 +4,49 @@ import dotenv from "dotenv";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
-import detectarEmocao from "./detector_emocional.js";
-import gerarRespostaPNL from "./protocolos_pnl.js";
-import calcularScoreEmocional from "./score_emocional.js";
-import gerarHeatmapEmocional from "./heatmap_emocional.js";
-import gerarRecomendacoes from "./recomendacoes_automaticas.js";
-import gerarIntervencaoAutomatica from "./intervencoes_automaticas.js";
-import gerarTrilhaTerapeutica from "./trilhas_terapeuticas.js";
-import verificarPlano from "./controle_premium.js";
-import analisarArquiteturaCognitiva from "./neuro_arquitetura_cognitiva.js";
-import calcularFrequenciaHawkins from "./frequencia_hawkins.js";
-import preverEstadoEmocional from "./predicao_emocional.js";
+import {
+  detectarEmocao,
+} from "./detector_emocional.js";
+
+import {
+  gerarRespostaPNL,
+} from "./protocolos_pnl.js";
+
+import {
+  calcularScoreEmocional,
+} from "./score_emocional.js";
+
+import {
+  gerarHeatmapEmocional,
+} from "./heatmap_emocional.js";
+
+import {
+  gerarRecomendacoes,
+} from "./recomendacoes_automaticas.js";
+
+import {
+  gerarIntervencaoAutomatica,
+} from "./intervencoes_automaticas.js";
+
+import {
+  gerarTrilhaTerapeutica,
+} from "./trilhas_terapeuticas.js";
+
+import {
+  verificarPlano,
+} from "./controle_premium.js";
+
+import {
+  analisarArquiteturaCognitiva,
+} from "./neuro_arquitetura_cognitiva.js";
+
+import {
+  calcularFrequenciaHawkins,
+} from "./frequencia_hawkins.js";
+
+import {
+  preverEstadoEmocional,
+} from "./predicao_emocional.js";
 
 dotenv.config();
 
@@ -30,7 +62,7 @@ app.use(express.json());
 const requiredEnv = [
   "OPENAI_API_KEY",
   "SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY"
+  "SUPABASE_SERVICE_ROLE_KEY",
 ];
 
 for (const envVar of requiredEnv) {
@@ -69,7 +101,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "4.0.0"
+    versao: "4.0.0",
   });
 });
 
@@ -82,7 +114,7 @@ app.get("/health", (req, res) => {
   res.json({
     ok: true,
     uptime: process.uptime(),
-    plataforma: "NeuroMapa360"
+    plataforma: "NeuroMapa360",
   });
 });
 
@@ -174,7 +206,7 @@ app.get("/admin/dashboard", async (req, res) => {
 
     return res.status(500).json({
       erro: "Erro dashboard admin",
-      detalhes: error.message
+      detalhes: error.message,
     });
   }
 });
@@ -189,13 +221,13 @@ app.post("/ia", async (req, res) => {
 
     const {
       mensagem,
-      user_id
+      user_id,
     } = req.body;
 
     if (!mensagem) {
 
       return res.status(400).json({
-        erro: "Mensagem obrigatória"
+        erro: "Mensagem obrigatória",
       });
     }
 
@@ -208,13 +240,13 @@ app.post("/ia", async (req, res) => {
 
     const {
       data: memoria,
-      error: memoriaError
+      error: memoriaError,
     } = await supabase
       .from("memoria_emocional")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", {
-        ascending: false
+        ascending: false,
       })
       .limit(10);
 
@@ -282,7 +314,7 @@ ${m.resposta_ia}
         limite: true,
 
         resposta:
-          "Você atingiu o limite do plano gratuito do NeuroMapa360."
+          "Você atingiu o limite do plano gratuito do NeuroMapa360.",
       });
     }
 
@@ -359,7 +391,7 @@ ${m.resposta_ia}
       return res.json({
 
         resposta:
-          "Você não precisa enfrentar isso sozinho. Procure apoio humano imediato e ligue 188 (CVV)."
+          "Você não precisa enfrentar isso sozinho. Procure apoio humano imediato e ligue 188 (CVV).",
       });
     }
 
@@ -550,7 +582,7 @@ Importante:
         "Erro IA terapêutica",
 
       detalhes:
-        error.message
+        error.message,
     });
   }
 });

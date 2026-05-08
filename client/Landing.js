@@ -1,6 +1,6 @@
 import React from "react";
 
-const BACKEND_URL = "https://neuro360-tkyx.onrender.com";
+const BACKEND_URL = "https://backend-neuro360.onrender.com";
 
 function Landing({ onEntrar }) {
 

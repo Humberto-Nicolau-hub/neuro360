@@ -139,4 +139,6 @@ function gerarRecomendacoes(
   return recomendacoes;
 }
 
-export default gerarRecomendacoes;
+export {
+  gerarRecomendacoes,
+};

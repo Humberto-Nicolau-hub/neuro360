@@ -28,12 +28,16 @@ app.use(express.json());
 const requiredEnv = [
   "OPENAI_API_KEY",
   "SUPABASE_URL",
-  "SUPABASE_KEY"
+  "SUPABASE_SERVICE_ROLE_KEY"
 ];
 
 for (const envVar of requiredEnv) {
+
   if (!process.env[envVar]) {
-    console.error(`ERRO: variável ${envVar} não configurada`);
+
+    console.error(
+      `ERRO: variável ${envVar} não configurada`
+    );
   }
 }
 
@@ -51,7 +55,7 @@ const openai = new OpenAI({
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 /* ======================================================
@@ -59,6 +63,7 @@ const supabase = createClient(
 ====================================================== */
 
 app.get("/", (req, res) => {
+
   res.json({
     status: "online",
     plataforma: "NeuroMapa360",
@@ -71,6 +76,7 @@ app.get("/", (req, res) => {
 ====================================================== */
 
 app.get("/health", (req, res) => {
+
   res.json({
     ok: true,
     uptime: process.uptime()
@@ -85,25 +91,30 @@ app.get("/admin/dashboard", async (req, res) => {
 
   try {
 
-    const { data: memorias, error } = await supabase
-      .from("memoria_emocional")
-      .select("*");
+    const { data: memorias, error } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*");
 
     if (error) {
       throw error;
     }
 
-    const scoreData = calcularScoreEmocional(
-      memorias || []
-    );
+    const scoreData =
+      calcularScoreEmocional(
+        memorias || []
+      );
 
-    const heatmapData = gerarHeatmapEmocional(
-      memorias || []
-    );
+    const heatmapData =
+      gerarHeatmapEmocional(
+        memorias || []
+      );
 
     const usuariosUnicos = [
       ...new Set(
-        memorias?.map((m) => m.user_id)
+        memorias?.map(
+          (m) => m.user_id
+        )
       ),
     ];
 
@@ -112,15 +123,23 @@ app.get("/admin/dashboard", async (req, res) => {
     );
 
     return res.json({
-      totalUsuarios: usuariosUnicos.length || 0,
+
+      totalUsuarios:
+        usuariosUnicos.length || 0,
+
       premium,
-      totalRegistros: memorias?.length || 0,
-      totalMemorias: memorias?.length || 0,
+
+      totalRegistros:
+        memorias?.length || 0,
+
+      totalMemorias:
+        memorias?.length || 0,
 
       conversao:
         usuariosUnicos.length > 0
           ? (
-              (premium / usuariosUnicos.length) *
+              (premium /
+                usuariosUnicos.length) *
               100
             ).toFixed(1)
           : 0,
@@ -165,9 +184,13 @@ app.post("/ia", async (req, res) => {
 
   try {
 
-    const { mensagem, user_id } = req.body;
+    const {
+      mensagem,
+      user_id
+    } = req.body;
 
     if (!mensagem) {
+
       return res.status(400).json({
         erro: "Mensagem obrigatória"
       });
@@ -177,38 +200,53 @@ app.post("/ia", async (req, res) => {
        MEMORIA
     ========================================= */
 
-    const { data: memoria } = await supabase
-      .from("memoria_emocional")
-      .select("*")
-      .eq("user_id", user_id || "anonimo")
-      .order("created_at", {
-        ascending: false,
-      });
+    const { data: memoria } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*")
+        .eq(
+          "user_id",
+          user_id || "anonimo"
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        );
 
     /* =========================================
        USUARIO
     ========================================= */
 
-    const { data: usuario } = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("id", user_id || "anonimo")
-      .single();
+    const { data: usuario } =
+      await supabase
+        .from("usuarios")
+        .select("*")
+        .eq(
+          "id",
+          user_id || "anonimo"
+        )
+        .single();
 
     /* =========================================
        PLANO
     ========================================= */
 
-    const plano = verificarPlano(
-      usuario || {},
-      memoria?.length || 0
-    );
+    const plano =
+      verificarPlano(
+        usuario || {},
+        memoria?.length || 0
+      );
 
-    if (plano?.limiteAtingido) {
+    if (
+      plano?.limiteAtingido
+    ) {
 
       return res.json({
         premium: false,
         limite: true,
+
         resposta:
           "Você atingiu o limite do plano gratuito do NeuroMapa360."
       });
@@ -225,10 +263,14 @@ app.post("/ia", async (req, res) => {
       analisarArquiteturaCognitiva(mensagem);
 
     const scoreData =
-      calcularScoreEmocional(memoria || []);
+      calcularScoreEmocional(
+        memoria || []
+      );
 
     const heatmapData =
-      gerarHeatmapEmocional(memoria || []);
+      gerarHeatmapEmocional(
+        memoria || []
+      );
 
     const recomendacoes =
       gerarRecomendacoes(
@@ -258,14 +300,18 @@ app.post("/ia", async (req, res) => {
        SEGURANCA
     ========================================= */
 
+    const mensagemLower =
+      mensagem.toLowerCase();
+
     const riscoElevado =
-      mensagem.toLowerCase().includes("suicidio") ||
-      mensagem.toLowerCase().includes("me matar") ||
-      mensagem.toLowerCase().includes("nao quero viver");
+      mensagemLower.includes("suicidio") ||
+      mensagemLower.includes("me matar") ||
+      mensagemLower.includes("nao quero viver");
 
     if (riscoElevado) {
 
       return res.json({
+
         resposta:
           "Você não precisa enfrentar isso sozinho. Procure apoio humano imediato e ligue 188 (CVV)."
       });
@@ -277,18 +323,25 @@ app.post("/ia", async (req, res) => {
 
     let contextoAnterior = "";
 
-    if (memoria?.length > 0) {
+    if (
+      memoria?.length > 0
+    ) {
 
       contextoAnterior =
         memoria
           .slice(0, 5)
-          .map((m) => `
-Usuário: ${m.mensagem_usuario}
+          .map(
+            (m) => `
+Usuário:
+${m.mensagem_usuario}
 
-IA: ${m.resposta_ia}
+IA:
+${m.resposta_ia}
 
-Emoção: ${m.emocao}
-`)
+Emoção:
+${m.emocao}
+`
+          )
           .join("\n");
     }
 
@@ -330,8 +383,11 @@ Responda de forma:
 
     const completion =
       await openai.chat.completions.create({
+
         model: "gpt-4o-mini",
+
         temperature: 0.9,
+
         max_tokens: 1000,
 
         messages: [
@@ -339,6 +395,7 @@ Responda de forma:
             role: "system",
             content: promptSistema,
           },
+
           {
             role: "user",
             content: mensagem,
@@ -347,7 +404,9 @@ Responda de forma:
       });
 
     const resposta =
-      completion.choices[0].message.content;
+      completion
+        .choices[0]
+        .message.content;
 
     /* =========================================
        MEMORIA
@@ -357,11 +416,20 @@ Responda de forma:
       .from("memoria_emocional")
       .insert([
         {
-          user_id: user_id || "anonimo",
-          mensagem_usuario: mensagem,
-          resposta_ia: resposta,
-          emocao: emocaoData?.emocao,
-          intensidade: emocaoData?.intensidade,
+          user_id:
+            user_id || "anonimo",
+
+          mensagem_usuario:
+            mensagem,
+
+          resposta_ia:
+            resposta,
+
+          emocao:
+            emocaoData?.emocao,
+
+          intensidade:
+            emocaoData?.intensidade,
         },
       ]);
 
@@ -370,9 +438,15 @@ Responda de forma:
     ========================================= */
 
     return res.json({
-      premium: plano?.premium,
-      plano: plano?.plano,
-      restante: plano?.restante,
+
+      premium:
+        plano?.premium,
+
+      plano:
+        plano?.plano,
+
+      restante:
+        plano?.restante,
 
       resposta,
 

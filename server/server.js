@@ -14,6 +14,7 @@ import gerarTrilhaTerapeutica from "./trilhas_terapeuticas.js";
 import verificarPlano from "./controle_premium.js";
 import analisarArquiteturaCognitiva from "./neuro_arquitetura_cognitiva.js";
 import calcularFrequenciaHawkins from "./frequencia_hawkins.js";
+import preverEstadoEmocional from "./predicao_emocional.js";
 
 dotenv.config();
 
@@ -68,7 +69,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "3.0.0"
+    versao: "4.0.0"
   });
 });
 
@@ -297,6 +298,11 @@ ${m.resposta_ia}
         emocaoData?.emocao
       );
 
+    const predicaoEmocional =
+      preverEstadoEmocional(
+        memoria || []
+      );
+
     const arquiteturaCognitiva =
       analisarArquiteturaCognitiva(
         mensagem
@@ -394,13 +400,22 @@ ${hawkinsData?.frequencia}
 Nível vibracional:
 ${hawkinsData?.nivel}
 
+Predição emocional:
+${predicaoEmocional?.resumo}
+
+Risco emocional:
+${predicaoEmocional?.risco}
+
+Tendência emocional:
+${predicaoEmocional?.tendencia}
+
 Resumo terapêutico:
 ${arquiteturaCognitiva?.resumoTerapeutico}
 
 Score emocional:
 ${scoreData?.score}
 
-Tendência emocional:
+Tendência emocional geral:
 ${scoreData?.tendencia}
 
 Nível emocional:
@@ -500,6 +515,9 @@ Importante:
       frequencia_hawkins:
         hawkinsData,
 
+      predicao_emocional:
+        predicaoEmocional,
+
       arquitetura_cognitiva:
         arquiteturaCognitiva,
 
@@ -551,7 +569,7 @@ app.listen(PORT, () => {
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
-VERSAO: 3.0.0
+VERSAO: 4.0.0
 ========================================
 
 `);

@@ -83,4 +83,6 @@ function verificarPlano(
   };
 }
 
-export default verificarPlano;
+export {
+  verificarPlano,
+};

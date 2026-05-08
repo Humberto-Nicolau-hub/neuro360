@@ -13,6 +13,7 @@ import gerarIntervencaoAutomatica from "./intervencoes_automaticas.js";
 import gerarTrilhaTerapeutica from "./trilhas_terapeuticas.js";
 import verificarPlano from "./controle_premium.js";
 import analisarArquiteturaCognitiva from "./neuro_arquitetura_cognitiva.js";
+import calcularFrequenciaHawkins from "./frequencia_hawkins.js";
 
 dotenv.config();
 
@@ -67,7 +68,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "2.0.0"
+    versao: "3.0.0"
   });
 });
 
@@ -235,8 +236,14 @@ app.post("/ia", async (req, res) => {
               (m) => `
 Emoção: ${m.emocao}
 Intensidade: ${m.intensidade}
-Usuário: ${m.mensagem_usuario}
-IA: ${m.resposta_ia}
+Frequência Hawkins: ${m.frequencia_hawkins}
+Nível Vibracional: ${m.nivel_hawkins}
+
+Usuário:
+${m.mensagem_usuario}
+
+IA:
+${m.resposta_ia}
 `
             )
             .join("\n")
@@ -284,6 +291,11 @@ IA: ${m.resposta_ia}
 
     const emocaoData =
       detectarEmocao(mensagem);
+
+    const hawkinsData =
+      calcularFrequenciaHawkins(
+        emocaoData?.emocao
+      );
 
     const arquiteturaCognitiva =
       analisarArquiteturaCognitiva(
@@ -376,6 +388,12 @@ ${emocaoData?.emocao}
 Intensidade emocional:
 ${emocaoData?.intensidade}
 
+Frequência Hawkins:
+${hawkinsData?.frequencia}
+
+Nível vibracional:
+${hawkinsData?.nivel}
+
 Resumo terapêutico:
 ${arquiteturaCognitiva?.resumoTerapeutico}
 
@@ -450,6 +468,12 @@ Importante:
 
           intensidade:
             emocaoData?.intensidade,
+
+          frequencia_hawkins:
+            hawkinsData?.frequencia,
+
+          nivel_hawkins:
+            hawkinsData?.nivel,
         },
       ]);
 
@@ -472,6 +496,9 @@ Importante:
 
       emocao_detectada:
         emocaoData,
+
+      frequencia_hawkins:
+        hawkinsData,
 
       arquitetura_cognitiva:
         arquiteturaCognitiva,
@@ -524,7 +551,7 @@ app.listen(PORT, () => {
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
-VERSAO: 2.0.0
+VERSAO: 3.0.0
 ========================================
 
 `);

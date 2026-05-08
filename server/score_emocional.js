@@ -102,4 +102,6 @@ function calcularScoreEmocional(memorias = []) {
   };
 }
 
-export default calcularScoreEmocional;
+export {
+  calcularScoreEmocional,
+};

@@ -81,7 +81,9 @@ const mapaHawkins = {
   }
 };
 
-export default function calcularFrequenciaHawkins(emocao) {
+export {
+  calcularFrequenciaHawkins,
+};
 
   const chave =
     emocao?.toLowerCase();

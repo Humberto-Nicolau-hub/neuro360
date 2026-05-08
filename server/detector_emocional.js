@@ -146,4 +146,6 @@ function detectarEmocao(texto = "") {
 // EXPORT ES MODULE
 // =========================
 
-export default detectarEmocao;
+export {
+  detectarEmocao,
+};

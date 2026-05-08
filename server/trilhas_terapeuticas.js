@@ -236,4 +236,6 @@ function gerarTrilhaTerapêutica(
   return trilha;
 }
 
-export default gerarTrilhaTerapêutica;
+export {
+  gerarTrilhaTerapeutica,
+};

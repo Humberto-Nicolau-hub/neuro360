@@ -1,4 +1,4 @@
-export default function preverEstadoEmocional(memoria = []) {
+function preverEstadoEmocional(memoria = []) {
 
   if (!memoria.length) {
 
@@ -69,3 +69,7 @@ export default function preverEstadoEmocional(memoria = []) {
     resumo
   };
 }
+
+export {
+  preverEstadoEmocional,
+};

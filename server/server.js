@@ -67,19 +67,20 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "1.0.0"
+    versao: "2.0.0"
   });
 });
 
 /* ======================================================
-   HEALTH CHECK
+   HEALTH
 ====================================================== */
 
 app.get("/health", (req, res) => {
 
   res.json({
     ok: true,
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    plataforma: "NeuroMapa360"
   });
 });
 
@@ -196,24 +197,50 @@ app.post("/ia", async (req, res) => {
       });
     }
 
+    const userId =
+      user_id || "anonimo";
+
     /* =========================================
-       MEMORIA
+       MEMORIA RECENTE
     ========================================= */
 
-    const { data: memoria } =
-      await supabase
-        .from("memoria_emocional")
-        .select("*")
-        .eq(
-          "user_id",
-          user_id || "anonimo"
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
+    const {
+      data: memoria,
+      error: memoriaError
+    } = await supabase
+      .from("memoria_emocional")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", {
+        ascending: false
+      })
+      .limit(10);
+
+    if (memoriaError) {
+
+      console.error(
+        "Erro memória:",
+        memoriaError.message
+      );
+    }
+
+    /* =========================================
+       CONTEXTO EMOCIONAL
+    ========================================= */
+
+    const contextoMemoria =
+      memoria?.length > 0
+        ? memoria
+            .map(
+              (m) => `
+Emoção: ${m.emocao}
+Intensidade: ${m.intensidade}
+Usuário: ${m.mensagem_usuario}
+IA: ${m.resposta_ia}
+`
+            )
+            .join("\n")
+        : "Sem histórico emocional anterior.";
 
     /* =========================================
        USUARIO
@@ -223,10 +250,7 @@ app.post("/ia", async (req, res) => {
       await supabase
         .from("usuarios")
         .select("*")
-        .eq(
-          "id",
-          user_id || "anonimo"
-        )
+        .eq("id", userId)
         .single();
 
     /* =========================================
@@ -244,7 +268,9 @@ app.post("/ia", async (req, res) => {
     ) {
 
       return res.json({
+
         premium: false,
+
         limite: true,
 
         resposta:
@@ -260,7 +286,9 @@ app.post("/ia", async (req, res) => {
       detectarEmocao(mensagem);
 
     const arquiteturaCognitiva =
-      analisarArquiteturaCognitiva(mensagem);
+      analisarArquiteturaCognitiva(
+        mensagem
+      );
 
     const scoreData =
       calcularScoreEmocional(
@@ -318,63 +346,54 @@ app.post("/ia", async (req, res) => {
     }
 
     /* =========================================
-       CONTEXTO
-    ========================================= */
-
-    let contextoAnterior = "";
-
-    if (
-      memoria?.length > 0
-    ) {
-
-      contextoAnterior =
-        memoria
-          .slice(0, 5)
-          .map(
-            (m) => `
-Usuário:
-${m.mensagem_usuario}
-
-IA:
-${m.resposta_ia}
-
-Emoção:
-${m.emocao}
-`
-          )
-          .join("\n");
-    }
-
-    /* =========================================
-       PROMPT
+       PROMPT SISTEMA
     ========================================= */
 
     const promptSistema = `
 Você é a IA NeuroMapa360.
 
-Atue como:
+Você atua como:
 - terapeuta emocional
 - especialista em PNL
 - mentor cognitivo
+- analista emocional
 - inteligência emocional terapêutica
 
-Contexto:
-${contextoAnterior}
+Seu papel:
+- acolher profundamente
+- responder de forma humana
+- evitar respostas genéricas
+- criar continuidade emocional
+- demonstrar memória terapêutica
+- gerar sensação de acompanhamento real
 
-Emoção:
+Histórico emocional recente:
+${contextoMemoria}
+
+Emoção detectada:
 ${emocaoData?.emocao}
+
+Intensidade emocional:
+${emocaoData?.intensidade}
 
 Resumo terapêutico:
 ${arquiteturaCognitiva?.resumoTerapeutico}
 
-Score:
+Score emocional:
 ${scoreData?.score}
 
-Responda de forma:
-- profunda
-- humana
-- acolhedora
-- terapêutica
+Tendência emocional:
+${scoreData?.tendencia}
+
+Nível emocional:
+${scoreData?.nivel}
+
+Importante:
+- responda naturalmente
+- nunca repita padrões robóticos
+- use empatia avançada
+- personalize usando o histórico emocional
+- aja como um terapeuta experiente
 `;
 
     /* =========================================
@@ -388,9 +407,10 @@ Responda de forma:
 
         temperature: 0.9,
 
-        max_tokens: 1000,
+        max_tokens: 1200,
 
         messages: [
+
           {
             role: "system",
             content: promptSistema,
@@ -409,15 +429,15 @@ Responda de forma:
         .message.content;
 
     /* =========================================
-       MEMORIA
+       SALVAR MEMORIA
     ========================================= */
 
     await supabase
       .from("memoria_emocional")
       .insert([
         {
-          user_id:
-            user_id || "anonimo",
+
+          user_id: userId,
 
           mensagem_usuario:
             mensagem,
@@ -434,7 +454,7 @@ Responda de forma:
       ]);
 
     /* =========================================
-       RESPOSTA
+       RESPOSTA FINAL
     ========================================= */
 
     return res.json({
@@ -470,6 +490,9 @@ Responda de forma:
 
       memoria_ativa:
         memoria?.length > 0,
+
+      contexto_utilizado:
+        memoria?.length || 0,
     });
 
   } catch (error) {
@@ -477,8 +500,12 @@ Responda de forma:
     console.error(error);
 
     return res.status(500).json({
-      erro: "Erro IA terapêutica",
-      detalhes: error.message
+
+      erro:
+        "Erro IA terapêutica",
+
+      detalhes:
+        error.message
     });
   }
 });
@@ -493,9 +520,12 @@ const PORT =
 app.listen(PORT, () => {
 
   console.log(`
+
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
+VERSAO: 2.0.0
 ========================================
+
 `);
 });

@@ -1,16 +1,51 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import AdminDashboard from "./AdminDashboard";
 
-const API_URL = "https://backend-neuro360.onrender.com";
+const API_URL =
+  "https://backend-neuro360.onrender.com";
 
 export default function App() {
-  const [mensagem, setMensagem] = useState("");
+  const [mensagem, setMensagem] =
+    useState("");
+
   const [chat, setChat] = useState([]);
-  const [emocao, setEmocao] = useState("ansioso");
-  const [modoTerapeutico, setModoTerapeutico] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [grafico, setGrafico] = useState([]);
-  const [mostrarAdmin, setMostrarAdmin] = useState(false);
+
+  const [emocao, setEmocao] =
+    useState("ansioso");
+
+  const [
+    modoTerapeutico,
+    setModoTerapeutico,
+  ] = useState(true);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [mostrarAdmin, setMostrarAdmin] =
+    useState(false);
+
+  const [scoreEmocional, setScoreEmocional] =
+    useState(0);
+
+  const [
+    frequenciaAtual,
+    setFrequenciaAtual,
+  ] = useState(null);
+
+  const [
+    conscienciaAtual,
+    setConscienciaAtual,
+  ] = useState("");
+
+  const [
+    trilhaAtual,
+    setTrilhaAtual,
+  ] = useState("");
 
   const mensagensRef = useRef(null);
 
@@ -28,7 +63,8 @@ export default function App() {
 
   useEffect(() => {
     mensagensRef.current?.scrollTo({
-      top: mensagensRef.current.scrollHeight,
+      top:
+        mensagensRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [chat]);
@@ -55,36 +91,77 @@ export default function App() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
             userId: userIdRef.current,
             mensagem: mensagemUsuario,
             emocao,
-            terapeutico: modoTerapeutico,
+            terapeutico:
+              modoTerapeutico,
           }),
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
+
+      console.log(
+        "RESPOSTA IA:",
+        data
+      );
+
+      setScoreEmocional(
+        data.score_emocional || 0
+      );
+
+      setFrequenciaAtual(
+        data.frequencia_hawkins || 0
+      );
+
+      setConscienciaAtual(
+        data.nivel_consciencia || ""
+      );
+
+      setTrilhaAtual(
+        data.trilha_terapeutica || ""
+      );
 
       setChat((prev) => [
         ...prev,
+
         {
           tipo: "ia",
-          texto: data.resposta,
-          hawkins:
-            data.frequencia_hawkins || null,
-          nivel:
-            data.nivel_consciencia || null,
-        },
-      ]);
 
-      setGrafico((prev) => [
-        ...prev,
-        {
-          intensidade:
-            data.intensidade || 5,
+          texto:
+            data.resposta ||
+            "Sem resposta.",
+
+          hawkins:
+            data.frequencia_hawkins,
+
+          nivel:
+            data.nivel_consciencia,
+
+          score:
+            data.score_emocional,
+
+          protocolo:
+            data.protocolo_pnl,
+
+          intervencao:
+            data.intervencao,
+
+          trilha:
+            data.trilha_terapeutica,
+
+          recomendacao:
+            data.recomendacao,
+
+          memoria:
+            data.memoria_ativa,
         },
       ]);
     } catch (err) {
@@ -121,7 +198,7 @@ export default function App() {
         </h1>
 
         <p style={styles.premium}>
-          Plano: Premium ✅
+          Plano Premium ✅
         </p>
 
         <button
@@ -141,9 +218,11 @@ export default function App() {
           <button
             style={{
               ...styles.toggle,
-              background: modoTerapeutico
-                ? "#22c55e"
-                : "#334155",
+
+              background:
+                modoTerapeutico
+                  ? "#22c55e"
+                  : "#334155",
             }}
             onClick={() =>
               setModoTerapeutico(
@@ -156,6 +235,36 @@ export default function App() {
               : "OFF"}
           </button>
         </div>
+
+        <div style={styles.metrics}>
+          <h3>
+            🧠 Estado Cognitivo
+          </h3>
+
+          <p>
+            Score:
+            {" "}
+            {scoreEmocional}
+          </p>
+
+          <p>
+            Hawkins:
+            {" "}
+            {frequenciaAtual}
+          </p>
+
+          <p>
+            Consciência:
+            {" "}
+            {conscienciaAtual}
+          </p>
+
+          <p>
+            Trilha:
+            {" "}
+            {trilhaAtual}
+          </p>
+        </div>
       </aside>
 
       <main style={styles.main}>
@@ -167,7 +276,8 @@ export default function App() {
             <div
               key={i}
               style={
-                msg.tipo === "usuario"
+                msg.tipo ===
+                "usuario"
                   ? styles.userBubble
                   : styles.aiBubble
               }
@@ -177,7 +287,7 @@ export default function App() {
               {msg.hawkins && (
                 <div
                   style={
-                    styles.hawkins
+                    styles.infoBox
                   }
                 >
                   🔥 Hawkins:
@@ -186,9 +296,61 @@ export default function App() {
                   {" "}
                   Hz
                   <br />
-                  🧠 Nível:
+                  🧠 Consciência:
                   {" "}
                   {msg.nivel}
+                  <br />
+                  📈 Score:
+                  {" "}
+                  {msg.score}
+                </div>
+              )}
+
+              {msg.protocolo && (
+                <div
+                  style={
+                    styles.protocolBox
+                  }
+                >
+                  🧩 Protocolo:
+                  <br />
+                  {msg.protocolo}
+                </div>
+              )}
+
+              {msg.intervencao && (
+                <div
+                  style={
+                    styles.interventionBox
+                  }
+                >
+                  ⚡ Intervenção:
+                  <br />
+                  {msg.intervencao}
+                </div>
+              )}
+
+              {msg.trilha && (
+                <div
+                  style={
+                    styles.trilhaBox
+                  }
+                >
+                  🛤️ Trilha:
+                  <br />
+                  {msg.trilha}
+                </div>
+              )}
+
+              {msg.memoria && (
+                <div
+                  style={
+                    styles.memoryBox
+                  }
+                >
+                  🧠 Memória ativa:
+                  <br />
+                  {msg.memoria}
                 </div>
               )}
             </div>
@@ -205,7 +367,9 @@ export default function App() {
           <select
             value={emocao}
             onChange={(e) =>
-              setEmocao(e.target.value)
+              setEmocao(
+                e.target.value
+              )
             }
             style={styles.select}
           >
@@ -230,7 +394,9 @@ export default function App() {
             style={styles.input}
             value={mensagem}
             onChange={(e) =>
-              setMensagem(e.target.value)
+              setMensagem(
+                e.target.value
+              )
             }
             placeholder="Como você está se sentindo?"
           />
@@ -258,44 +424,55 @@ const styles = {
   },
 
   sidebar: {
-    width: 260,
+    width: 300,
     background: "#0f172a",
     padding: 20,
     borderRight:
       "1px solid #1e293b",
+    overflowY: "auto",
   },
 
   logo: {
-    fontSize: 36,
+    fontSize: 34,
+    marginBottom: 10,
   },
 
   premium: {
     color: "#4ade80",
+    marginBottom: 20,
   },
 
   admin: {
-    marginTop: 20,
     width: "100%",
     padding: 12,
     borderRadius: 10,
     border: "none",
-    background: "#1d4ed8",
+    background: "#2563eb",
     color: "#fff",
     cursor: "pointer",
+    marginBottom: 20,
   },
 
   box: {
-    marginTop: 30,
+    marginBottom: 25,
   },
 
   toggle: {
-    marginTop: 10,
-    padding: 12,
     width: "100%",
+    padding: 12,
+    borderRadius: 10,
     border: "none",
     color: "#fff",
-    borderRadius: 10,
+    marginTop: 10,
     cursor: "pointer",
+  },
+
+  metrics: {
+    background: "#111827",
+    padding: 20,
+    borderRadius: 14,
+    marginTop: 20,
+    lineHeight: 1.8,
   },
 
   main: {
@@ -307,33 +484,62 @@ const styles = {
   chat: {
     flex: 1,
     overflowY: "auto",
-    padding: 30,
+    padding: 25,
   },
 
   userBubble: {
     background: "#22c55e",
-    marginBottom: 20,
+    color: "#fff",
     padding: 18,
     borderRadius: 18,
-    maxWidth: "60%",
+    marginBottom: 20,
     marginLeft: "auto",
+    maxWidth: "70%",
   },
 
   aiBubble: {
     background: "#1e3a8a",
-    marginBottom: 20,
     padding: 18,
     borderRadius: 18,
-    maxWidth: "70%",
+    marginBottom: 20,
+    maxWidth: "75%",
   },
 
-  hawkins: {
+  infoBox: {
     marginTop: 15,
     background: "#0f172a",
-    padding: 10,
+    padding: 12,
     borderRadius: 10,
-    fontSize: 14,
     color: "#4ade80",
+    fontSize: 14,
+  },
+
+  protocolBox: {
+    marginTop: 12,
+    background: "#312e81",
+    padding: 12,
+    borderRadius: 10,
+  },
+
+  interventionBox: {
+    marginTop: 12,
+    background: "#7c2d12",
+    padding: 12,
+    borderRadius: 10,
+  },
+
+  trilhaBox: {
+    marginTop: 12,
+    background: "#14532d",
+    padding: 12,
+    borderRadius: 10,
+  },
+
+  memoryBox: {
+    marginTop: 12,
+    background: "#3f3f46",
+    padding: 12,
+    borderRadius: 10,
   },
 
   controls: {
@@ -344,16 +550,17 @@ const styles = {
       "1px solid #1e293b",
   },
 
-  input: {
-    flex: 1,
+  select: {
     padding: 14,
     borderRadius: 10,
     border: "none",
   },
 
-  select: {
+  input: {
+    flex: 1,
     padding: 14,
     borderRadius: 10,
+    border: "none",
   },
 
   send: {

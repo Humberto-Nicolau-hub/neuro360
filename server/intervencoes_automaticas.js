@@ -145,4 +145,6 @@ function gerarIntervencaoAutomatica(
   return intervencoes;
 }
 
-export default gerarIntervencaoAutomatica;
+export {
+  gerarIntervencaoAutomatica,
+};

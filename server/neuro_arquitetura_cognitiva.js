@@ -158,7 +158,7 @@ function analisarArquiteturaCognitiva(texto = "") {
   // FUNÇÃO DE DETECÇÃO
   // ======================================================
 
-  function detectar(lista, destino, chave) {
+  function detectar(lista, destino) {
     lista.forEach(item => {
       item.termos.forEach(termo => {
         if (mensagem.includes(termo)) {
@@ -245,4 +245,4 @@ function analisarArquiteturaCognitiva(texto = "") {
   return analise;
 }
 
-module.exports = analisarArquiteturaCognitiva;
+export default analisarArquiteturaCognitiva;

@@ -35,7 +35,7 @@ export default function App() {
   const [
     frequenciaAtual,
     setFrequenciaAtual,
-  ] = useState(null);
+  ] = useState(0);
 
   const [
     conscienciaAtual,
@@ -45,6 +45,16 @@ export default function App() {
   const [
     trilhaAtual,
     setTrilhaAtual,
+  ] = useState("");
+
+  const [
+    protocoloAtual,
+    setProtocoloAtual,
+  ] = useState("");
+
+  const [
+    intervencaoAtual,
+    setIntervencaoAtual,
   ] = useState("");
 
   const mensagensRef = useRef(null);
@@ -90,6 +100,7 @@ export default function App() {
         `${API_URL}/chat`,
         {
           method: "POST",
+
           headers: {
             "Content-Type":
               "application/json",
@@ -109,7 +120,7 @@ export default function App() {
         await response.json();
 
       console.log(
-        "RESPOSTA IA:",
+        "IA RESPONSE:",
         data
       );
 
@@ -127,6 +138,14 @@ export default function App() {
 
       setTrilhaAtual(
         data.trilha_terapeutica || ""
+      );
+
+      setProtocoloAtual(
+        data.protocolo_pnl || ""
+      );
+
+      setIntervencaoAtual(
+        data.intervencao || ""
       );
 
       setChat((prev) => [
@@ -165,12 +184,17 @@ export default function App() {
         },
       ]);
     } catch (err) {
-      console.error(err);
+      console.error(
+        "ERRO IA:",
+        err
+      );
 
       setChat((prev) => [
         ...prev,
+
         {
           tipo: "ia",
+
           texto:
             "Erro ao conectar com IA terapêutica.",
         },
@@ -242,27 +266,39 @@ export default function App() {
           </h3>
 
           <p>
-            Score:
+            📈 Score:
             {" "}
             {scoreEmocional}
           </p>
 
           <p>
-            Hawkins:
+            🔥 Hawkins:
             {" "}
             {frequenciaAtual}
           </p>
 
           <p>
-            Consciência:
+            🌎 Consciência:
             {" "}
             {conscienciaAtual}
           </p>
 
           <p>
-            Trilha:
+            🛤️ Trilha:
             {" "}
             {trilhaAtual}
+          </p>
+
+          <p>
+            🧩 Protocolo:
+            {" "}
+            {protocoloAtual}
+          </p>
+
+          <p>
+            ⚡ Intervenção:
+            {" "}
+            {intervencaoAtual}
           </p>
         </div>
       </aside>
@@ -286,9 +322,7 @@ export default function App() {
 
               {msg.hawkins && (
                 <div
-                  style={
-                    styles.infoBox
-                  }
+                  style={styles.infoBox}
                 >
                   🔥 Hawkins:
                   {" "}
@@ -296,10 +330,12 @@ export default function App() {
                   {" "}
                   Hz
                   <br />
+
                   🧠 Consciência:
                   {" "}
                   {msg.nivel}
                   <br />
+
                   📈 Score:
                   {" "}
                   {msg.score}
@@ -332,9 +368,7 @@ export default function App() {
 
               {msg.trilha && (
                 <div
-                  style={
-                    styles.trilhaBox
-                  }
+                  style={styles.trilhaBox}
                 >
                   🛤️ Trilha:
                   <br />
@@ -344,9 +378,7 @@ export default function App() {
 
               {msg.memoria && (
                 <div
-                  style={
-                    styles.memoryBox
-                  }
+                  style={styles.memoryBox}
                 >
                   🧠 Memória ativa:
                   <br />
@@ -424,7 +456,7 @@ const styles = {
   },
 
   sidebar: {
-    width: 300,
+    width: 320,
     background: "#0f172a",
     padding: 20,
     borderRight:
@@ -451,6 +483,7 @@ const styles = {
     color: "#fff",
     cursor: "pointer",
     marginBottom: 20,
+    fontWeight: "bold",
   },
 
   box: {
@@ -465,6 +498,7 @@ const styles = {
     color: "#fff",
     marginTop: 10,
     cursor: "pointer",
+    fontWeight: "bold",
   },
 
   metrics: {
@@ -472,7 +506,8 @@ const styles = {
     padding: 20,
     borderRadius: 14,
     marginTop: 20,
-    lineHeight: 1.8,
+    lineHeight: 1.9,
+    fontSize: 14,
   },
 
   main: {
@@ -495,6 +530,7 @@ const styles = {
     marginBottom: 20,
     marginLeft: "auto",
     maxWidth: "70%",
+    lineHeight: 1.6,
   },
 
   aiBubble: {
@@ -503,6 +539,7 @@ const styles = {
     borderRadius: 18,
     marginBottom: 20,
     maxWidth: "75%",
+    lineHeight: 1.7,
   },
 
   infoBox: {
@@ -548,12 +585,15 @@ const styles = {
     padding: 20,
     borderTop:
       "1px solid #1e293b",
+    background: "#0f172a",
   },
 
   select: {
     padding: 14,
     borderRadius: 10,
     border: "none",
+    background: "#1e293b",
+    color: "#fff",
   },
 
   input: {
@@ -561,6 +601,8 @@ const styles = {
     padding: 14,
     borderRadius: 10,
     border: "none",
+    background: "#1e293b",
+    color: "#fff",
   },
 
   send: {
@@ -570,5 +612,6 @@ const styles = {
     background: "#22c55e",
     color: "#fff",
     cursor: "pointer",
+    fontWeight: "bold",
   },
 };

@@ -129,4 +129,6 @@ Quero compreender melhor suas emoções para te ajudar de forma mais profunda.
 `;
 }
 
-export default gerarRespostaPNL;
+export {
+  gerarRespostaPNL,
+};

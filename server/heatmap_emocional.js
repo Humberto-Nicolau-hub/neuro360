@@ -94,4 +94,6 @@ function gerarHeatmapEmocional(memorias = []) {
   };
 }
 
-export default gerarHeatmapEmocional;
+export {
+  gerarHeatmapEmocional,
+};

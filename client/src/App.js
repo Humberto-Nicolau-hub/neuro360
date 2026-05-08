@@ -1,703 +1,248 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
+import AdminDashboard from "./AdminDashboard";
 
-import { createClient } from "@supabase/supabase-js";
-
-import EvolucaoChart from "./EvolucaoChart";
-
-const supabase = createClient(
-  "https://qodzwxgabuadsnplcscl.supabase.co",
-  "sb_publishable_JGrrfcfRg8fko94mFIGpyQ_mDmSxo5K"
-);
-
-const BACKEND_URL =
-  "https://backend-neuro360.onrender.com";
-
-const ADMIN_EMAIL =
-  "contatobetaoofertas@gmail.com";
-
-const EMOCOES = [
-  "Ansioso",
-  "Triste",
-  "Feliz",
-  "Estressado",
-  "Desmotivado",
-  "Deprimido",
-  "Procrastinador",
-];
-
-const MAPA = {
-  Deprimido: 1,
-  Desmotivado: 2,
-  Triste: 3,
-  Ansioso: 4,
-  Estressado: 5,
-  Procrastinador: 6,
-  Feliz: 8,
-};
+const API_URL = "https://backend-neuro360.onrender.com";
 
 export default function App() {
-  const [session, setSession] =
-    useState(null);
+  const [mensagem, setMensagem] = useState("");
+  const [chat, setChat] = useState([]);
+  const [emocao, setEmocao] = useState("ansioso");
+  const [modoTerapeutico, setModoTerapeutico] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [grafico, setGrafico] = useState([]);
+  const [mostrarAdmin, setMostrarAdmin] = useState(false);
 
-  const [email, setEmail] =
-    useState("");
+  const mensagensRef = useRef(null);
 
-  const [password, setPassword] =
-    useState("");
-
-  const [modoCadastro, setModoCadastro] =
-    useState(false);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [texto, setTexto] =
-    useState("");
-
-  const [emocao, setEmocao] =
-    useState("Ansioso");
-
-  const [grafico, setGrafico] =
-    useState([]);
-
-  const [plano, setPlano] =
-    useState("free");
-
-  const [isAdmin, setIsAdmin] =
-    useState(false);
-
-  const [metricas, setMetricas] =
-    useState(null);
-
-  const [chat, setChat] =
-    useState([]);
-
-  const [modo, setModo] =
-    useState("terapeutico");
-
-  const [modoProfundo, setModoProfundo] =
-    useState(false);
-
-  const chatRef = useRef(null);
-
-  const isPremium =
-    plano === "premium" || isAdmin;
-
-  /* ================= SCROLL ================= */
+  const userIdRef = useRef(
+    localStorage.getItem("neuro_user_id") ||
+      crypto.randomUUID()
+  );
 
   useEffect(() => {
-    chatRef.current?.scrollTo({
-      top:
-        chatRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [chat, loading]);
-
-  /* ================= AUTH ================= */
-
-  useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        setSession(data.session);
-      });
-
-    const { data: listener } =
-      supabase.auth.onAuthStateChange(
-        (_, session) => {
-          setSession(session);
-        }
-      );
-
-    return () =>
-      listener?.subscription?.unsubscribe();
+    localStorage.setItem(
+      "neuro_user_id",
+      userIdRef.current
+    );
   }, []);
 
-  /* ================= USER ================= */
-
   useEffect(() => {
-    if (session?.user) {
-      buscarUsuario();
-      buscarRegistros();
+    mensagensRef.current?.scrollTo({
+      top: mensagensRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [chat]);
 
-      if (
-        session.user.email ===
-        ADMIN_EMAIL
-      ) {
-        setIsAdmin(true);
-        carregarMetricas();
-      }
-    }
-  }, [session]);
+  async function enviarMensagem() {
+    if (!mensagem.trim()) return;
 
-  const buscarUsuario =
-    async () => {
-      try {
-        const emailUser =
-          session.user.email;
+    const mensagemUsuario = mensagem;
 
-        const admin =
-          emailUser === ADMIN_EMAIL;
-
-        let { data } =
-          await supabase
-            .from("profiles")
-            .select("*")
-            .eq(
-              "email",
-              emailUser
-            )
-            .maybeSingle();
-
-        if (!data) {
-          const { data: novo } =
-            await supabase
-              .from("profiles")
-              .insert([
-                {
-                  email: emailUser,
-                  plano: admin
-                    ? "premium"
-                    : "free",
-                  is_admin: admin,
-                },
-              ])
-              .select()
-              .single();
-
-          data = novo;
-        }
-
-        setPlano(
-          admin
-            ? "premium"
-            : data?.plano || "free"
-        );
-
-        setIsAdmin(
-          admin ||
-            data?.is_admin ||
-            false
-        );
-      } catch (e) {
-        console.log(
-          "Erro usuário:",
-          e.message
-        );
-      }
-    };
-
-  /* ================= MÉTRICAS ================= */
-
-  const carregarMetricas =
-    async () => {
-      try {
-        const res = await fetch(
-          `${BACKEND_URL}/admin-metricas`
-        );
-
-        if (!res.ok) return;
-
-        const data =
-          await res.json();
-
-        setMetricas(data);
-      } catch (e) {
-        console.log(
-          "Erro métricas:",
-          e.message
-        );
-      }
-    };
-
-  /* ================= REGISTROS ================= */
-
-  const buscarRegistros =
-    async () => {
-      try {
-        const { data } =
-          await supabase
-            .from(
-              "registros_emocionais"
-            )
-            .select("*")
-            .eq(
-              "user_id",
-              session.user.id
-            );
-
-        setGrafico(
-          data?.map((d) => ({
-            data: new Date(
-              d.created_at
-            ).toLocaleDateString(),
-
-            valor:
-              MAPA[d.emocao] || 5,
-          })) || []
-        );
-      } catch (e) {
-        console.log(
-          "Erro registros:",
-          e.message
-        );
-      }
-    };
-
-  /* ================= IA ================= */
-
-  const falarComIA = async () => {
-    if (!texto || loading) return;
-
-    const mensagem = texto;
-
-    setTexto("");
-
-    const novoChat = [
-      ...chat,
+    setChat((prev) => [
+      ...prev,
       {
-        tipo: "user",
-        texto: mensagem,
+        tipo: "usuario",
+        texto: mensagemUsuario,
       },
-    ];
+    ]);
 
-    setChat(novoChat);
-
+    setMensagem("");
     setLoading(true);
 
     try {
-      const controller =
-        new AbortController();
-
-      const timeout =
-        setTimeout(() => {
-          controller.abort();
-        }, 45000);
-
-      const res = await fetch(
-        `${BACKEND_URL}/ia`,
+      const response = await fetch(
+        `${API_URL}/chat`,
         {
           method: "POST",
-
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
-
-          signal:
-            controller.signal,
-
           body: JSON.stringify({
-            mensagem: mensagem,
-            emocao: emocao,
-            user_id:
-              session?.user?.id ||
-              "anon",
-            modo: modo,
-            modoProfundo:
-              modoProfundo,
+            userId: userIdRef.current,
+            mensagem: mensagemUsuario,
+            emocao,
+            terapeutico: modoTerapeutico,
           }),
         }
       );
 
-      clearTimeout(timeout);
+      const data = await response.json();
 
-      const data =
-        await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          data?.erro ||
-            "Backend indisponível"
-        );
-      }
-
-      setChat([
-        ...novoChat,
+      setChat((prev) => [
+        ...prev,
         {
           tipo: "ia",
-          texto:
-            data?.resposta ||
-            "Sem resposta da IA.",
+          texto: data.resposta,
+          hawkins:
+            data.frequencia_hawkins || null,
+          nivel:
+            data.nivel_consciencia || null,
         },
       ]);
 
-      buscarRegistros();
+      setGrafico((prev) => [
+        ...prev,
+        {
+          intensidade:
+            data.intensidade || 5,
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
 
-    } catch (e) {
-
-      console.log(
-        "Erro IA:",
-        e.message
-      );
-
-      setChat([
-        ...novoChat,
+      setChat((prev) => [
+        ...prev,
         {
           tipo: "ia",
           texto:
-            "⚠️ A IA está temporariamente instável.",
+            "Erro ao conectar com IA terapêutica.",
         },
       ]);
     }
 
     setLoading(false);
-  };
+  }
 
-  /* ================= LOGIN ================= */
-
-  const login = async () => {
-    setLoading(true);
-
-    const { error } =
-      await supabase.auth.signInWithPassword(
-        {
-          email,
-          password,
-        }
-      );
-
-    if (error)
-      alert("Erro login");
-
-    setLoading(false);
-  };
-
-  /* ================= REGISTER ================= */
-
-  const register = async () => {
-    setLoading(true);
-
-    const { error } =
-      await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-    if (error) {
-      alert(
-        "Erro ao cadastrar"
-      );
-    } else {
-      alert(
-        "Conta criada com sucesso!"
-      );
-
-      setModoCadastro(false);
-    }
-
-    setLoading(false);
-  };
-
-  /* ================= LOGOUT ================= */
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-
-    localStorage.clear();
-    sessionStorage.clear();
-
-    window.location.reload();
-  };
-
-  /* ================= LOGIN UI ================= */
-
-  if (!session) {
+  if (mostrarAdmin) {
     return (
-      <div
-        style={
-          styles.loginContainer
+      <AdminDashboard
+        voltar={() =>
+          setMostrarAdmin(false)
         }
-      >
-        <div
-          style={styles.loginCard}
-        >
-          <h2
-            style={{
-              textAlign:
-                "center",
-            }}
-          >
-            NeuroMapa360
-          </h2>
-
-          <input
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
-            }
-          />
-
-          <input
-            style={styles.input}
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) =>
-              setPassword(
-                e.target.value
-              )
-            }
-          />
-
-          <button
-            style={styles.button}
-            onClick={
-              modoCadastro
-                ? register
-                : login
-            }
-          >
-            {loading
-              ? "Carregando..."
-              : modoCadastro
-              ? "Criar Conta"
-              : "Entrar"}
-          </button>
-
-          <p
-            style={{
-              color:
-                "#38bdf8",
-              cursor:
-                "pointer",
-              textAlign:
-                "center",
-            }}
-            onClick={() =>
-              setModoCadastro(
-                !modoCadastro
-              )
-            }
-          >
-            {modoCadastro
-              ? "Já tenho conta"
-              : "Criar conta"}
-          </p>
-        </div>
-      </div>
+      />
     );
   }
 
-  /* ================= APP ================= */
-
   return (
     <div style={styles.app}>
-      <div style={styles.sidebar}>
-        <h2>Neuro360</h2>
+      <aside style={styles.sidebar}>
+        <h1 style={styles.logo}>
+          Neuro360
+        </h1>
 
-        <p
-          style={{
-            color:
-              "#22c55e",
-          }}
-        >
-          Plano:{" "}
-          {isPremium
-            ? "Premium ✅"
-            : "Free"}
+        <p style={styles.premium}>
+          Plano: Premium ✅
         </p>
 
-        {isAdmin && (
-          <>
-            <p
-              style={{
-                color:
-                  "#facc15",
-                marginTop: 10,
-              }}
-            >
-              ADMIN 👑
-            </p>
+        <button
+          style={styles.admin}
+          onClick={() =>
+            setMostrarAdmin(true)
+          }
+        >
+          ADMIN 👑
+        </button>
 
+        <div style={styles.box}>
+          <strong>
+            Terapia Guiada
+          </strong>
+
+          <button
+            style={{
+              ...styles.toggle,
+              background: modoTerapeutico
+                ? "#22c55e"
+                : "#334155",
+            }}
+            onClick={() =>
+              setModoTerapeutico(
+                !modoTerapeutico
+              )
+            }
+          >
+            {modoTerapeutico
+              ? "ON"
+              : "OFF"}
+          </button>
+        </div>
+      </aside>
+
+      <main style={styles.main}>
+        <div
+          style={styles.chat}
+          ref={mensagensRef}
+        >
+          {chat.map((msg, i) => (
             <div
+              key={i}
               style={
-                styles.adminBox
+                msg.tipo === "usuario"
+                  ? styles.userBubble
+                  : styles.aiBubble
               }
             >
-              <p>
-                Usuários:{" "}
-                {metricas?.usuarios ||
-                  0}
-              </p>
+              <p>{msg.texto}</p>
 
-              <p>
-                Registros:{" "}
-                {metricas?.registros ||
-                  0}
-              </p>
-
-              <p>
-                IA:{" "}
-                {metricas?.ia ||
-                  0}
-              </p>
+              {msg.hawkins && (
+                <div
+                  style={
+                    styles.hawkins
+                  }
+                >
+                  🔥 Hawkins:
+                  {" "}
+                  {msg.hawkins}
+                  {" "}
+                  Hz
+                  <br />
+                  🧠 Nível:
+                  {" "}
+                  {msg.nivel}
+                </div>
+              )}
             </div>
-          </>
-        )}
-
-        <button
-          onClick={() =>
-            setModo("normal")
-          }
-          style={{
-            ...styles.modeBtn,
-
-            background:
-              modo ===
-              "normal"
-                ? "#22c55e"
-                : "#334155",
-          }}
-        >
-          Normal
-        </button>
-
-        <button
-          onClick={() =>
-            setModo(
-              "terapeutico"
-            )
-          }
-          style={{
-            ...styles.modeBtn,
-
-            background:
-              modo ===
-              "terapeutico"
-                ? "#22c55e"
-                : "#334155",
-          }}
-        >
-          Terapêutico
-        </button>
-
-        <button
-          onClick={() =>
-            setModoProfundo(
-              !modoProfundo
-            )
-          }
-          style={{
-            ...styles.modeBtn,
-
-            background:
-              modoProfundo
-                ? "#22c55e"
-                : "#334155",
-          }}
-        >
-          🧠 Terapia Guiada{" "}
-          {modoProfundo
-            ? "ON"
-            : "OFF"}
-        </button>
-
-        <button
-          onClick={logout}
-          style={styles.logout}
-        >
-          Sair
-        </button>
-      </div>
-
-      <div style={styles.main}>
-        <div
-          ref={chatRef}
-          style={styles.chatBox}
-        >
-          {chat.map(
-            (msg, i) => (
-              <div
-                key={i}
-                style={{
-                  ...styles.bubble,
-
-                  alignSelf:
-                    msg.tipo ===
-                    "user"
-                      ? "flex-end"
-                      : "flex-start",
-
-                  background:
-                    msg.tipo ===
-                    "user"
-                      ? "#22c55e"
-                      : "#334155",
-                }}
-              >
-                {msg.texto}
-              </div>
-            )
-          )}
+          ))}
 
           {loading && (
-            <div
-              style={{
-                ...styles.bubble,
-                background:
-                  "#334155",
-              }}
-            >
-              IA pensando...
+            <div style={styles.aiBubble}>
+              IA analisando emoções...
             </div>
           )}
         </div>
 
-        <div style={styles.inputBar}>
+        <div style={styles.controls}>
           <select
             value={emocao}
             onChange={(e) =>
-              setEmocao(
-                e.target.value
-              )
+              setEmocao(e.target.value)
             }
+            style={styles.select}
           >
-            {EMOCOES.map(
-              (e) => (
-                <option
-                  key={e}
-                >
-                  {e}
-                </option>
-              )
-            )}
+            <option value="ansioso">
+              Ansioso
+            </option>
+
+            <option value="triste">
+              Triste
+            </option>
+
+            <option value="desmotivado">
+              Desmotivado
+            </option>
+
+            <option value="feliz">
+              Feliz
+            </option>
           </select>
 
           <input
-            value={texto}
+            style={styles.input}
+            value={mensagem}
             onChange={(e) =>
-              setTexto(
-                e.target.value
-              )
+              setMensagem(e.target.value)
             }
             placeholder="Como você está se sentindo?"
           />
 
           <button
-            onClick={
-              falarComIA
-            }
+            style={styles.send}
+            onClick={enviarMensagem}
           >
             Enviar
           </button>
         </div>
-
-        {grafico.length >
-          0 && (
-          <EvolucaoChart
-            data={grafico}
-          />
-        )}
-      </div>
+      </main>
     </div>
   );
 }
@@ -705,15 +250,52 @@ export default function App() {
 const styles = {
   app: {
     display: "flex",
-    height: "100vh",
-    background: "#0f172a",
+    background: "#020617",
     color: "#fff",
+    height: "100vh",
+    overflow: "hidden",
+    fontFamily: "Arial",
   },
 
   sidebar: {
-    width: 220,
-    background: "#020617",
+    width: 260,
+    background: "#0f172a",
     padding: 20,
+    borderRight:
+      "1px solid #1e293b",
+  },
+
+  logo: {
+    fontSize: 36,
+  },
+
+  premium: {
+    color: "#4ade80",
+  },
+
+  admin: {
+    marginTop: 20,
+    width: "100%",
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    background: "#1d4ed8",
+    color: "#fff",
+    cursor: "pointer",
+  },
+
+  box: {
+    marginTop: 30,
+  },
+
+  toggle: {
+    marginTop: 10,
+    padding: 12,
+    width: "100%",
+    border: "none",
+    color: "#fff",
+    borderRadius: 10,
+    cursor: "pointer",
   },
 
   main: {
@@ -722,83 +304,64 @@ const styles = {
     flexDirection: "column",
   },
 
-  chatBox: {
+  chat: {
     flex: 1,
     overflowY: "auto",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
+    padding: 30,
   },
 
-  bubble: {
-    padding: 12,
-    borderRadius: 10,
-    maxWidth: "60%",
-  },
-
-  inputBar: {
-    display: "flex",
-    gap: 10,
-    padding: 10,
-    background: "#1e293b",
-  },
-
-  logout: {
-    marginTop: 20,
-    background: "#ef4444",
-    padding: 10,
-    borderRadius: 5,
-    color: "#fff",
-    border: "none",
-  },
-
-  button: {
-    padding: 12,
+  userBubble: {
     background: "#22c55e",
-    borderRadius: 6,
-    color: "#fff",
-    border: "none",
+    marginBottom: 20,
+    padding: 18,
+    borderRadius: 18,
+    maxWidth: "60%",
+    marginLeft: "auto",
+  },
+
+  aiBubble: {
+    background: "#1e3a8a",
+    marginBottom: 20,
+    padding: 18,
+    borderRadius: 18,
+    maxWidth: "70%",
+  },
+
+  hawkins: {
+    marginTop: 15,
+    background: "#0f172a",
+    padding: 10,
+    borderRadius: 10,
+    fontSize: 14,
+    color: "#4ade80",
+  },
+
+  controls: {
+    display: "flex",
+    gap: 10,
+    padding: 20,
+    borderTop:
+      "1px solid #1e293b",
   },
 
   input: {
-    padding: 10,
-    borderRadius: 6,
-    border: "none",
-  },
-
-  loginContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "#0f172a",
-  },
-
-  loginCard: {
-    background: "#1e293b",
-    padding: 30,
+    flex: 1,
+    padding: 14,
     borderRadius: 10,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-    width: 320,
-  },
-
-  modeBtn: {
-    marginTop: 10,
-    width: "100%",
-    padding: 10,
-    color: "#fff",
     border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
   },
 
-  adminBox: {
-    marginTop: 10,
-    background: "#020617",
-    padding: 10,
-    borderRadius: 8,
+  select: {
+    padding: 14,
+    borderRadius: 10,
+  },
+
+  send: {
+    padding: "14px 24px",
+    borderRadius: 10,
+    border: "none",
+    background: "#22c55e",
+    color: "#fff",
+    cursor: "pointer",
   },
 };

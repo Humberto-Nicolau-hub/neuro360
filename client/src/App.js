@@ -6,17 +6,28 @@ import React, {
 
 import AdminDashboard from "./AdminDashboard";
 
+/* ======================================================
+   API
+====================================================== */
+
 const API_URL =
+  process.env.REACT_APP_API_URL ||
   "https://backend-neuro360.onrender.com";
 
+/* ======================================================
+   APP
+====================================================== */
+
 export default function App() {
+
   const [mensagem, setMensagem] =
     useState("");
 
-  const [chat, setChat] = useState([]);
+  const [chat, setChat] =
+    useState([]);
 
   const [emocao, setEmocao] =
-    useState("ansioso");
+    useState("ansiedade");
 
   const [
     modoTerapeutico,
@@ -26,11 +37,15 @@ export default function App() {
   const [loading, setLoading] =
     useState(false);
 
-  const [mostrarAdmin, setMostrarAdmin] =
-    useState(false);
+  const [
+    mostrarAdmin,
+    setMostrarAdmin,
+  ] = useState(false);
 
-  const [scoreEmocional, setScoreEmocional] =
-    useState(0);
+  const [
+    scoreEmocional,
+    setScoreEmocional,
+  ] = useState(0);
 
   const [
     frequenciaAtual,
@@ -57,32 +72,56 @@ export default function App() {
     setIntervencaoAtual,
   ] = useState("");
 
-  const mensagensRef = useRef(null);
+  const mensagensRef =
+    useRef(null);
 
   const userIdRef = useRef(
-    localStorage.getItem("neuro_user_id") ||
-      crypto.randomUUID()
+    localStorage.getItem(
+      "neuro_user_id"
+    ) || crypto.randomUUID()
   );
 
+  /* ======================================================
+     STORAGE
+  ====================================================== */
+
   useEffect(() => {
+
     localStorage.setItem(
       "neuro_user_id",
       userIdRef.current
     );
+
   }, []);
 
+  /* ======================================================
+     SCROLL
+  ====================================================== */
+
   useEffect(() => {
+
     mensagensRef.current?.scrollTo({
       top:
-        mensagensRef.current.scrollHeight,
+        mensagensRef.current
+          .scrollHeight,
+
       behavior: "smooth",
     });
+
   }, [chat]);
 
-  async function enviarMensagem() {
-    if (!mensagem.trim()) return;
+  /* ======================================================
+     ENVIAR MENSAGEM
+  ====================================================== */
 
-    const mensagemUsuario = mensagem;
+  async function enviarMensagem() {
+
+    if (!mensagem.trim()) {
+      return;
+    }
+
+    const mensagemUsuario =
+      mensagem;
 
     setChat((prev) => [
       ...prev,
@@ -93,60 +132,89 @@ export default function App() {
     ]);
 
     setMensagem("");
+
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/chat`,
-        {
-          method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+      const response =
+        await fetch(
+          `${API_URL}/ia`,
+          {
+            method: "POST",
 
-          body: JSON.stringify({
-            userId: userIdRef.current,
-            mensagem: mensagemUsuario,
-            emocao,
-            terapeutico:
-              modoTerapeutico,
-          }),
-        }
-      );
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+
+              user_id:
+                userIdRef.current,
+
+              mensagem:
+                mensagemUsuario,
+
+              emocao,
+
+              terapeutico:
+                modoTerapeutico,
+            }),
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          "Erro na API"
+        );
+      }
 
       const data =
         await response.json();
 
       console.log(
-        "IA RESPONSE:",
+        "NEURO360 RESPONSE:",
         data
       );
 
+      /* =========================================
+         DASHBOARD ESTADO
+      ========================================= */
+
       setScoreEmocional(
-        data.score_emocional || 0
+        data?.score_emocional || 0
       );
 
       setFrequenciaAtual(
-        data.frequencia_hawkins || 0
+        data
+          ?.frequencia_hawkins
+          ?.frequencia || 0
       );
 
       setConscienciaAtual(
-        data.nivel_consciencia || ""
+        data
+          ?.frequencia_hawkins
+          ?.nivel || ""
       );
 
       setTrilhaAtual(
-        data.trilha_terapeutica || ""
+        data
+          ?.trilha_terapeutica || ""
       );
 
       setProtocoloAtual(
-        data.protocolo_pnl || ""
+        data
+          ?.protocolo_pnl || ""
       );
 
       setIntervencaoAtual(
-        data.intervencao || ""
+        data?.intervencao || ""
       );
+
+      /* =========================================
+         CHAT IA
+      ========================================= */
 
       setChat((prev) => [
         ...prev,
@@ -155,35 +223,43 @@ export default function App() {
           tipo: "ia",
 
           texto:
-            data.resposta ||
+            data?.resposta ||
             "Sem resposta.",
 
           hawkins:
-            data.frequencia_hawkins,
+            data
+              ?.frequencia_hawkins
+              ?.frequencia,
 
           nivel:
-            data.nivel_consciencia,
+            data
+              ?.frequencia_hawkins
+              ?.nivel,
 
           score:
-            data.score_emocional,
+            data
+              ?.score_emocional,
 
           protocolo:
-            data.protocolo_pnl,
+            data
+              ?.protocolo_pnl,
 
           intervencao:
-            data.intervencao,
+            data
+              ?.intervencao,
 
           trilha:
-            data.trilha_terapeutica,
-
-          recomendacao:
-            data.recomendacao,
+            data
+              ?.trilha_terapeutica,
 
           memoria:
-            data.memoria_ativa,
+            data
+              ?.memoria_ativa,
         },
       ]);
+
     } catch (err) {
+
       console.error(
         "ERRO IA:",
         err
@@ -196,15 +272,22 @@ export default function App() {
           tipo: "ia",
 
           texto:
-            "Erro ao conectar com IA terapêutica.",
+            "Erro ao conectar com a IA terapêutica.",
         },
       ]);
-    }
 
-    setLoading(false);
+    } finally {
+
+      setLoading(false);
+    }
   }
 
+  /* ======================================================
+     ADMIN
+  ====================================================== */
+
   if (mostrarAdmin) {
+
     return (
       <AdminDashboard
         voltar={() =>
@@ -214,15 +297,21 @@ export default function App() {
     );
   }
 
+  /* ======================================================
+     RENDER
+  ====================================================== */
+
   return (
     <div style={styles.app}>
+
       <aside style={styles.sidebar}>
+
         <h1 style={styles.logo}>
           Neuro360
         </h1>
 
         <p style={styles.premium}>
-          Plano Premium ✅
+          IA Terapêutica Ativa ✅
         </p>
 
         <button
@@ -235,6 +324,7 @@ export default function App() {
         </button>
 
         <div style={styles.box}>
+
           <strong>
             Terapia Guiada
           </strong>
@@ -261,6 +351,7 @@ export default function App() {
         </div>
 
         <div style={styles.metrics}>
+
           <h3>
             🧠 Estado Cognitivo
           </h3>
@@ -300,15 +391,20 @@ export default function App() {
             {" "}
             {intervencaoAtual}
           </p>
+
         </div>
+
       </aside>
 
       <main style={styles.main}>
+
         <div
           style={styles.chat}
           ref={mensagensRef}
         >
+
           {chat.map((msg, i) => (
+
             <div
               key={i}
               style={
@@ -318,84 +414,93 @@ export default function App() {
                   : styles.aiBubble
               }
             >
+
               <p>{msg.texto}</p>
 
               {msg.hawkins && (
+
                 <div
                   style={styles.infoBox}
                 >
+
                   🔥 Hawkins:
                   {" "}
                   {msg.hawkins}
                   {" "}
                   Hz
+
                   <br />
 
                   🧠 Consciência:
                   {" "}
                   {msg.nivel}
+
                   <br />
 
                   📈 Score:
                   {" "}
                   {msg.score}
+
                 </div>
               )}
 
               {msg.protocolo && (
+
                 <div
                   style={
                     styles.protocolBox
                   }
                 >
+
                   🧩 Protocolo:
                   <br />
                   {msg.protocolo}
+
                 </div>
               )}
 
               {msg.intervencao && (
+
                 <div
                   style={
                     styles.interventionBox
                   }
                 >
+
                   ⚡ Intervenção:
                   <br />
                   {msg.intervencao}
+
                 </div>
               )}
 
               {msg.trilha && (
+
                 <div
                   style={styles.trilhaBox}
                 >
+
                   🛤️ Trilha:
                   <br />
                   {msg.trilha}
+
                 </div>
               )}
 
-              {msg.memoria && (
-                <div
-                  style={styles.memoryBox}
-                >
-                  🧠 Memória ativa:
-                  <br />
-                  {msg.memoria}
-                </div>
-              )}
             </div>
           ))}
 
           {loading && (
+
             <div style={styles.aiBubble}>
               IA analisando emoções...
             </div>
           )}
+
         </div>
 
         <div style={styles.controls}>
+
           <select
             value={emocao}
             onChange={(e) =>
@@ -405,21 +510,27 @@ export default function App() {
             }
             style={styles.select}
           >
-            <option value="ansioso">
-              Ansioso
+
+            <option value="ansiedade">
+              Ansiedade
             </option>
 
-            <option value="triste">
-              Triste
+            <option value="tristeza">
+              Tristeza
             </option>
 
-            <option value="desmotivado">
-              Desmotivado
+            <option value="culpa">
+              Culpa
             </option>
 
-            <option value="feliz">
-              Feliz
+            <option value="raiva">
+              Raiva
             </option>
+
+            <option value="procrastinacao">
+              Procrastinação
+            </option>
+
           </select>
 
           <input
@@ -431,6 +542,12 @@ export default function App() {
               )
             }
             placeholder="Como você está se sentindo?"
+            onKeyDown={(e) => {
+
+              if (e.key === "Enter") {
+                enviarMensagem();
+              }
+            }}
           />
 
           <button
@@ -439,13 +556,21 @@ export default function App() {
           >
             Enviar
           </button>
+
         </div>
+
       </main>
+
     </div>
   );
 }
 
+/* ======================================================
+   STYLES
+====================================================== */
+
 const styles = {
+
   app: {
     display: "flex",
     background: "#020617",
@@ -568,13 +693,6 @@ const styles = {
   trilhaBox: {
     marginTop: 12,
     background: "#14532d",
-    padding: 12,
-    borderRadius: 10,
-  },
-
-  memoryBox: {
-    marginTop: 12,
-    background: "#3f3f46",
     padding: 12,
     borderRadius: 10,
   },

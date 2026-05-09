@@ -50,9 +50,13 @@ function calcularScoreEmocional(memorias = []) {
 
   if (score < 30) {
     nivel = "critico";
-  } else if (score < 50) {
+  }
+
+  else if (score < 50) {
     nivel = "fragil";
-  } else if (score < 70) {
+  }
+
+  else if (score < 70) {
     nivel = "instavel";
   }
 

@@ -52,8 +52,19 @@ dotenv.config();
 
 const app = express();
 
+/* ======================================================
+   MIDDLEWARES
+====================================================== */
+
 app.use(cors());
+
 app.use(express.json());
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 
 /* ======================================================
    VALIDACOES
@@ -98,7 +109,7 @@ const supabase = createClient(
 
 app.get("/", (req, res) => {
 
-  res.json({
+  return res.json({
     status: "online",
     plataforma: "NeuroMapa360",
     versao: "4.0.0",
@@ -111,7 +122,7 @@ app.get("/", (req, res) => {
 
 app.get("/health", (req, res) => {
 
-  res.json({
+  return res.json({
     ok: true,
     uptime: process.uptime(),
     plataforma: "NeuroMapa360",
@@ -126,10 +137,12 @@ app.get("/admin/dashboard", async (req, res) => {
 
   try {
 
-    const { data: memorias, error } =
-      await supabase
-        .from("memoria_emocional")
-        .select("*");
+    const {
+      data: memorias,
+      error,
+    } = await supabase
+      .from("memoria_emocional")
+      .select("*");
 
     if (error) {
       throw error;
@@ -179,7 +192,8 @@ app.get("/admin/dashboard", async (req, res) => {
             ).toFixed(1)
           : 0,
 
-      receita: premium * 47,
+      receita:
+        premium * 47,
 
       emocaoDominante:
         scoreData?.emocaoDominante || null,
@@ -205,8 +219,12 @@ app.get("/admin/dashboard", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      erro: "Erro dashboard admin",
-      detalhes: error.message,
+
+      erro:
+        "Erro dashboard admin",
+
+      detalhes:
+        error.message,
     });
   }
 });
@@ -259,7 +277,7 @@ app.post("/ia", async (req, res) => {
     }
 
     /* =========================================
-       CONTEXTO EMOCIONAL
+       CONTEXTO MEMORIA
     ========================================= */
 
     const contextoMemoria =
@@ -286,12 +304,13 @@ ${m.resposta_ia}
        USUARIO
     ========================================= */
 
-    const { data: usuario } =
-      await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("id", userId)
-        .single();
+    const {
+      data: usuario,
+    } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
     /* =========================================
        PLANO
@@ -382,9 +401,26 @@ ${m.resposta_ia}
       mensagem.toLowerCase();
 
     const riscoElevado =
-      mensagemLower.includes("suicidio") ||
-      mensagemLower.includes("me matar") ||
-      mensagemLower.includes("nao quero viver");
+
+      mensagemLower.includes(
+        "suicidio"
+      ) ||
+
+      mensagemLower.includes(
+        "suicídio"
+      ) ||
+
+      mensagemLower.includes(
+        "me matar"
+      ) ||
+
+      mensagemLower.includes(
+        "nao quero viver"
+      ) ||
+
+      mensagemLower.includes(
+        "não quero viver"
+      );
 
     if (riscoElevado) {
 
@@ -502,7 +538,8 @@ Importante:
       .insert([
         {
 
-          user_id: userId,
+          user_id:
+            userId,
 
           mensagem_usuario:
             mensagem,

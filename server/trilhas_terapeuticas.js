@@ -1,4 +1,4 @@
-function gerarTrilhaTerapêutica(
+function gerarTrilhaTerapeutica(
   perfilEmocional,
   emocaoAtual
 ) {
@@ -28,6 +28,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Respiração terapêutica",
+
         descricao:
           "Respire lentamente por 5 ciclos completos.",
       },
@@ -35,6 +36,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Descompressão mental",
+
         descricao:
           "Reduza estímulos mentais e excesso de informação.",
       },
@@ -42,6 +44,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Ancoragem emocional",
+
         descricao:
           "Lembre um momento de segurança emocional e conecte-se a essa sensação.",
       },
@@ -49,6 +52,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Reestruturação cognitiva",
+
         descricao:
           "Questione pensamentos catastróficos automáticos.",
       },
@@ -74,6 +78,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Acolhimento emocional",
+
         descricao:
           "Permita sentir emoções sem julgamento.",
       },
@@ -81,6 +86,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Reconexão interna",
+
         descricao:
           "Liste pequenas coisas que ainda possuem significado emocional.",
       },
@@ -88,6 +94,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Ativação emocional leve",
+
         descricao:
           "Realize pequenas ações que tragam movimento emocional positivo.",
       },
@@ -113,6 +120,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Separar erro de identidade",
+
         descricao:
           "Você cometeu um erro, mas não é o erro.",
       },
@@ -120,6 +128,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Reinterpretação emocional",
+
         descricao:
           "Transforme experiência em aprendizado emocional.",
       },
@@ -127,6 +136,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Autocompaixão guiada",
+
         descricao:
           "Fale consigo da forma que falaria com alguém que ama.",
       },
@@ -152,6 +162,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Microação",
+
         descricao:
           "Escolha uma ação extremamente pequena.",
       },
@@ -159,6 +170,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Quebra de sobrecarga",
+
         descricao:
           "Divida tarefas em partes mínimas.",
       },
@@ -166,6 +178,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Movimento progressivo",
+
         descricao:
           "Foque em continuidade, não perfeição.",
       },
@@ -191,6 +204,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Respiração lenta",
+
         descricao:
           "Reduza ativação fisiológica antes de agir.",
       },
@@ -198,6 +212,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Distanciamento emocional",
+
         descricao:
           "Observe a emoção antes de reagir.",
       },
@@ -205,6 +220,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Reorganização emocional",
+
         descricao:
           "Identifique qual dor emocional existe por trás da raiva.",
       },
@@ -227,6 +243,7 @@ function gerarTrilhaTerapêutica(
       {
         titulo:
           "Autopercepção",
+
         descricao:
           "Observe seus padrões emocionais diariamente.",
       },

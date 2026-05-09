@@ -52,11 +52,18 @@ dotenv.config();
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 /* ======================================================
    MIDDLEWARES
 ====================================================== */
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+  })
+);
 
 app.use(express.json());
 
@@ -112,7 +119,7 @@ app.get("/", (req, res) => {
   return res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "4.0.0",
+    versao: "4.0.1",
   });
 });
 
@@ -224,7 +231,9 @@ app.get("/admin/dashboard", async (req, res) => {
         "Erro dashboard admin",
 
       detalhes:
-        error.message,
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : undefined,
     });
   }
 });
@@ -310,7 +319,7 @@ ${m.resposta_ia}
       .from("usuarios")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     /* =========================================
        PLANO
@@ -488,13 +497,6 @@ ${scoreData?.tendencia}
 
 Nível emocional:
 ${scoreData?.nivel}
-
-Importante:
-- responda naturalmente
-- nunca repita padrões robóticos
-- use empatia avançada
-- personalize usando o histórico emocional
-- aja como um terapeuta experiente
 `;
 
     /* =========================================
@@ -525,9 +527,9 @@ Importante:
       });
 
     const resposta =
-      completion
-        .choices[0]
-        .message.content;
+      completion?.choices?.[0]?.message?.content
+      || respostaPNL
+      || "Estou aqui com você.";
 
     /* =========================================
        SALVAR MEMORIA
@@ -590,6 +592,12 @@ Importante:
       arquitetura_cognitiva:
         arquiteturaCognitiva,
 
+      score_emocional:
+        scoreData?.score,
+
+      nivel_consciencia:
+        hawkinsData?.nivel,
+
       perfil_emocional:
         scoreData,
 
@@ -600,7 +608,17 @@ Importante:
 
       intervencoes,
 
-      trilha,
+      intervencao:
+        intervencoes?.[0]?.titulo || null,
+
+      protocolo_pnl:
+        respostaPNL,
+
+      trilha_terapeutica:
+        trilha?.nome,
+
+      trilha_completa:
+        trilha,
 
       memoria_ativa:
         memoria?.length > 0,
@@ -619,9 +637,29 @@ Importante:
         "Erro IA terapêutica",
 
       detalhes:
-        error.message,
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : undefined,
     });
   }
+});
+
+/* ======================================================
+   TRATAMENTO GLOBAL
+====================================================== */
+
+process.on("unhandledRejection", (err) => {
+  console.error(
+    "UNHANDLED REJECTION:",
+    err
+  );
+});
+
+process.on("uncaughtException", (err) => {
+  console.error(
+    "UNCAUGHT EXCEPTION:",
+    err
+  );
 });
 
 /* ======================================================
@@ -638,7 +676,7 @@ app.listen(PORT, () => {
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
-VERSAO: 4.0.0
+VERSAO: 4.0.1
 ========================================
 
 `);

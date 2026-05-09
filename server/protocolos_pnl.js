@@ -1,9 +1,10 @@
-function gerarRespostaPNL(emocaoData, mensagemUsuario) {
+function gerarRespostaPNL(
+  emocaoData,
+  mensagemUsuario
+) {
+
   const {
     emocao,
-    intensidade,
-    vibracao,
-    categoria,
   } = emocaoData;
 
   // =========================
@@ -11,6 +12,7 @@ function gerarRespostaPNL(emocaoData, mensagemUsuario) {
   // =========================
 
   if (emocao === "ansiedade") {
+
     return `
 Percebo que sua mente está acelerada neste momento.
 
@@ -38,6 +40,7 @@ o que mais está pesando dentro de você agora?
   // =========================
 
   if (emocao === "tristeza") {
+
     return `
 Sinto que existe um peso emocional importante dentro de você neste momento.
 
@@ -61,6 +64,7 @@ qual situação mais machucou você recentemente?
   // =========================
 
   if (emocao === "culpa") {
+
     return `
 Percebo sinais de autocrítica muito forte.
 
@@ -83,6 +87,7 @@ o que exatamente você sente que deveria ter feito diferente?
   // =========================
 
   if (emocao === "procrastinacao") {
+
     return `
 O que você chama de procrastinação muitas vezes é sobrecarga emocional silenciosa.
 
@@ -101,6 +106,7 @@ Qual seria o menor passo possível que você conseguiria fazer agora em menos de
   // =========================
 
   if (emocao === "raiva") {
+
     return `
 Existe uma carga emocional intensa dentro de você agora.
 

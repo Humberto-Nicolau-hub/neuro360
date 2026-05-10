@@ -1,148 +1,262 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "./supabaseClient";
+import React, { useState } from "react";
 
-const BACKEND_URL = "https://backend-neuro360.onrender.com";
+export default function AppInterno() {
+  const [mensagem, setMensagem] = useState("");
+  const [historico, setHistorico] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-function AppInterno() {
-  const [user, setUser] = useState(null);
-  const [plano, setPlano] = useState("free");
-  const [texto, setTexto] = useState("");
-  const [resposta, setResposta] = useState("");
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://backend-neuro360.onrender.com";
 
-  useEffect(() => {
-    carregarUsuario();
-  }, []);
+  async function enviarMensagem() {
+    if (!mensagem.trim()) return;
 
-  async function carregarUsuario() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const novaMensagem = {
+      tipo: "usuario",
+      texto: mensagem,
+    };
 
-    if (user) {
-      setUser(user);
-      localStorage.setItem("user_id", user.id);
+    setHistorico((prev) => [...prev, novaMensagem]);
 
-      try {
-        const res = await fetch(`${BACKEND_URL}/plano/${user.id}`);
-        const data = await res.json();
-        setPlano(data.plano);
-      } catch {
-        setPlano("free");
-      }
+    const textoUsuario = mensagem;
+
+    setMensagem("");
+    setLoading(true);
+
+    try {
+      const resposta = await fetch(`${API_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mensagem: textoUsuario,
+          perfil: "terapeutico",
+        }),
+      });
+
+      const data = await resposta.json();
+
+      setHistorico((prev) => [
+        ...prev,
+        {
+          tipo: "ia",
+          texto:
+            data.resposta ||
+            "Não consegui responder agora.",
+        },
+      ]);
+    } catch (erro) {
+      setHistorico((prev) => [
+        ...prev,
+        {
+          tipo: "ia",
+          texto:
+            "Erro ao conectar com IA terapêutica.",
+        },
+      ]);
     }
+
+    setLoading(false);
   }
 
-  async function falarComIA() {
-    if (!texto) return;
-
-    const res = await fetch(`${BACKEND_URL}/ia`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        texto,
-        user_id: user.id,
-      }),
-    });
-
-    const data = await res.json();
-    setResposta(data.resposta);
-
-    // 🔥 volta pro topo automaticamente
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-
-    // 🔥 limpa TUDO
+  function sair() {
     localStorage.clear();
-
-    // 🔥 força reset completo
     window.location.reload();
   }
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: 20
-    }}>
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background:
+          "linear-gradient(135deg,#0f172a,#111827,#1e293b)",
+        color: "white",
+        fontFamily: "Arial",
+      }}
+    >
+      {/* SIDEBAR */}
 
-      <div style={{
-        background: "#fff",
-        padding: 30,
-        borderRadius: 10,
-        width: 320,
-        textAlign: "center"
-      }}>
-
-        <h1>NeuroMapa360</h1>
-
-        <p><strong>Plano:</strong> {plano.toUpperCase()}</p>
-
-        <button
-          onClick={logout}
+      <div
+        style={{
+          width: "320px",
+          background: "rgba(255,255,255,0.05)",
+          padding: "25px",
+          borderRight: "1px solid rgba(255,255,255,0.1)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <h1
           style={{
-            background: "red",
-            color: "#fff",
-            border: "none",
-            padding: 5,
-            borderRadius: 5,
-            cursor: "pointer"
+            fontSize: "52px",
+            marginBottom: "20px",
           }}
         >
-          Sair
-        </button>
+          Neuro360
+        </h1>
 
-        <br /><br />
-
-        <select style={{ width: "100%", padding: 8 }}>
-          <option>Ansioso</option>
-          <option>Triste</option>
-          <option>Estressado</option>
-        </select>
-
-        <br /><br />
-
-        <textarea
-          placeholder="Descreva como você está"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+        <div
           style={{
-            width: "100%",
-            height: 80
-          }}
-        />
-
-        <br /><br />
-
-        <button
-          onClick={falarComIA}
-          style={{
-            width: "100%",
-            padding: 10,
-            background: "green",
-            color: "#fff",
-            border: "none",
-            borderRadius: 5
+            color: "#4ade80",
+            marginBottom: "20px",
+            fontWeight: "bold",
           }}
         >
-          Falar com IA
+          IA Terapêutica Ativa ✅
+        </div>
+
+        <button
+          style={{
+            background:
+              "linear-gradient(90deg,#2563eb,#38bdf8)",
+            border: "none",
+            padding: "18px",
+            borderRadius: "12px",
+            color: "white",
+            fontWeight: "bold",
+            marginBottom: "20px",
+            cursor: "pointer",
+          }}
+        >
+          ADMIN 👑
         </button>
 
-        <br /><br />
+        <div
+          style={{
+            marginTop: "30px",
+            opacity: 0.9,
+            lineHeight: "2",
+          }}
+        >
+          <div>🧠 Estado Cognitivo</div>
+          <div>📄 Score: 82</div>
+          <div>🔥 Hawkins: 540</div>
+          <div>🌎 Consciência: Expansão</div>
+          <div>🛤️ Trilha: Reequilíbrio</div>
+          <div>⚙️ Protocolo: NeuroReset</div>
+          <div>⚡ Intervenção: Respiração guiada</div>
+        </div>
 
-        {resposta && (
-          <div>
-            <h3>Resposta da IA</h3>
-            <p style={{ textAlign: "left" }}>{resposta}</p>
-          </div>
-        )}
+        <button
+          onClick={sair}
+          style={{
+            marginTop: "auto",
+            background: "#ef4444",
+            border: "none",
+            padding: "15px",
+            borderRadius: "12px",
+            color: "white",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          SAIR
+        </button>
+      </div>
 
+      {/* CHAT */}
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          padding: "30px",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            marginBottom: "20px",
+          }}
+        >
+          {historico.map((msg, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                justifyContent:
+                  msg.tipo === "usuario"
+                    ? "flex-end"
+                    : "flex-start",
+                marginBottom: "20px",
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: "70%",
+                  padding: "20px",
+                  borderRadius: "18px",
+                  lineHeight: "1.7",
+                  fontSize: "18px",
+                  background:
+                    msg.tipo === "usuario"
+                      ? "linear-gradient(90deg,#22c55e,#4ade80)"
+                      : "linear-gradient(90deg,#1d4ed8,#3b82f6)",
+                }}
+              >
+                {msg.texto}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div
+              style={{
+                color: "#4ade80",
+              }}
+            >
+              IA analisando...
+            </div>
+          )}
+        </div>
+
+        {/* INPUT */}
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+          }}
+        >
+          <input
+            value={mensagem}
+            onChange={(e) =>
+              setMensagem(e.target.value)
+            }
+            placeholder="Como você está se sentindo?"
+            style={{
+              flex: 1,
+              padding: "18px",
+              borderRadius: "12px",
+              border: "none",
+              background: "rgba(255,255,255,0.08)",
+              color: "white",
+              fontSize: "16px",
+            }}
+          />
+
+          <button
+            onClick={enviarMensagem}
+            style={{
+              background:
+                "linear-gradient(90deg,#22c55e,#4ade80)",
+              border: "none",
+              padding: "18px 30px",
+              borderRadius: "12px",
+              color: "white",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            Enviar
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
-export default AppInterno;

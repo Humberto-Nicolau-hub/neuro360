@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useEffect,
+} from "react";
 
 import AppInterno from "./AppInterno";
 
@@ -6,6 +9,9 @@ export default function App() {
 
   const [logado, setLogado] =
     useState(false);
+
+  const [usuarioAtual, setUsuarioAtual] =
+    useState(null);
 
   const [email, setEmail] =
     useState("");
@@ -28,6 +34,8 @@ export default function App() {
       admin: true,
 
       premium: true,
+
+      plano: "premium",
     },
 
     {
@@ -39,6 +47,8 @@ export default function App() {
       admin: false,
 
       premium: false,
+
+      plano: "free",
     },
 
     {
@@ -50,6 +60,8 @@ export default function App() {
       admin: false,
 
       premium: false,
+
+      plano: "free",
     },
 
     {
@@ -61,8 +73,64 @@ export default function App() {
       admin: false,
 
       premium: false,
+
+      plano: "free",
     },
   ];
+
+  /* ======================================================
+     VERIFICA SESSÃO
+  ====================================================== */
+
+  useEffect(() => {
+
+    try {
+
+      const usuarioSalvo =
+        JSON.parse(
+          localStorage.getItem(
+            "usuario"
+          )
+        );
+
+      if (
+        usuarioSalvo &&
+        usuarioSalvo.email
+      ) {
+
+        const usuarioValido =
+          usuarios.find(
+            (u) =>
+              u.email ===
+              usuarioSalvo.email
+          );
+
+        if (usuarioValido) {
+
+          setUsuarioAtual(
+            usuarioValido
+          );
+
+          setLogado(true);
+
+        } else {
+
+          localStorage.removeItem(
+            "usuario"
+          );
+        }
+      }
+
+    } catch (erro) {
+
+      console.log(erro);
+
+      localStorage.removeItem(
+        "usuario"
+      );
+    }
+
+  }, []);
 
   /* ======================================================
      LOGIN
@@ -108,23 +176,82 @@ export default function App() {
       return;
     }
 
+    /* =========================================
+       LIMPA SESSÃO ANTIGA
+    ========================================= */
+
+    localStorage.clear();
+
+    const sessaoSegura = {
+
+      email:
+        usuarioEncontrado.email,
+
+      admin:
+        usuarioEncontrado.admin,
+
+      premium:
+        usuarioEncontrado.premium,
+
+      plano:
+        usuarioEncontrado.plano,
+
+      loginAtivo: true,
+
+      ultimoLogin:
+        new Date().toISOString(),
+    };
+
     localStorage.setItem(
       "usuario",
       JSON.stringify(
-        usuarioEncontrado
+        sessaoSegura
       )
+    );
+
+    setUsuarioAtual(
+      sessaoSegura
     );
 
     setLogado(true);
   }
 
   /* ======================================================
+     LOGOUT GLOBAL
+  ====================================================== */
+
+  function sairSistema() {
+
+    localStorage.removeItem(
+      "usuario"
+    );
+
+    sessionStorage.clear();
+
+    setUsuarioAtual(null);
+
+    setLogado(false);
+
+    window.location.reload();
+  }
+
+  /* ======================================================
      APP INTERNO
   ====================================================== */
 
-  if (logado) {
+  if (
+    logado &&
+    usuarioAtual
+  ) {
 
-    return <AppInterno />;
+    return (
+      <AppInterno
+        usuario={usuarioAtual}
+        onLogout={
+          sairSistema
+        }
+      />
+    );
   }
 
   /* ======================================================
@@ -177,7 +304,9 @@ export default function App() {
         </button>
 
         <button
-          style={styles.secondaryButton}
+          style={
+            styles.secondaryButton
+          }
         >
           Criar Conta
         </button>
@@ -259,7 +388,8 @@ const styles = {
 
     borderRadius: 12,
 
-    border: "1px solid #1e293b",
+    border:
+      "1px solid #1e293b",
 
     background: "#0f172a",
 

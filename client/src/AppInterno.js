@@ -44,6 +44,76 @@ export default function AppInterno({
     useRef(null);
 
   /* ======================================================
+     EMOÇÕES RÁPIDAS
+  ====================================================== */
+
+  const emocoesRapidas = [
+
+    {
+      emoji: "🟣",
+      nome: "Ansioso",
+      texto:
+        "Estou me sentindo ansioso hoje",
+    },
+
+    {
+      emoji: "🔵",
+      nome: "Triste",
+      texto:
+        "Estou me sentindo triste hoje",
+    },
+
+    {
+      emoji: "🟠",
+      nome: "Raiva",
+      texto:
+        "Estou com muita raiva hoje",
+    },
+
+    {
+      emoji: "🟢",
+      nome: "Motivado",
+      texto:
+        "Hoje estou me sentindo motivado",
+    },
+
+    {
+      emoji: "🟡",
+      nome: "Confuso",
+      texto:
+        "Estou me sentindo confuso",
+    },
+
+    {
+      emoji: "🔴",
+      nome: "Sobrecarregado",
+      texto:
+        "Estou me sentindo sobrecarregado",
+    },
+
+    {
+      emoji: "⚫",
+      nome: "Sem foco",
+      texto:
+        "Estou sem foco hoje",
+    },
+
+    {
+      emoji: "🟤",
+      nome: "Cansado",
+      texto:
+        "Estou mentalmente cansado",
+    },
+
+    {
+      emoji: "✨",
+      nome: "Esperançoso",
+      texto:
+        "Estou me sentindo esperançoso",
+    },
+  ];
+
+  /* ======================================================
      API
   ====================================================== */
 
@@ -88,10 +158,6 @@ export default function AppInterno({
       estadoEmocional.emocao
         ?.toLowerCase();
 
-    /* =========================================
-       TRISTEZA
-    ========================================= */
-
     if (
       emocao?.includes("triste")
     ) {
@@ -105,10 +171,6 @@ export default function AppInterno({
           "linear-gradient(90deg,#1d4ed8,#3b82f6)",
       };
     }
-
-    /* =========================================
-       ANSIEDADE
-    ========================================= */
 
     if (
       emocao?.includes("ans")
@@ -124,10 +186,6 @@ export default function AppInterno({
       };
     }
 
-    /* =========================================
-       RAIVA
-    ========================================= */
-
     if (
       emocao?.includes("raiva")
     ) {
@@ -142,10 +200,6 @@ export default function AppInterno({
       };
     }
 
-    /* =========================================
-       EVOLUÇÃO
-    ========================================= */
-
     if (
       emocao?.includes("evol")
     ) {
@@ -159,10 +213,6 @@ export default function AppInterno({
           "linear-gradient(90deg,#2563eb,#60a5fa)",
       };
     }
-
-    /* =========================================
-       PADRÃO
-    ========================================= */
 
     return {
 
@@ -247,10 +297,6 @@ export default function AppInterno({
       const data =
         await resposta.json();
 
-      /* =========================================
-         RESPOSTA IA
-      ========================================= */
-
       const respostaIA =
         data?.resposta ||
         "Não consegui responder agora.";
@@ -264,10 +310,6 @@ export default function AppInterno({
           texto: respostaIA,
         },
       ]);
-
-      /* =========================================
-         ANALISE EMOCIONAL
-      ========================================= */
 
       const textoAnalise =
         (
@@ -291,10 +333,6 @@ export default function AppInterno({
 
       let intervencao =
         "Respiração guiada";
-
-      /* =========================================
-         ANSIEDADE
-      ========================================= */
 
       if (
 
@@ -333,10 +371,6 @@ export default function AppInterno({
           "Respiração profunda";
       }
 
-      /* =========================================
-         TRISTEZA
-      ========================================= */
-
       if (
 
         textoAnalise.includes(
@@ -373,10 +407,6 @@ export default function AppInterno({
         intervencao =
           "Acolhimento terapêutico";
       }
-
-      /* =========================================
-         RAIVA
-      ========================================= */
 
       if (
 
@@ -415,10 +445,6 @@ export default function AppInterno({
           "Relaxamento neural";
       }
 
-      /* =========================================
-         EVOLUÇÃO
-      ========================================= */
-
       if (
 
         textoAnalise.includes(
@@ -435,6 +461,10 @@ export default function AppInterno({
 
         textoAnalise.includes(
           "evoluindo"
+        ) ||
+
+        textoAnalise.includes(
+          "motivado"
         )
 
       ) {
@@ -456,9 +486,34 @@ export default function AppInterno({
           "Potencialização mental";
       }
 
-      /* =========================================
-         DASHBOARD DINAMICO
-      ========================================= */
+      if (
+
+        textoAnalise.includes(
+          "sobrecarregado"
+        ) ||
+
+        textoAnalise.includes(
+          "cansado"
+        )
+
+      ) {
+
+        emocao =
+          "Sobrecarregado";
+
+        score = 38;
+
+        hawkins = 110;
+
+        consciencia =
+          "Sob pressão";
+
+        trilha =
+          "Alívio Mental";
+
+        intervencao =
+          "Desaceleração guiada";
+      }
 
       setEstadoEmocional({
 
@@ -583,10 +638,6 @@ export default function AppInterno({
           IA Terapêutica Ativa ✅
         </div>
 
-        {/* =========================================
-           BOTAO ADMIN
-        ========================================= */}
-
         {usuario?.admin && (
 
           <button
@@ -619,10 +670,6 @@ export default function AppInterno({
             ADMIN 👑
           </button>
         )}
-
-        {/* =========================================
-           STATUS
-        ========================================= */}
 
         <div
           style={{
@@ -693,10 +740,6 @@ export default function AppInterno({
           </div>
 
         </div>
-
-        {/* =========================================
-           SAIR
-        ========================================= */}
 
         <button
           onClick={sair}
@@ -837,6 +880,117 @@ export default function AppInterno({
           )}
 
           <div ref={finalChatRef} />
+
+        </div>
+
+        {/* ======================================================
+           EMOÇÕES RÁPIDAS
+        ====================================================== */}
+
+        <div
+          style={{
+
+            marginBottom: "20px",
+          }}
+        >
+
+          <div
+            style={{
+
+              marginBottom: "12px",
+
+              fontSize: "15px",
+
+              color: "#cbd5e1",
+
+              fontWeight: "bold",
+            }}
+          >
+            Como você está se sentindo hoje?
+          </div>
+
+          <div
+            style={{
+
+              display: "flex",
+
+              flexWrap: "wrap",
+
+              gap: "12px",
+            }}
+          >
+
+            {emocoesRapidas.map(
+              (emocao, index) => (
+
+              <button
+                key={index}
+
+                onClick={() =>
+                  setMensagem(
+                    emocao.texto
+                  )
+                }
+
+                style={{
+
+                  background:
+                    "rgba(255,255,255,0.08)",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.1)",
+
+                  padding:
+                    "12px 18px",
+
+                  borderRadius:
+                    "999px",
+
+                  color: "white",
+
+                  cursor: "pointer",
+
+                  fontSize: "14px",
+
+                  fontWeight: "bold",
+
+                  transition:
+                    "all 0.3s ease",
+
+                  backdropFilter:
+                    "blur(10px)",
+
+                  boxShadow:
+                    "0 0 15px rgba(0,0,0,0.15)",
+                }}
+
+                onMouseEnter={(e) => {
+
+                  e.target.style.transform =
+                    "scale(1.05)";
+
+                  e.target.style.background =
+                    "rgba(255,255,255,0.15)";
+                }}
+
+                onMouseLeave={(e) => {
+
+                  e.target.style.transform =
+                    "scale(1)";
+
+                  e.target.style.background =
+                    "rgba(255,255,255,0.08)";
+                }}
+              >
+
+                {emocao.emoji}
+                {" "}
+                {emocao.nome}
+
+              </button>
+            ))}
+
+          </div>
 
         </div>
 

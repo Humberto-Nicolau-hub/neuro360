@@ -55,13 +55,35 @@ const app = express();
 app.set("trust proxy", 1);
 
 /* ======================================================
-   MIDDLEWARES
+   CORS SEGURO
 ====================================================== */
+
+const allowedOrigins = [
+  "https://neuromapa360.ia.br",
+  "https://www.neuromapa360.ia.br",
+  "http://localhost:3000",
+];
 
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST"],
+    origin: function (origin, callback) {
+
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("CORS não permitido")
+      );
+    },
+
+    methods: ["GET", "POST", "OPTIONS"],
+
+    credentials: true,
   })
 );
 
@@ -119,7 +141,7 @@ app.get("/", (req, res) => {
   return res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "4.0.1",
+    versao: "5.0.0",
   });
 });
 
@@ -234,6 +256,28 @@ app.get("/admin/dashboard", async (req, res) => {
         process.env.NODE_ENV === "development"
           ? error.message
           : undefined,
+    });
+  }
+});
+
+/* ======================================================
+   API CHAT COMPATIBILIDADE
+====================================================== */
+
+app.post("/api/chat", async (req, res) => {
+
+  try {
+
+    req.url = "/ia";
+
+    app._router.handle(req, res);
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      erro: "Erro API CHAT",
     });
   }
 });
@@ -645,6 +689,80 @@ ${scoreData?.nivel}
 });
 
 /* ======================================================
+   STATUS EMOCIONAL USUARIO
+====================================================== */
+
+app.post("/api/status-emocional", async (req, res) => {
+
+  try {
+
+    const { mensagem } = req.body;
+
+    if (!mensagem) {
+
+      return res.json({
+        status: "Neutro",
+      });
+    }
+
+    const emocao =
+      detectarEmocao(mensagem);
+
+    let status = "Equilibrado";
+
+    const texto =
+      mensagem.toLowerCase();
+
+    if (
+      texto.includes("ansioso") ||
+      texto.includes("ansiedade")
+    ) {
+      status = "Ansioso";
+    }
+
+    else if (
+      texto.includes("triste") ||
+      texto.includes("depress")
+    ) {
+      status = "Triste";
+    }
+
+    else if (
+      texto.includes("raiva")
+    ) {
+      status = "Raiva";
+    }
+
+    else if (
+      texto.includes("desmotivado")
+    ) {
+      status = "Desmotivado";
+    }
+
+    else if (
+      texto.includes("procrast")
+    ) {
+      status = "Procrastinador";
+    }
+
+    return res.json({
+
+      status,
+
+      emocao,
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      erro: "Erro status emocional",
+    });
+  }
+});
+
+/* ======================================================
    TRATAMENTO GLOBAL
 ====================================================== */
 
@@ -676,7 +794,7 @@ app.listen(PORT, () => {
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
-VERSAO: 4.0.1
+VERSAO: 5.0.0
 ========================================
 
 `);

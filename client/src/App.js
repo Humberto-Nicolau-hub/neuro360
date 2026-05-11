@@ -4,27 +4,87 @@ import AppInterno from "./AppInterno";
 
 export default function App() {
 
-  const [logado, setLogado] =
-    useState(false);
+  const [logado, setLogado] = useState(false);
 
-  const [email, setEmail] =
-    useState("");
+  const [usuario, setUsuario] = useState(null);
 
-  const [senha, setSenha] =
-    useState("");
+  const [email, setEmail] = useState("");
+
+  const [senha, setSenha] = useState("");
+
+  /* ======================================================
+     USUÁRIOS AUTORIZADOS
+  ====================================================== */
+
+  const usuarios = [
+
+    {
+      email: "contatobetaoofertas@gmail.com",
+      senha: "123456",
+      plano: "premium",
+      isAdmin: true,
+    },
+
+    {
+      email: "ebony66@gmail.com",
+      senha: "123456",
+      plano: "free",
+      isAdmin: false,
+    },
+
+    {
+      email: "segredodavida88@gmail.com",
+      senha: "123456",
+      plano: "free",
+      isAdmin: false,
+    },
+  ];
+
+  /* ======================================================
+     LOGIN
+  ====================================================== */
 
   function entrar() {
 
     if (!email || !senha) {
 
-      alert(
-        "Preencha email e senha."
-      );
+      alert("Preencha email e senha.");
 
       return;
     }
 
+    const usuarioEncontrado =
+      usuarios.find(
+        (u) =>
+          u.email === email &&
+          u.senha === senha
+      );
+
+    if (!usuarioEncontrado) {
+
+      alert("Email ou senha inválidos.");
+
+      return;
+    }
+
+    setUsuario(usuarioEncontrado);
+
     setLogado(true);
+  }
+
+  /* ======================================================
+     LOGOUT
+  ====================================================== */
+
+  function sair() {
+
+    setLogado(false);
+
+    setUsuario(null);
+
+    setEmail("");
+
+    setSenha("");
   }
 
   /* ======================================================
@@ -33,11 +93,18 @@ export default function App() {
 
   if (logado) {
 
-    return <AppInterno />;
+    return (
+
+      <AppInterno
+        usuario={usuario}
+        sair={sair}
+      />
+
+    );
   }
 
   /* ======================================================
-     LOGIN
+     LOGIN SCREEN
   ====================================================== */
 
   return (
@@ -59,9 +126,7 @@ export default function App() {
           placeholder="Email"
           value={email}
           onChange={(e) =>
-            setEmail(
-              e.target.value
-            )
+            setEmail(e.target.value)
           }
           style={styles.input}
         />
@@ -71,9 +136,7 @@ export default function App() {
           placeholder="Senha"
           value={senha}
           onChange={(e) =>
-            setSenha(
-              e.target.value
-            )
+            setSenha(e.target.value)
           }
           style={styles.input}
         />

@@ -7,10 +7,15 @@ import AppInterno from "./AppInterno";
 
 export default function App() {
 
+  /* ======================================================
+     STATES
+  ====================================================== */
+
   const [logado, setLogado] =
     useState(false);
 
-  const [usuarioAtual, setUsuarioAtual] =
+  const [usuarioAtual,
+    setUsuarioAtual] =
     useState(null);
 
   const [email, setEmail] =
@@ -18,6 +23,10 @@ export default function App() {
 
   const [senha, setSenha] =
     useState("");
+
+  const [carregandoSessao,
+    setCarregandoSessao] =
+    useState(true);
 
   /* ======================================================
      USUÁRIOS
@@ -87,39 +96,62 @@ export default function App() {
     try {
 
       const usuarioSalvo =
-        JSON.parse(
-          localStorage.getItem(
-            "usuario"
-          )
+        localStorage.getItem(
+          "usuario"
         );
 
-      if (
-        usuarioSalvo &&
-        usuarioSalvo.email
-      ) {
+      if (!usuarioSalvo) {
 
-        const usuarioValido =
-          usuarios.find(
-            (u) =>
-              u.email ===
-              usuarioSalvo.email
-          );
+        setCarregandoSessao(false);
 
-        if (usuarioValido) {
-
-          setUsuarioAtual(
-            usuarioValido
-          );
-
-          setLogado(true);
-
-        } else {
-
-          localStorage.removeItem(
-            "usuario"
-          );
-        }
+        return;
       }
+
+      const usuarioParseado =
+        JSON.parse(usuarioSalvo);
+
+      const usuarioValido =
+        usuarios.find(
+          (u) =>
+            u.email ===
+            usuarioParseado.email
+        );
+
+      if (!usuarioValido) {
+
+        localStorage.removeItem(
+          "usuario"
+        );
+
+        setUsuarioAtual(null);
+
+        setLogado(false);
+
+        setCarregandoSessao(false);
+
+        return;
+      }
+
+      const sessaoLimpa = {
+
+        email:
+          usuarioValido.email,
+
+        admin:
+          usuarioValido.admin,
+
+        premium:
+          usuarioValido.premium,
+
+        plano:
+          usuarioValido.plano,
+      };
+
+      setUsuarioAtual(
+        sessaoLimpa
+      );
+
+      setLogado(true);
 
     } catch (erro) {
 
@@ -128,6 +160,14 @@ export default function App() {
       localStorage.removeItem(
         "usuario"
       );
+
+      setUsuarioAtual(null);
+
+      setLogado(false);
+
+    } finally {
+
+      setCarregandoSessao(false);
     }
 
   }, []);
@@ -158,11 +198,31 @@ export default function App() {
       return;
     }
 
+    /* =========================================
+       LIMPA SESSÃO ANTERIOR
+    ========================================= */
+
+    setUsuarioAtual(null);
+
+    setLogado(false);
+
+    localStorage.removeItem(
+      "usuario"
+    );
+
+    sessionStorage.clear();
+
+    /* =========================================
+       PROCURA USUÁRIO
+    ========================================= */
+
     const usuarioEncontrado =
       usuarios.find(
         (usuario) =>
+
           usuario.email ===
             emailLimpo &&
+
           usuario.senha ===
             senhaLimpa
       );
@@ -177,12 +237,10 @@ export default function App() {
     }
 
     /* =========================================
-       LIMPA SESSÃO ANTIGA
+       NOVA SESSÃO SEGURA
     ========================================= */
 
-    localStorage.clear();
-
-    const sessaoSegura = {
+    const novaSessao = {
 
       email:
         usuarioEncontrado.email,
@@ -205,19 +263,31 @@ export default function App() {
     localStorage.setItem(
       "usuario",
       JSON.stringify(
-        sessaoSegura
+        novaSessao
       )
     );
 
+    /* =========================================
+       ATUALIZA ESTADO
+    ========================================= */
+
     setUsuarioAtual(
-      sessaoSegura
+      novaSessao
     );
 
     setLogado(true);
+
+    /* =========================================
+       LIMPA INPUTS
+    ========================================= */
+
+    setEmail("");
+
+    setSenha("");
   }
 
   /* ======================================================
-     LOGOUT GLOBAL
+     LOGOUT
   ====================================================== */
 
   function sairSistema() {
@@ -236,6 +306,43 @@ export default function App() {
   }
 
   /* ======================================================
+     CARREGANDO
+  ====================================================== */
+
+  if (carregandoSessao) {
+
+    return (
+
+      <div
+        style={{
+
+          height: "100vh",
+
+          display: "flex",
+
+          justifyContent:
+            "center",
+
+          alignItems:
+            "center",
+
+          background:
+            "#020617",
+
+          color: "white",
+
+          fontSize: "22px",
+
+          fontFamily:
+            "Arial",
+        }}
+      >
+        Carregando NeuroMapa360...
+      </div>
+    );
+  }
+
+  /* ======================================================
      APP INTERNO
   ====================================================== */
 
@@ -245,8 +352,12 @@ export default function App() {
   ) {
 
     return (
+
       <AppInterno
-        usuario={usuarioAtual}
+        usuario={
+          usuarioAtual
+        }
+
         onLogout={
           sairSistema
         }
@@ -274,30 +385,39 @@ export default function App() {
 
         <input
           type="email"
+
           placeholder="Email"
+
           value={email}
+
           onChange={(e) =>
             setEmail(
               e.target.value
             )
           }
+
           style={styles.input}
         />
 
         <input
           type="password"
+
           placeholder="Senha"
+
           value={senha}
+
           onChange={(e) =>
             setSenha(
               e.target.value
             )
           }
+
           style={styles.input}
         />
 
         <button
           style={styles.button}
+
           onClick={entrar}
         >
           Entrar

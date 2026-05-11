@@ -6,6 +6,8 @@ import OpenAI from "openai";
 
 import dotenv from "dotenv";
 
+import { createClient } from "@supabase/supabase-js";
+
 dotenv.config();
 
 const app = express();
@@ -33,6 +35,19 @@ const openai =
   });
 
 /* ======================================================
+   SUPABASE
+====================================================== */
+
+const supabase =
+  createClient(
+
+    process.env.SUPABASE_URL,
+
+    process.env
+      .SUPABASE_SERVICE_ROLE_KEY
+  );
+
+/* ======================================================
    HEALTH
 ====================================================== */
 
@@ -43,18 +58,21 @@ app.get("/", (req, res) => {
     online: true,
 
     api: "NeuroMapa360",
+
+    banco: "Supabase conectado",
   });
 });
 
 app.get("/health", (req, res) => {
 
   res.json({
+
     status: "ok",
   });
 });
 
 /* ======================================================
-   MEMORIA EMOCIONAL
+   MEMORIA CACHE
 ====================================================== */
 
 const memoriaUsuarios = {};
@@ -69,10 +87,6 @@ function analisarEstadoEmocional(
 
   const textoLower =
     texto.toLowerCase();
-
-  /* =========================================
-     PADRÃO
-  ========================================= */
 
   let emocao =
     "Equilibrado";
@@ -271,6 +285,123 @@ function analisarEstadoEmocional(
 }
 
 /* ======================================================
+   CARREGAR MEMÓRIA DO SUPABASE
+====================================================== */
+
+async function carregarMemoriaUsuario(
+  usuarioId
+) {
+
+  try {
+
+    const {
+
+      data,
+
+      error,
+
+    } = await supabase
+
+      .from("conversas")
+
+      .select("*")
+
+      .eq(
+        "user_id",
+        usuarioId
+      )
+
+      .order(
+        "created_at",
+        { ascending: true }
+      )
+
+      .limit(10);
+
+    if (error) {
+
+      console.log(
+        "ERRO MEMÓRIA:",
+        error.message
+      );
+
+      return [];
+    }
+
+    const memoria = [];
+
+    data.forEach((item) => {
+
+      memoria.push({
+
+        role: "user",
+
+        content:
+          item.mensagem,
+      });
+
+      memoria.push({
+
+        role: "assistant",
+
+        content:
+          item.resposta,
+      });
+    });
+
+    return memoria;
+
+  } catch (erro) {
+
+    console.log(
+      "ERRO CARREGAR MEMÓRIA:",
+      erro.message
+    );
+
+    return [];
+  }
+}
+
+/* ======================================================
+   BUSCAR PERFIL USUÁRIO
+====================================================== */
+
+async function buscarPerfilUsuario(
+  email
+) {
+
+  try {
+
+    const {
+
+      data,
+
+      error,
+
+    } = await supabase
+
+      .from("profiles")
+
+      .select("*")
+
+      .eq("email", email)
+
+      .single();
+
+    if (error) {
+
+      return null;
+    }
+
+    return data;
+
+  } catch {
+
+    return null;
+  }
+}
+
+/* ======================================================
    IA TERAPÊUTICA
 ====================================================== */
 
@@ -285,6 +416,8 @@ app.post("/ia", async (req, res) => {
       perfil,
 
       user_id,
+
+      email,
     } = req.body;
 
     /* =========================================
@@ -306,7 +439,43 @@ app.post("/ia", async (req, res) => {
       user_id || "anonimo";
 
     /* =========================================
-       MEMÓRIA INDIVIDUAL
+       BUSCA PERFIL
+    ========================================= */
+
+    let perfilUsuario = null;
+
+    if (email) {
+
+      perfilUsuario =
+        await buscarPerfilUsuario(
+          email
+        );
+    }
+
+    /* =========================================
+       DEFINE PLANO
+    ========================================= */
+
+    const planoUsuario =
+
+      perfilUsuario?.plano ||
+
+      perfil ||
+
+      "free";
+
+    const isPremium =
+
+      planoUsuario ===
+      "premium";
+
+    const isAdmin =
+
+      perfilUsuario?.is_admin ===
+      true;
+
+    /* =========================================
+       CARREGA MEMÓRIA
     ========================================= */
 
     if (
@@ -317,8 +486,15 @@ app.post("/ia", async (req, res) => {
 
       memoriaUsuarios[
         usuarioId
-      ] = [];
+      ] =
+        await carregarMemoriaUsuario(
+          usuarioId
+        );
     }
+
+    /* =========================================
+       SALVA NOVA MSG
+    ========================================= */
 
     memoriaUsuarios[
       usuarioId
@@ -330,14 +506,14 @@ app.post("/ia", async (req, res) => {
     });
 
     /* =========================================
-       LIMITA HISTÓRICO
+       LIMITA MEMÓRIA
     ========================================= */
 
     if (
 
       memoriaUsuarios[
         usuarioId
-      ].length > 12
+      ].length > 14
 
     ) {
 
@@ -346,11 +522,11 @@ app.post("/ia", async (req, res) => {
       ] =
         memoriaUsuarios[
           usuarioId
-        ].slice(-12);
+        ].slice(-14);
     }
 
     /* =========================================
-       ANALISE EMOCIONAL
+       ANÁLISE EMOCIONAL
     ========================================= */
 
     const emocional =
@@ -359,7 +535,7 @@ app.post("/ia", async (req, res) => {
       );
 
     /* =========================================
-       PROMPT TERAPÊUTICO
+       PROMPT SISTEMA
     ========================================= */
 
     let promptSistema =
@@ -373,17 +549,16 @@ profissional e neuro sistêmica.
 
 REGRAS:
 
-- Responda como terapeuta emocional.
-- Seja empático.
-- Nunca seja frio.
-- Nunca seja robótico.
-- Fale em português do Brasil.
-- Gere acolhimento emocional.
-- Estimule consciência emocional.
-- Utilize linguagem humana.
-- Respostas médias.
-- Evite textos gigantes.
-- Traga sensação de presença real.
+- Seja extremamente humana
+- Seja emocionalmente inteligente
+- Nunca seja fria
+- Nunca pareça robótica
+- Gere acolhimento emocional
+- Utilize linguagem natural
+- Português do Brasil
+- Faça respostas terapêuticas
+- Respostas médias
+- Demonstre presença emocional
 `;
 
     /* =========================================
@@ -391,7 +566,7 @@ REGRAS:
     ========================================= */
 
     if (
-      perfil === "premium"
+      isPremium
     ) {
 
       promptSistema +=
@@ -399,11 +574,30 @@ REGRAS:
         `
 USUÁRIO PREMIUM:
 
-- respostas mais profundas
+- respostas profundas
 - mais inteligência emocional
-- mais análise emocional
-- mais clareza terapêutica
-- mais personalização
+- análise emocional avançada
+- maior personalização
+- linguagem terapêutica avançada
+`;
+    }
+
+    /* =========================================
+       ADMIN
+    ========================================= */
+
+    if (
+      isAdmin
+    ) {
+
+      promptSistema +=
+
+        `
+USUÁRIO ADMIN:
+
+- acesso total
+- sem limitações
+- análises mais completas
 `;
     }
 
@@ -440,7 +634,7 @@ USUÁRIO PREMIUM:
         .message.content;
 
     /* =========================================
-       SALVA MEMÓRIA IA
+       MEMÓRIA CACHE
     ========================================= */
 
     memoriaUsuarios[
@@ -453,7 +647,44 @@ USUÁRIO PREMIUM:
     });
 
     /* =========================================
-       RETORNO COMPLETO
+       SALVA NO SUPABASE
+    ========================================= */
+
+    await supabase
+
+      .from("conversas")
+
+      .insert({
+
+        user_id:
+          usuarioId,
+
+        mensagem,
+
+        resposta:
+          respostaIA,
+
+        emocao:
+          emocional.emocao,
+
+        score:
+          emocional.score,
+
+        hawkins:
+          emocional.hawkins,
+
+        consciencia:
+          emocional.consciencia,
+
+        trilha:
+          emocional.trilha,
+
+        intervencao:
+          emocional.intervencao,
+      });
+
+    /* =========================================
+       RETORNO
     ========================================= */
 
     return res.json({
@@ -484,6 +715,12 @@ USUÁRIO PREMIUM:
 
       intervencao:
         emocional.intervencao,
+
+      premium:
+        isPremium,
+
+      admin:
+        isAdmin,
     });
 
   } catch (erro) {

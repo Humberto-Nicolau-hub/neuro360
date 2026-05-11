@@ -4,7 +4,10 @@ import React, {
   useRef,
 } from "react";
 
-export default function AppInterno() {
+export default function AppInterno({
+  usuario,
+  onLogout,
+}) {
 
   /* ======================================================
      STATES
@@ -37,7 +40,8 @@ export default function AppInterno() {
       emocao: "Equilibrado",
     });
 
-  const finalChatRef = useRef(null);
+  const finalChatRef =
+    useRef(null);
 
   /* ======================================================
      API
@@ -46,15 +50,6 @@ export default function AppInterno() {
   const API_URL =
     process.env.REACT_APP_API_URL ||
     "https://neuro360-tkyx.onrender.com";
-
-  /* ======================================================
-     USUARIO LOGADO
-  ====================================================== */
-
-  const usuario =
-    JSON.parse(
-      localStorage.getItem("usuario")
-    ) || {};
 
   /* ======================================================
      AUTO SCROLL
@@ -78,6 +73,7 @@ export default function AppInterno() {
       e.key === "Enter" &&
       !loading
     ) {
+
       enviarMensagem();
     }
   }
@@ -92,11 +88,16 @@ export default function AppInterno() {
       estadoEmocional.emocao
         ?.toLowerCase();
 
+    /* =========================================
+       TRISTEZA
+    ========================================= */
+
     if (
       emocao?.includes("triste")
     ) {
 
       return {
+
         sidebar:
           "linear-gradient(180deg,#172554,#1e3a8a)",
 
@@ -105,11 +106,16 @@ export default function AppInterno() {
       };
     }
 
+    /* =========================================
+       ANSIEDADE
+    ========================================= */
+
     if (
       emocao?.includes("ans")
     ) {
 
       return {
+
         sidebar:
           "linear-gradient(180deg,#3f1d0d,#7c2d12)",
 
@@ -118,11 +124,16 @@ export default function AppInterno() {
       };
     }
 
+    /* =========================================
+       RAIVA
+    ========================================= */
+
     if (
       emocao?.includes("raiva")
     ) {
 
       return {
+
         sidebar:
           "linear-gradient(180deg,#450a0a,#7f1d1d)",
 
@@ -131,7 +142,30 @@ export default function AppInterno() {
       };
     }
 
+    /* =========================================
+       EVOLUÇÃO
+    ========================================= */
+
+    if (
+      emocao?.includes("evol")
+    ) {
+
+      return {
+
+        sidebar:
+          "linear-gradient(180deg,#0f172a,#1e40af)",
+
+        card:
+          "linear-gradient(90deg,#2563eb,#60a5fa)",
+      };
+    }
+
+    /* =========================================
+       PADRÃO
+    ========================================= */
+
     return {
+
       sidebar:
         "linear-gradient(180deg,#0f172a,#1e293b)",
 
@@ -192,7 +226,9 @@ export default function AppInterno() {
                 textoUsuario,
 
               perfil:
-                "terapeutico",
+                usuario?.premium
+                  ? "premium"
+                  : "terapeutico",
 
               user_id:
                 usuario?.email ||
@@ -212,8 +248,12 @@ export default function AppInterno() {
         await resposta.json();
 
       /* =========================================
-         HISTORICO
+         RESPOSTA IA
       ========================================= */
+
+      const respostaIA =
+        data?.resposta ||
+        "Não consegui responder agora.";
 
       setHistorico((prev) => [
 
@@ -221,12 +261,200 @@ export default function AppInterno() {
 
         {
           tipo: "ia",
-
-          texto:
-            data?.resposta ||
-            "Não consegui responder agora.",
+          texto: respostaIA,
         },
       ]);
+
+      /* =========================================
+         ANALISE EMOCIONAL
+      ========================================= */
+
+      const textoAnalise =
+        (
+          textoUsuario +
+          " " +
+          respostaIA
+        ).toLowerCase();
+
+      let emocao =
+        "Equilibrado";
+
+      let score = 82;
+
+      let hawkins = 540;
+
+      let consciencia =
+        "Expansão";
+
+      let trilha =
+        "Reequilíbrio";
+
+      let intervencao =
+        "Respiração guiada";
+
+      /* =========================================
+         ANSIEDADE
+      ========================================= */
+
+      if (
+
+        textoAnalise.includes(
+          "ansioso"
+        ) ||
+
+        textoAnalise.includes(
+          "ansiedade"
+        ) ||
+
+        textoAnalise.includes(
+          "medo"
+        ) ||
+
+        textoAnalise.includes(
+          "nervoso"
+        )
+
+      ) {
+
+        emocao =
+          "Ansiedade";
+
+        score = 42;
+
+        hawkins = 125;
+
+        consciencia =
+          "Contração";
+
+        trilha =
+          "Acalmamento Neural";
+
+        intervencao =
+          "Respiração profunda";
+      }
+
+      /* =========================================
+         TRISTEZA
+      ========================================= */
+
+      if (
+
+        textoAnalise.includes(
+          "triste"
+        ) ||
+
+        textoAnalise.includes(
+          "depress"
+        ) ||
+
+        textoAnalise.includes(
+          "sozinho"
+        ) ||
+
+        textoAnalise.includes(
+          "desanimado"
+        )
+
+      ) {
+
+        emocao =
+          "Tristeza";
+
+        score = 28;
+
+        hawkins = 75;
+
+        consciencia =
+          "Desmotivação";
+
+        trilha =
+          "Reconexão Emocional";
+
+        intervencao =
+          "Acolhimento terapêutico";
+      }
+
+      /* =========================================
+         RAIVA
+      ========================================= */
+
+      if (
+
+        textoAnalise.includes(
+          "raiva"
+        ) ||
+
+        textoAnalise.includes(
+          "ódio"
+        ) ||
+
+        textoAnalise.includes(
+          "irritado"
+        ) ||
+
+        textoAnalise.includes(
+          "estresse"
+        )
+
+      ) {
+
+        emocao =
+          "Raiva";
+
+        score = 35;
+
+        hawkins = 150;
+
+        consciencia =
+          "Reatividade";
+
+        trilha =
+          "Descompressão";
+
+        intervencao =
+          "Relaxamento neural";
+      }
+
+      /* =========================================
+         EVOLUÇÃO
+      ========================================= */
+
+      if (
+
+        textoAnalise.includes(
+          "foco"
+        ) ||
+
+        textoAnalise.includes(
+          "clareza"
+        ) ||
+
+        textoAnalise.includes(
+          "melhor"
+        ) ||
+
+        textoAnalise.includes(
+          "evoluindo"
+        )
+
+      ) {
+
+        emocao =
+          "Evolução";
+
+        score = 91;
+
+        hawkins = 700;
+
+        consciencia =
+          "Alta percepção";
+
+        trilha =
+          "Expansão Cognitiva";
+
+        intervencao =
+          "Potencialização mental";
+      }
 
       /* =========================================
          DASHBOARD DINAMICO
@@ -234,34 +462,17 @@ export default function AppInterno() {
 
       setEstadoEmocional({
 
-        score:
-          data?.score_emocional ||
-          82,
+        score,
 
-        hawkins:
-          data
-            ?.frequencia_hawkins
-            ?.frequencia || 540,
+        hawkins,
 
-        consciencia:
-          data
-            ?.nivel_consciencia ||
-          "Expansão",
+        consciencia,
 
-        trilha:
-          data
-            ?.trilha_terapeutica ||
-          "Reequilíbrio",
+        trilha,
 
-        intervencao:
-          data?.intervencao ||
-          "Respiração guiada",
+        intervencao,
 
-        emocao:
-          data
-            ?.emocao_detectada
-            ?.emocao ||
-          "Equilibrado",
+        emocao,
       });
 
     } catch (erro) {
@@ -289,6 +500,13 @@ export default function AppInterno() {
   ====================================================== */
 
   function sair() {
+
+    if (onLogout) {
+
+      onLogout();
+
+      return;
+    }
 
     localStorage.clear();
 
@@ -365,34 +583,46 @@ export default function AppInterno() {
           IA Terapêutica Ativa ✅
         </div>
 
-        <button
-          style={{
+        {/* =========================================
+           BOTAO ADMIN
+        ========================================= */}
 
-            background:
-              cores.card,
+        {usuario?.admin && (
 
-            border: "none",
+          <button
+            style={{
 
-            padding: "18px",
+              background:
+                cores.card,
 
-            borderRadius: "12px",
+              border: "none",
 
-            color: "white",
+              padding: "18px",
 
-            fontWeight: "bold",
+              borderRadius:
+                "12px",
 
-            marginBottom: "20px",
+              color: "white",
 
-            cursor: "pointer",
+              fontWeight:
+                "bold",
 
-            boxShadow:
-              "0 0 20px rgba(0,0,0,0.2)",
-          }}
-        >
-          ADMIN 👑
-        </button>
+              marginBottom:
+                "20px",
 
-        {/* STATUS */}
+              cursor: "pointer",
+
+              boxShadow:
+                "0 0 20px rgba(0,0,0,0.2)",
+            }}
+          >
+            ADMIN 👑
+          </button>
+        )}
+
+        {/* =========================================
+           STATUS
+        ========================================= */}
 
         <div
           style={{
@@ -433,7 +663,9 @@ export default function AppInterno() {
           <div>
             🌎 Consciência:
             {" "}
-            {estadoEmocional.consciencia}
+            {
+              estadoEmocional.consciencia
+            }
           </div>
 
           <div>
@@ -445,12 +677,26 @@ export default function AppInterno() {
           <div>
             ⚡ Intervenção:
             {" "}
-            {estadoEmocional.intervencao}
+            {
+              estadoEmocional.intervencao
+            }
+          </div>
+
+          <div>
+            👤 Plano:
+            {" "}
+            {
+              usuario?.premium
+                ? "Premium"
+                : "Free"
+            }
           </div>
 
         </div>
 
-        {/* BOTAO SAIR */}
+        {/* =========================================
+           SAIR
+        ========================================= */}
 
         <button
           onClick={sair}
@@ -466,11 +712,13 @@ export default function AppInterno() {
 
             padding: "15px",
 
-            borderRadius: "12px",
+            borderRadius:
+              "12px",
 
             color: "white",
 
-            fontWeight: "bold",
+            fontWeight:
+              "bold",
 
             cursor: "pointer",
 

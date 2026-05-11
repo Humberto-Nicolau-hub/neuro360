@@ -13,11 +13,60 @@ export default function App() {
   const [senha, setSenha] =
     useState("");
 
-  const ADMIN_EMAIL =
-    "contatobetaoofertas@gmail.com";
+  /* ======================================================
+     USUÁRIOS
+  ====================================================== */
 
-  const ADMIN_SENHA =
-    "123456";
+  const usuarios = [
+
+    {
+      email:
+        "contatobetaoofertas@gmail.com",
+
+      senha: "123456",
+
+      admin: true,
+
+      premium: true,
+    },
+
+    {
+      email:
+        "ebony66@gmail.com",
+
+      senha: "123456",
+
+      admin: false,
+
+      premium: false,
+    },
+
+    {
+      email:
+        "segredodavida88@gmail.com",
+
+      senha: "123456",
+
+      admin: false,
+
+      premium: false,
+    },
+
+    {
+      email:
+        "segurosbrokerdf@gmail.com",
+
+      senha: "123456",
+
+      admin: false,
+
+      premium: false,
+    },
+  ];
+
+  /* ======================================================
+     LOGIN
+  ====================================================== */
 
   function entrar() {
 
@@ -41,10 +90,16 @@ export default function App() {
       return;
     }
 
-    if (
-      emailLimpo !== ADMIN_EMAIL ||
-      senhaLimpa !== ADMIN_SENHA
-    ) {
+    const usuarioEncontrado =
+      usuarios.find(
+        (usuario) =>
+          usuario.email ===
+            emailLimpo &&
+          usuario.senha ===
+            senhaLimpa
+      );
+
+    if (!usuarioEncontrado) {
 
       alert(
         "Email ou senha inválidos."
@@ -55,11 +110,9 @@ export default function App() {
 
     localStorage.setItem(
       "usuario",
-      JSON.stringify({
-        email: emailLimpo,
-        premium: true,
-        admin: true,
-      })
+      JSON.stringify(
+        usuarioEncontrado
+      )
     );
 
     setLogado(true);
@@ -234,8 +287,6 @@ const styles = {
     fontSize: 16,
 
     cursor: "pointer",
-
-    transition: "0.3s",
   },
 
   secondaryButton: {

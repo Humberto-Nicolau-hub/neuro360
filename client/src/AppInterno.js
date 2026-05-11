@@ -22,6 +22,15 @@ export default function AppInterno() {
     "https://neuro360-tkyx.onrender.com";
 
   /* ======================================================
+     USUARIO LOGADO
+  ====================================================== */
+
+  const usuario =
+    JSON.parse(
+      localStorage.getItem("usuario")
+    ) || {};
+
+  /* ======================================================
      AUTO SCROLL
   ====================================================== */
 
@@ -32,6 +41,17 @@ export default function AppInterno() {
     });
 
   }, [historico, loading]);
+
+  /* ======================================================
+     ENTER
+  ====================================================== */
+
+  function handleKeyDown(e) {
+
+    if (e.key === "Enter") {
+      enviarMensagem();
+    }
+  }
 
   /* ======================================================
      ENVIAR MENSAGEM
@@ -70,11 +90,24 @@ export default function AppInterno() {
           },
 
           body: JSON.stringify({
+
             mensagem: textoUsuario,
+
             perfil: "terapeutico",
+
+            user_id:
+              usuario?.email ||
+              "anonimo",
           }),
         }
       );
+
+      if (!resposta.ok) {
+
+        throw new Error(
+          "Erro servidor"
+        );
+      }
 
       const data =
         await resposta.json();
@@ -85,12 +118,14 @@ export default function AppInterno() {
           tipo: "ia",
 
           texto:
-            data.resposta ||
+            data?.resposta ||
             "Não consegui responder agora.",
         },
       ]);
 
     } catch (erro) {
+
+      console.error(erro);
 
       setHistorico((prev) => [
         ...prev,
@@ -212,13 +247,34 @@ export default function AppInterno() {
             lineHeight: "2",
           }}
         >
-          <div>🧠 Estado Cognitivo</div>
-          <div>📄 Score: 82</div>
-          <div>🔥 Hawkins: 540</div>
-          <div>🌎 Consciência: Expansão</div>
-          <div>🛤️ Trilha: Reequilíbrio</div>
-          <div>⚙️ Protocolo: NeuroReset</div>
-          <div>⚡ Intervenção: Respiração guiada</div>
+          <div>
+            🧠 Estado Cognitivo
+          </div>
+
+          <div>
+            📄 Score: 82
+          </div>
+
+          <div>
+            🔥 Hawkins: 540
+          </div>
+
+          <div>
+            🌎 Consciência: Expansão
+          </div>
+
+          <div>
+            🛤️ Trilha: Reequilíbrio
+          </div>
+
+          <div>
+            ⚙️ Protocolo: NeuroReset
+          </div>
+
+          <div>
+            ⚡ Intervenção:
+            Respiração guiada
+          </div>
         </div>
 
         <button
@@ -302,6 +358,9 @@ export default function AppInterno() {
 
                   whiteSpace: "pre-wrap",
 
+                  boxShadow:
+                    "0 0 20px rgba(0,0,0,0.2)",
+
                   background:
                     msg.tipo === "usuario"
                       ? "linear-gradient(90deg,#22c55e,#4ade80)"
@@ -321,13 +380,13 @@ export default function AppInterno() {
                 color: "#4ade80",
 
                 marginTop: "10px",
+
+                fontSize: "16px",
               }}
             >
               IA analisando...
             </div>
           )}
-
-          {/* FINAL DO CHAT */}
 
           <div ref={finalChatRef} />
 
@@ -345,6 +404,8 @@ export default function AppInterno() {
 
           <input
             value={mensagem}
+
+            onKeyDown={handleKeyDown}
 
             onChange={(e) =>
               setMensagem(
@@ -377,6 +438,8 @@ export default function AppInterno() {
           <button
             onClick={enviarMensagem}
 
+            disabled={loading}
+
             style={{
               background:
                 "linear-gradient(90deg,#22c55e,#4ade80)",
@@ -392,6 +455,9 @@ export default function AppInterno() {
               fontWeight: "bold",
 
               cursor: "pointer",
+
+              opacity:
+                loading ? 0.7 : 1,
             }}
           >
             Enviar

@@ -7,7 +7,7 @@ export default function AppInterno() {
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
-    "https://backend-neuro360.onrender.com";
+    "https://neuro360-tkyx.onrender.com";
 
   async function enviarMensagem() {
     if (!mensagem.trim()) return;

@@ -6,6 +6,10 @@ import React, {
 
 export default function AppInterno() {
 
+  /* ======================================================
+     STATES
+  ====================================================== */
+
   const [mensagem, setMensagem] =
     useState("");
 
@@ -15,7 +19,29 @@ export default function AppInterno() {
   const [loading, setLoading] =
     useState(false);
 
+  const [estadoEmocional,
+    setEstadoEmocional] =
+    useState({
+
+      score: 82,
+
+      hawkins: 540,
+
+      consciencia: "Expansão",
+
+      trilha: "Reequilíbrio",
+
+      intervencao:
+        "Respiração guiada",
+
+      emocao: "Equilibrado",
+    });
+
   const finalChatRef = useRef(null);
+
+  /* ======================================================
+     API
+  ====================================================== */
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
@@ -48,10 +74,74 @@ export default function AppInterno() {
 
   function handleKeyDown(e) {
 
-    if (e.key === "Enter") {
+    if (
+      e.key === "Enter" &&
+      !loading
+    ) {
       enviarMensagem();
     }
   }
+
+  /* ======================================================
+     COR DINAMICA
+  ====================================================== */
+
+  function obterCorEmocional() {
+
+    const emocao =
+      estadoEmocional.emocao
+        ?.toLowerCase();
+
+    if (
+      emocao?.includes("triste")
+    ) {
+
+      return {
+        sidebar:
+          "linear-gradient(180deg,#172554,#1e3a8a)",
+
+        card:
+          "linear-gradient(90deg,#1d4ed8,#3b82f6)",
+      };
+    }
+
+    if (
+      emocao?.includes("ans")
+    ) {
+
+      return {
+        sidebar:
+          "linear-gradient(180deg,#3f1d0d,#7c2d12)",
+
+        card:
+          "linear-gradient(90deg,#ea580c,#fb923c)",
+      };
+    }
+
+    if (
+      emocao?.includes("raiva")
+    ) {
+
+      return {
+        sidebar:
+          "linear-gradient(180deg,#450a0a,#7f1d1d)",
+
+        card:
+          "linear-gradient(90deg,#dc2626,#ef4444)",
+      };
+    }
+
+    return {
+      sidebar:
+        "linear-gradient(180deg,#0f172a,#1e293b)",
+
+      card:
+        "linear-gradient(90deg,#2563eb,#38bdf8)",
+    };
+  }
+
+  const cores =
+    obterCorEmocional();
 
   /* ======================================================
      ENVIAR MENSAGEM
@@ -59,10 +149,15 @@ export default function AppInterno() {
 
   async function enviarMensagem() {
 
-    if (!mensagem.trim()) return;
+    if (
+      !mensagem.trim() ||
+      loading
+    ) return;
 
     const novaMensagem = {
+
       tipo: "usuario",
+
       texto: mensagem,
     };
 
@@ -71,7 +166,8 @@ export default function AppInterno() {
       novaMensagem,
     ]);
 
-    const textoUsuario = mensagem;
+    const textoUsuario =
+      mensagem;
 
     setMensagem("");
 
@@ -79,28 +175,31 @@ export default function AppInterno() {
 
     try {
 
-      const resposta = await fetch(
-        `${API_URL}/ia`,
-        {
-          method: "POST",
+      const resposta =
+        await fetch(
+          `${API_URL}/ia`,
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-          body: JSON.stringify({
+            body: JSON.stringify({
 
-            mensagem: textoUsuario,
+              mensagem:
+                textoUsuario,
 
-            perfil: "terapeutico",
+              perfil:
+                "terapeutico",
 
-            user_id:
-              usuario?.email ||
-              "anonimo",
-          }),
-        }
-      );
+              user_id:
+                usuario?.email ||
+                "anonimo",
+            }),
+          }
+        );
 
       if (!resposta.ok) {
 
@@ -112,8 +211,14 @@ export default function AppInterno() {
       const data =
         await resposta.json();
 
+      /* =========================================
+         HISTORICO
+      ========================================= */
+
       setHistorico((prev) => [
+
         ...prev,
+
         {
           tipo: "ia",
 
@@ -123,12 +228,50 @@ export default function AppInterno() {
         },
       ]);
 
+      /* =========================================
+         DASHBOARD DINAMICO
+      ========================================= */
+
+      setEstadoEmocional({
+
+        score:
+          data?.score_emocional ||
+          82,
+
+        hawkins:
+          data
+            ?.frequencia_hawkins
+            ?.frequencia || 540,
+
+        consciencia:
+          data
+            ?.nivel_consciencia ||
+          "Expansão",
+
+        trilha:
+          data
+            ?.trilha_terapeutica ||
+          "Reequilíbrio",
+
+        intervencao:
+          data?.intervencao ||
+          "Respiração guiada",
+
+        emocao:
+          data
+            ?.emocao_detectada
+            ?.emocao ||
+          "Equilibrado",
+      });
+
     } catch (erro) {
 
       console.error(erro);
 
       setHistorico((prev) => [
+
         ...prev,
+
         {
           tipo: "ia",
 
@@ -160,6 +303,7 @@ export default function AppInterno() {
 
     <div
       style={{
+
         display: "flex",
 
         height: "100vh",
@@ -177,10 +321,11 @@ export default function AppInterno() {
 
       <div
         style={{
+
           width: "320px",
 
           background:
-            "rgba(255,255,255,0.05)",
+            cores.sidebar,
 
           padding: "25px",
 
@@ -190,11 +335,15 @@ export default function AppInterno() {
           display: "flex",
 
           flexDirection: "column",
+
+          transition:
+            "all 0.5s ease",
         }}
       >
 
         <h1
           style={{
+
             fontSize: "52px",
 
             marginBottom: "20px",
@@ -205,6 +354,7 @@ export default function AppInterno() {
 
         <div
           style={{
+
             color: "#4ade80",
 
             marginBottom: "20px",
@@ -217,8 +367,9 @@ export default function AppInterno() {
 
         <button
           style={{
+
             background:
-              "linear-gradient(90deg,#2563eb,#38bdf8)",
+              cores.card,
 
             border: "none",
 
@@ -233,56 +384,83 @@ export default function AppInterno() {
             marginBottom: "20px",
 
             cursor: "pointer",
+
+            boxShadow:
+              "0 0 20px rgba(0,0,0,0.2)",
           }}
         >
           ADMIN 👑
         </button>
 
+        {/* STATUS */}
+
         <div
           style={{
+
             marginTop: "30px",
 
-            opacity: 0.9,
+            opacity: 0.95,
 
             lineHeight: "2",
+
+            background:
+              "rgba(255,255,255,0.05)",
+
+            padding: "20px",
+
+            borderRadius: "16px",
           }}
         >
+
           <div>
-            🧠 Estado Cognitivo
+            🧠 Emoção:
+            {" "}
+            {estadoEmocional.emocao}
           </div>
 
           <div>
-            📄 Score: 82
+            📄 Score:
+            {" "}
+            {estadoEmocional.score}
           </div>
 
           <div>
-            🔥 Hawkins: 540
+            🔥 Hawkins:
+            {" "}
+            {estadoEmocional.hawkins}
           </div>
 
           <div>
-            🌎 Consciência: Expansão
+            🌎 Consciência:
+            {" "}
+            {estadoEmocional.consciencia}
           </div>
 
           <div>
-            🛤️ Trilha: Reequilíbrio
-          </div>
-
-          <div>
-            ⚙️ Protocolo: NeuroReset
+            🛤️ Trilha:
+            {" "}
+            {estadoEmocional.trilha}
           </div>
 
           <div>
             ⚡ Intervenção:
-            Respiração guiada
+            {" "}
+            {estadoEmocional.intervencao}
           </div>
+
         </div>
+
+        {/* BOTAO SAIR */}
 
         <button
           onClick={sair}
+
           style={{
+
             marginTop: "auto",
 
-            background: "#ef4444",
+            background:
+              "linear-gradient(90deg,#ef4444,#fb7185)",
 
             border: "none",
 
@@ -295,6 +473,9 @@ export default function AppInterno() {
             fontWeight: "bold",
 
             cursor: "pointer",
+
+            boxShadow:
+              "0 0 20px rgba(0,0,0,0.2)",
           }}
         >
           SAIR
@@ -306,6 +487,7 @@ export default function AppInterno() {
 
       <div
         style={{
+
           flex: 1,
 
           display: "flex",
@@ -316,8 +498,11 @@ export default function AppInterno() {
         }}
       >
 
+        {/* HISTORICO */}
+
         <div
           style={{
+
             flex: 1,
 
             overflowY: "auto",
@@ -328,43 +513,57 @@ export default function AppInterno() {
           }}
         >
 
-          {historico.map((msg, index) => (
+          {historico.map(
+            (msg, index) => (
 
             <div
               key={index}
+
               style={{
+
                 display: "flex",
 
                 justifyContent:
-                  msg.tipo === "usuario"
+                  msg.tipo ===
+                  "usuario"
                     ? "flex-end"
                     : "flex-start",
 
-                marginBottom: "20px",
+                marginBottom:
+                  "20px",
               }}
             >
 
               <div
                 style={{
+
                   maxWidth: "70%",
 
                   padding: "20px",
 
-                  borderRadius: "18px",
+                  borderRadius:
+                    "18px",
 
                   lineHeight: "1.7",
 
                   fontSize: "18px",
 
-                  whiteSpace: "pre-wrap",
+                  whiteSpace:
+                    "pre-wrap",
 
                   boxShadow:
                     "0 0 20px rgba(0,0,0,0.2)",
 
                   background:
-                    msg.tipo === "usuario"
+                    msg.tipo ===
+                    "usuario"
+
                       ? "linear-gradient(90deg,#22c55e,#4ade80)"
-                      : "linear-gradient(90deg,#1d4ed8,#3b82f6)",
+
+                      : cores.card,
+
+                  transition:
+                    "all 0.5s ease",
                 }}
               >
                 {msg.texto}
@@ -377,6 +576,7 @@ export default function AppInterno() {
 
             <div
               style={{
+
                 color: "#4ade80",
 
                 marginTop: "10px",
@@ -396,6 +596,7 @@ export default function AppInterno() {
 
         <div
           style={{
+
             display: "flex",
 
             gap: "10px",
@@ -405,7 +606,9 @@ export default function AppInterno() {
           <input
             value={mensagem}
 
-            onKeyDown={handleKeyDown}
+            onKeyDown={
+              handleKeyDown
+            }
 
             onChange={(e) =>
               setMensagem(
@@ -415,12 +618,16 @@ export default function AppInterno() {
 
             placeholder="Como você está se sentindo?"
 
+            disabled={loading}
+
             style={{
+
               flex: 1,
 
               padding: "18px",
 
-              borderRadius: "12px",
+              borderRadius:
+                "12px",
 
               border: "none",
 
@@ -436,31 +643,41 @@ export default function AppInterno() {
           />
 
           <button
-            onClick={enviarMensagem}
+            onClick={
+              enviarMensagem
+            }
 
             disabled={loading}
 
             style={{
+
               background:
                 "linear-gradient(90deg,#22c55e,#4ade80)",
 
               border: "none",
 
-              padding: "18px 30px",
+              padding:
+                "18px 30px",
 
-              borderRadius: "12px",
+              borderRadius:
+                "12px",
 
               color: "white",
 
-              fontWeight: "bold",
+              fontWeight:
+                "bold",
 
               cursor: "pointer",
 
               opacity:
-                loading ? 0.7 : 1,
+                loading
+                  ? 0.7
+                  : 1,
             }}
           >
-            Enviar
+            {loading
+              ? "..."
+              : "Enviar"}
           </button>
 
         </div>

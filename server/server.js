@@ -1,10 +1,12 @@
-const express = require("express");
+import express from "express";
 
-const cors = require("cors");
+import cors from "cors";
 
-const OpenAI = require("openai");
+import OpenAI from "openai";
 
-require("dotenv").config();
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 

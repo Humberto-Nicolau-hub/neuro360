@@ -55,7 +55,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 /* ======================================================
-   CORS SEGURO
+   CORS
 ====================================================== */
 
 const allowedOrigins = [
@@ -141,7 +141,7 @@ app.get("/", (req, res) => {
   return res.json({
     status: "online",
     plataforma: "NeuroMapa360",
-    versao: "5.0.0",
+    versao: "5.1.0",
   });
 });
 
@@ -248,10 +248,7 @@ app.get("/admin/dashboard", async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-
-      erro:
-        "Erro dashboard admin",
-
+      erro: "Erro dashboard admin",
       detalhes:
         process.env.NODE_ENV === "development"
           ? error.message
@@ -261,32 +258,10 @@ app.get("/admin/dashboard", async (req, res) => {
 });
 
 /* ======================================================
-   API CHAT COMPATIBILIDADE
+   FUNCAO CENTRAL IA
 ====================================================== */
 
-app.post("/api/chat", async (req, res) => {
-
-  try {
-
-    req.url = "/ia";
-
-    app._router.handle(req, res);
-
-  } catch (error) {
-
-    console.error(error);
-
-    return res.status(500).json({
-      erro: "Erro API CHAT",
-    });
-  }
-});
-
-/* ======================================================
-   IA TERAPEUTICA
-====================================================== */
-
-app.post("/ia", async (req, res) => {
+async function processarIA(req, res) {
 
   try {
 
@@ -306,7 +281,7 @@ app.post("/ia", async (req, res) => {
       user_id || "anonimo";
 
     /* =========================================
-       MEMORIA RECENTE
+       MEMORIA
     ========================================= */
 
     const {
@@ -330,7 +305,7 @@ app.post("/ia", async (req, res) => {
     }
 
     /* =========================================
-       CONTEXTO MEMORIA
+       CONTEXTO
     ========================================= */
 
     const contextoMemoria =
@@ -341,17 +316,12 @@ app.post("/ia", async (req, res) => {
 Emoção: ${m.emocao}
 Intensidade: ${m.intensidade}
 Frequência Hawkins: ${m.frequencia_hawkins}
-Nível Vibracional: ${m.nivel_hawkins}
-
-Usuário:
-${m.mensagem_usuario}
-
-IA:
-${m.resposta_ia}
+Usuário: ${m.mensagem_usuario}
+IA: ${m.resposta_ia}
 `
             )
             .join("\n")
-        : "Sem histórico emocional anterior.";
+        : "Sem histórico emocional.";
 
     /* =========================================
        USUARIO
@@ -375,16 +345,11 @@ ${m.resposta_ia}
         memoria?.length || 0
       );
 
-    if (
-      plano?.limiteAtingido
-    ) {
+    if (plano?.limiteAtingido) {
 
       return res.json({
-
         premium: false,
-
         limite: true,
-
         resposta:
           "Você atingiu o limite do plano gratuito do NeuroMapa360.",
       });
@@ -450,37 +415,21 @@ ${m.resposta_ia}
        SEGURANCA
     ========================================= */
 
-    const mensagemLower =
+    const texto =
       mensagem.toLowerCase();
 
     const riscoElevado =
-
-      mensagemLower.includes(
-        "suicidio"
-      ) ||
-
-      mensagemLower.includes(
-        "suicídio"
-      ) ||
-
-      mensagemLower.includes(
-        "me matar"
-      ) ||
-
-      mensagemLower.includes(
-        "nao quero viver"
-      ) ||
-
-      mensagemLower.includes(
-        "não quero viver"
-      );
+      texto.includes("suicidio") ||
+      texto.includes("suicídio") ||
+      texto.includes("me matar") ||
+      texto.includes("não quero viver") ||
+      texto.includes("nao quero viver");
 
     if (riscoElevado) {
 
       return res.json({
-
         resposta:
-          "Você não precisa enfrentar isso sozinho. Procure apoio humano imediato e ligue 188 (CVV).",
+          "Você não precisa enfrentar isso sozinho. Procure apoio humano imediato. Ligue 188 (CVV).",
       });
     }
 
@@ -495,85 +444,82 @@ Você atua como:
 - terapeuta emocional
 - especialista em PNL
 - mentor cognitivo
-- analista emocional
 - inteligência emocional terapêutica
 
-Seu papel:
-- acolher profundamente
-- responder de forma humana
+Objetivos:
+- acolher
+- responder humanamente
 - evitar respostas genéricas
-- criar continuidade emocional
-- demonstrar memória terapêutica
-- gerar sensação de acompanhamento real
+- criar vínculo emocional
+- demonstrar continuidade terapêutica
 
-Histórico emocional recente:
+Histórico:
 ${contextoMemoria}
 
-Emoção detectada:
+Emoção:
 ${emocaoData?.emocao}
 
-Intensidade emocional:
+Intensidade:
 ${emocaoData?.intensidade}
 
 Frequência Hawkins:
 ${hawkinsData?.frequencia}
 
-Nível vibracional:
+Nível:
 ${hawkinsData?.nivel}
-
-Predição emocional:
-${predicaoEmocional?.resumo}
-
-Risco emocional:
-${predicaoEmocional?.risco}
-
-Tendência emocional:
-${predicaoEmocional?.tendencia}
 
 Resumo terapêutico:
 ${arquiteturaCognitiva?.resumoTerapeutico}
-
-Score emocional:
-${scoreData?.score}
-
-Tendência emocional geral:
-${scoreData?.tendencia}
-
-Nível emocional:
-${scoreData?.nivel}
 `;
 
     /* =========================================
        OPENAI
     ========================================= */
 
-    const completion =
-      await openai.chat.completions.create({
+    let resposta = "";
 
-        model: "gpt-4o-mini",
+    try {
 
-        temperature: 0.9,
+      const completion =
+        await openai.chat.completions.create({
 
-        max_tokens: 1200,
+          model: "gpt-4o-mini",
 
-        messages: [
+          temperature: 0.9,
 
-          {
-            role: "system",
-            content: promptSistema,
-          },
+          max_tokens: 1200,
 
-          {
-            role: "user",
-            content: mensagem,
-          },
-        ],
-      });
+          messages: [
+            {
+              role: "system",
+              content: promptSistema,
+            },
+            {
+              role: "user",
+              content: mensagem,
+            },
+          ],
+        });
 
-    const resposta =
-      completion?.choices?.[0]?.message?.content
-      || respostaPNL
-      || "Estou aqui com você.";
+      resposta =
+        completion?.choices?.[0]?.message?.content;
+
+    } catch (openaiError) {
+
+      console.error(
+        "ERRO OPENAI:",
+        openaiError.message
+      );
+
+      resposta = respostaPNL;
+    }
+
+    if (!resposta) {
+
+      resposta =
+        respostaPNL ||
+        "Estou aqui com você.";
+    }
 
     /* =========================================
        SALVAR MEMORIA
@@ -583,9 +529,7 @@ ${scoreData?.nivel}
       .from("memoria_emocional")
       .insert([
         {
-
-          user_id:
-            userId,
+          user_id: userId,
 
           mensagem_usuario:
             mensagem,
@@ -673,7 +617,10 @@ ${scoreData?.nivel}
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "ERRO IA:",
+      error
+    );
 
     return res.status(500).json({
 
@@ -686,10 +633,18 @@ ${scoreData?.nivel}
           : undefined,
     });
   }
-});
+}
 
 /* ======================================================
-   STATUS EMOCIONAL USUARIO
+   ROTAS IA
+====================================================== */
+
+app.post("/ia", processarIA);
+
+app.post("/api/chat", processarIA);
+
+/* ======================================================
+   STATUS EMOCIONAL
 ====================================================== */
 
 app.post("/api/status-emocional", async (req, res) => {
@@ -717,38 +672,37 @@ app.post("/api/status-emocional", async (req, res) => {
       texto.includes("ansioso") ||
       texto.includes("ansiedade")
     ) {
-      status = "Ansioso";
-    }
 
-    else if (
+      status = "Ansioso";
+
+    } else if (
       texto.includes("triste") ||
       texto.includes("depress")
     ) {
-      status = "Triste";
-    }
 
-    else if (
+      status = "Triste";
+
+    } else if (
       texto.includes("raiva")
     ) {
-      status = "Raiva";
-    }
 
-    else if (
+      status = "Raiva";
+
+    } else if (
       texto.includes("desmotivado")
     ) {
-      status = "Desmotivado";
-    }
 
-    else if (
+      status = "Desmotivado";
+
+    } else if (
       texto.includes("procrast")
     ) {
+
       status = "Procrastinador";
     }
 
     return res.json({
-
       status,
-
       emocao,
     });
 
@@ -767,6 +721,7 @@ app.post("/api/status-emocional", async (req, res) => {
 ====================================================== */
 
 process.on("unhandledRejection", (err) => {
+
   console.error(
     "UNHANDLED REJECTION:",
     err
@@ -774,6 +729,7 @@ process.on("unhandledRejection", (err) => {
 });
 
 process.on("uncaughtException", (err) => {
+
   console.error(
     "UNCAUGHT EXCEPTION:",
     err
@@ -790,12 +746,10 @@ const PORT =
 app.listen(PORT, () => {
 
   console.log(`
-
 ========================================
 NeuroMapa360 ONLINE
 PORTA: ${PORT}
-VERSAO: 5.0.0
+VERSAO: 5.1.0
 ========================================
-
 `);
 });

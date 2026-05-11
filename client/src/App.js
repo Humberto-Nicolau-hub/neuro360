@@ -4,87 +4,65 @@ import AppInterno from "./AppInterno";
 
 export default function App() {
 
-  const [logado, setLogado] = useState(false);
+  const [logado, setLogado] =
+    useState(false);
 
-  const [usuario, setUsuario] = useState(null);
+  const [email, setEmail] =
+    useState("");
 
-  const [email, setEmail] = useState("");
+  const [senha, setSenha] =
+    useState("");
 
-  const [senha, setSenha] = useState("");
+  const ADMIN_EMAIL =
+    "contatobetaoofertas@gmail.com";
 
-  /* ======================================================
-     USUÁRIOS AUTORIZADOS
-  ====================================================== */
-
-  const usuarios = [
-
-    {
-      email: "contatobetaoofertas@gmail.com",
-      senha: "123456",
-      plano: "premium",
-      isAdmin: true,
-    },
-
-    {
-      email: "ebony66@gmail.com",
-      senha: "123456",
-      plano: "free",
-      isAdmin: false,
-    },
-
-    {
-      email: "segredodavida88@gmail.com",
-      senha: "123456",
-      plano: "free",
-      isAdmin: false,
-    },
-  ];
-
-  /* ======================================================
-     LOGIN
-  ====================================================== */
+  const ADMIN_SENHA =
+    "123456";
 
   function entrar() {
 
-    if (!email || !senha) {
+    const emailLimpo =
+      email
+        .trim()
+        .toLowerCase();
 
-      alert("Preencha email e senha.");
+    const senhaLimpa =
+      senha.trim();
 
-      return;
-    }
+    if (
+      !emailLimpo ||
+      !senhaLimpa
+    ) {
 
-    const usuarioEncontrado =
-      usuarios.find(
-        (u) =>
-          u.email === email &&
-          u.senha === senha
+      alert(
+        "Preencha email e senha."
       );
 
-    if (!usuarioEncontrado) {
+      return;
+    }
 
-      alert("Email ou senha inválidos.");
+    if (
+      emailLimpo !== ADMIN_EMAIL ||
+      senhaLimpa !== ADMIN_SENHA
+    ) {
+
+      alert(
+        "Email ou senha inválidos."
+      );
 
       return;
     }
 
-    setUsuario(usuarioEncontrado);
+    localStorage.setItem(
+      "usuario",
+      JSON.stringify({
+        email: emailLimpo,
+        premium: true,
+        admin: true,
+      })
+    );
 
     setLogado(true);
-  }
-
-  /* ======================================================
-     LOGOUT
-  ====================================================== */
-
-  function sair() {
-
-    setLogado(false);
-
-    setUsuario(null);
-
-    setEmail("");
-
-    setSenha("");
   }
 
   /* ======================================================
@@ -93,18 +71,11 @@ export default function App() {
 
   if (logado) {
 
-    return (
-
-      <AppInterno
-        usuario={usuario}
-        sair={sair}
-      />
-
-    );
+    return <AppInterno />;
   }
 
   /* ======================================================
-     LOGIN SCREEN
+     LOGIN
   ====================================================== */
 
   return (
@@ -126,7 +97,9 @@ export default function App() {
           placeholder="Email"
           value={email}
           onChange={(e) =>
-            setEmail(e.target.value)
+            setEmail(
+              e.target.value
+            )
           }
           style={styles.input}
         />
@@ -136,7 +109,9 @@ export default function App() {
           placeholder="Senha"
           value={senha}
           onChange={(e) =>
-            setSenha(e.target.value)
+            setSenha(
+              e.target.value
+            )
           }
           style={styles.input}
         />

@@ -25,7 +25,7 @@ export default function AppInterno() {
     setLoading(true);
 
     try {
-      const resposta = await fetch(`${API_URL}/api/chat`, {
+      const resposta = await fetch(`${API_URL}/ia`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

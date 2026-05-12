@@ -11,6 +11,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 export default function AppInterno({
@@ -39,10 +42,6 @@ export default function AppInterno({
     setHistoricoEmocional] =
     useState([]);
 
-  const [modoFoco,
-    setModoFoco] =
-    useState(false);
-
   const [estadoEmocional,
     setEstadoEmocional] =
     useState({
@@ -65,96 +64,12 @@ export default function AppInterno({
     useRef(null);
 
   /* ======================================================
-     EMOÇÕES RÁPIDAS
-  ====================================================== */
-
-  const emocoesRapidas = [
-
-    {
-      emoji: "🟣",
-      nome: "Ansioso",
-      texto:
-        "Estou me sentindo ansioso hoje",
-    },
-
-    {
-      emoji: "🟤",
-      nome: "Cansado",
-      texto:
-        "Estou mentalmente cansado",
-    },
-
-    {
-      emoji: "🟡",
-      nome: "Confuso",
-      texto:
-        "Estou me sentindo confuso",
-    },
-
-    {
-      emoji: "😔",
-      nome: "Deprimido",
-      texto:
-        "Estou me sentindo deprimido",
-    },
-
-    {
-      emoji: "✨",
-      nome: "Esperançoso",
-      texto:
-        "Estou me sentindo esperançoso",
-    },
-
-    {
-      emoji: "😄",
-      nome: "Feliz",
-      texto:
-        "Hoje estou me sentindo feliz",
-    },
-
-    {
-      emoji: "🟢",
-      nome: "Motivado",
-      texto:
-        "Hoje estou me sentindo motivado",
-    },
-
-    {
-      emoji: "🟠",
-      nome: "Raiva",
-      texto:
-        "Estou com muita raiva hoje",
-    },
-
-    {
-      emoji: "⚫",
-      nome: "Sem foco",
-      texto:
-        "Estou sem foco hoje",
-    },
-
-    {
-      emoji: "🔴",
-      nome: "Sobrecarregado",
-      texto:
-        "Estou me sentindo sobrecarregado",
-    },
-
-    {
-      emoji: "🔵",
-      nome: "Triste",
-      texto:
-        "Estou me sentindo triste hoje",
-    },
-  ];
-
-  /* ======================================================
      API
   ====================================================== */
 
   const API_URL =
     process.env.REACT_APP_API_URL ||
-    "https://neuro360-tkyx.onrender.com";
+    "http://localhost:3001";
 
   /* ======================================================
      AUTO SCROLL
@@ -164,6 +79,7 @@ export default function AppInterno({
 
     finalChatRef.current?.scrollIntoView({
       behavior: "smooth",
+      block: "end",
     });
 
   }, [historico, loading]);
@@ -200,28 +116,70 @@ export default function AppInterno({
   }
 
   /* ======================================================
-     COR DINÂMICA
+     EMOÇÕES RÁPIDAS
   ====================================================== */
 
-  function obterCorEmocional() {
+  const emocoesRapidas = [
+
+    {
+      emoji: "🟠",
+      nome: "Ansioso",
+      texto:
+        "Estou me sentindo ansioso hoje",
+    },
+
+    {
+      emoji: "🟡",
+      nome: "Triste",
+      texto:
+        "Estou me sentindo triste hoje",
+    },
+
+    {
+      emoji: "😊",
+      nome: "Feliz",
+      texto:
+        "Hoje estou me sentindo feliz",
+    },
+
+    {
+      emoji: "🟢",
+      nome: "Motivado",
+      texto:
+        "Hoje estou me sentindo motivado",
+    },
+
+    {
+      emoji: "🔴",
+      nome: "Raiva",
+      texto:
+        "Estou com muita raiva hoje",
+    },
+
+    {
+      emoji: "⚪",
+      nome: "Sem foco",
+      texto:
+        "Estou sem foco hoje",
+    },
+
+    {
+      emoji: "🩷",
+      nome: "Sobrecarregado",
+      texto:
+        "Estou me sentindo sobrecarregado",
+    },
+  ];
+
+  /* ======================================================
+     CORES DINÂMICAS
+  ====================================================== */
+
+  function obterTemaEmocional() {
 
     const emocao =
       estadoEmocional.emocao
         ?.toLowerCase();
-
-    if (
-      emocao?.includes("triste")
-    ) {
-
-      return {
-
-        sidebar:
-          "linear-gradient(180deg,#172554,#1e3a8a)",
-
-        card:
-          "linear-gradient(90deg,#1d4ed8,#38bdf8)",
-      };
-    }
 
     if (
       emocao?.includes("ans")
@@ -229,11 +187,37 @@ export default function AppInterno({
 
       return {
 
-        sidebar:
-          "linear-gradient(180deg,#3f1d0d,#7c2d12)",
+        glow:
+          "rgba(251,146,60,0.55)",
+
+        orb:
+          "linear-gradient(135deg,#f97316,#fb923c,#fdba74)",
 
         card:
-          "linear-gradient(90deg,#ea580c,#fb923c)",
+          "linear-gradient(135deg,#7c2d12,#ea580c)",
+
+        border:
+          "rgba(251,146,60,0.25)",
+      };
+    }
+
+    if (
+      emocao?.includes("triste")
+    ) {
+
+      return {
+
+        glow:
+          "rgba(59,130,246,0.55)",
+
+        orb:
+          "linear-gradient(135deg,#2563eb,#38bdf8,#7dd3fc)",
+
+        card:
+          "linear-gradient(135deg,#1e3a8a,#2563eb)",
+
+        border:
+          "rgba(59,130,246,0.25)",
       };
     }
 
@@ -243,70 +227,41 @@ export default function AppInterno({
 
       return {
 
-        sidebar:
-          "linear-gradient(180deg,#450a0a,#7f1d1d)",
+        glow:
+          "rgba(239,68,68,0.55)",
+
+        orb:
+          "linear-gradient(135deg,#dc2626,#ef4444,#f87171)",
 
         card:
-          "linear-gradient(90deg,#dc2626,#f87171)",
-      };
-    }
+          "linear-gradient(135deg,#7f1d1d,#dc2626)",
 
-    if (
-      emocao?.includes("feliz")
-    ) {
-
-      return {
-
-        sidebar:
-          "linear-gradient(180deg,#064e3b,#065f46)",
-
-        card:
-          "linear-gradient(90deg,#10b981,#34d399)",
+        border:
+          "rgba(239,68,68,0.25)",
       };
     }
 
     return {
 
-      sidebar:
-        "linear-gradient(180deg,#0f172a,#1e293b)",
+      glow:
+        "rgba(34,211,238,0.55)",
+
+      orb:
+        "linear-gradient(135deg,#06b6d4,#22d3ee,#67e8f9)",
 
       card:
-        "linear-gradient(90deg,#2563eb,#38bdf8)",
+        "linear-gradient(135deg,#0f172a,#111827)",
+
+      border:
+        "rgba(34,211,238,0.25)",
     };
   }
 
-  const cores =
-    obterCorEmocional();
+  const tema =
+    obterTemaEmocional();
 
   /* ======================================================
-     INSIGHT AUTOMÁTICO
-  ====================================================== */
-
-  function gerarInsight() {
-
-    const score =
-      estadoEmocional.score;
-
-    if (score <= 35) {
-
-      return "Há sinais emocionais de sobrecarga. A desaceleração terapêutica pode ajudar.";
-    }
-
-    if (score <= 60) {
-
-      return "Você apresenta oscilações emocionais moderadas nas últimas interações.";
-    }
-
-    if (score >= 80) {
-
-      return "Seu padrão emocional demonstra evolução cognitiva positiva.";
-    }
-
-    return "Seu estado emocional está em processo de estabilização.";
-  }
-
-  /* ======================================================
-     ENVIAR
+     ENVIAR MSG
   ====================================================== */
 
   async function enviarMensagem() {
@@ -361,7 +316,7 @@ export default function AppInterno({
               perfil:
                 usuario?.premium
                   ? "premium"
-                  : "terapeutico",
+                  : "free",
 
               user_id:
                 usuario?.email ||
@@ -444,12 +399,12 @@ export default function AppInterno({
           },
 
           ...prev,
-        ].slice(0, 7)
+        ].slice(0, 10)
       );
 
     } catch (erro) {
 
-      console.error(erro);
+      console.log(erro);
 
       setHistorico((prev) => [
 
@@ -459,7 +414,7 @@ export default function AppInterno({
           tipo: "ia",
 
           texto:
-            "Erro ao conectar com IA terapêutica.",
+            "Erro ao conectar com IA.",
 
           horario:
             obterHorarioAtual(),
@@ -489,7 +444,7 @@ export default function AppInterno({
   }
 
   /* ======================================================
-     DADOS GRÁFICO
+     GRÁFICO
   ====================================================== */
 
   const dadosGrafico =
@@ -505,6 +460,22 @@ export default function AppInterno({
           item.score || 50,
       }));
 
+  const donutData = [
+
+    {
+      name: "score",
+      value:
+        estadoEmocional.score,
+    },
+
+    {
+      name: "restante",
+      value:
+        100 -
+        estadoEmocional.score,
+    },
+  ];
+
   /* ======================================================
      RENDER
   ====================================================== */
@@ -518,18 +489,15 @@ export default function AppInterno({
 
         height: "100vh",
 
+        overflow: "hidden",
+
         background:
-          modoFoco
-            ? "#020617"
-            : "linear-gradient(135deg,#020617,#0f172a,#111827)",
+          "linear-gradient(135deg,#020617,#0f172a,#111827)",
 
         color: "white",
 
         fontFamily:
           "Arial, sans-serif",
-
-        transition:
-          "all 0.5s ease",
       }}
     >
 
@@ -538,42 +506,38 @@ export default function AppInterno({
       <div
         style={{
 
-          width:
-            modoFoco
-              ? "260px"
-              : "340px",
+          width: "340px",
 
           background:
-            cores.sidebar,
+            "rgba(255,255,255,0.03)",
 
-          padding: "25px",
+          borderRight:
+            `1px solid ${tema.border}`,
+
+          padding: "30px",
 
           display: "flex",
 
           flexDirection: "column",
 
-          borderRight:
-            "1px solid rgba(255,255,255,0.08)",
-
           backdropFilter:
-            "blur(16px)",
-
-          transition:
-            "all 0.5s ease",
+            "blur(30px)",
         }}
       >
+
+        {/* AVATAR IA */}
 
         <div
           style={{
 
-            width: "90px",
+            width: "120px",
 
-            height: "90px",
+            height: "120px",
 
             borderRadius: "50%",
 
             background:
-              cores.card,
+              tema.orb,
 
             display: "flex",
 
@@ -581,23 +545,46 @@ export default function AppInterno({
 
             justifyContent: "center",
 
-            fontSize: "38px",
+            marginBottom: "30px",
 
-            marginBottom: "20px",
+            position: "relative",
+
+            animation:
+              "pulse 4s infinite ease-in-out",
 
             boxShadow:
-              "0 0 40px rgba(56,189,248,0.35)",
+              `0 0 60px ${tema.glow}`,
           }}
         >
-          🧠
+
+          <div
+            style={{
+
+              width: "35px",
+
+              height: "35px",
+
+              borderRadius: "50%",
+
+              background:
+                "rgba(255,192,203,0.95)",
+
+              boxShadow:
+                "0 0 30px rgba(255,192,203,0.8)",
+            }}
+          />
+
         </div>
 
         <h1
           style={{
-            fontSize: "48px",
+
+            fontSize: "60px",
+
+            marginBottom: "10px",
           }}
         >
-          Neuro360
+          NeuroMapa360
         </h1>
 
         <div
@@ -605,50 +592,15 @@ export default function AppInterno({
 
             color: "#4ade80",
 
-            marginBottom: "20px",
-
             fontWeight: "bold",
+
+            marginBottom: "30px",
           }}
         >
           IA Terapêutica Ativa ✅
         </div>
 
-        {/* MODO FOCO */}
-
-        <button
-          onClick={() =>
-            setModoFoco(
-              !modoFoco
-            )
-          }
-
-          style={{
-
-            background:
-              "rgba(255,255,255,0.08)",
-
-            border:
-              "1px solid rgba(255,255,255,0.08)",
-
-            padding: "14px",
-
-            borderRadius: "14px",
-
-            color: "white",
-
-            marginBottom: "20px",
-
-            cursor: "pointer",
-          }}
-        >
-          {
-            modoFoco
-              ? "🧘 Modo Normal"
-              : "🎯 Modo Foco TDAH"
-          }
-        </button>
-
-        {/* DASHBOARD */}
+        {/* STATUS */}
 
         <div
           style={{
@@ -656,11 +608,16 @@ export default function AppInterno({
             background:
               "rgba(255,255,255,0.05)",
 
-            padding: "20px",
+            border:
+              `1px solid ${tema.border}`,
 
-            borderRadius: "18px",
+            borderRadius: "22px",
+
+            padding: "24px",
 
             lineHeight: "2",
+
+            marginBottom: "25px",
           }}
         >
 
@@ -671,7 +628,7 @@ export default function AppInterno({
           </div>
 
           <div>
-            📄 Score:
+            ◻️ Score:
             {" "}
             {estadoEmocional.score}
           </div>
@@ -685,119 +642,13 @@ export default function AppInterno({
           <div>
             🌎 Consciência:
             {" "}
-            {
-              estadoEmocional.consciencia
-            }
+            {estadoEmocional.consciencia}
           </div>
 
           <div>
             🛤️ Trilha:
             {" "}
-            {
-              estadoEmocional.trilha
-            }
-          </div>
-
-          <div>
-            👤 Plano:
-            {" "}
-            {
-              usuario?.premium
-                ? "Premium"
-                : "Free"
-            }
-          </div>
-
-        </div>
-
-        {/* INSIGHT */}
-
-        <div
-          style={{
-
-            marginTop: "20px",
-
-            background:
-              "rgba(255,255,255,0.05)",
-
-            padding: "18px",
-
-            borderRadius: "18px",
-
-            lineHeight: "1.8",
-
-            fontSize: "14px",
-
-            color: "#cbd5e1",
-          }}
-        >
-          💡
-          {" "}
-          {gerarInsight()}
-        </div>
-
-        {/* TIMELINE */}
-
-        <div
-          style={{
-            marginTop: "20px",
-          }}
-        >
-
-          <div
-            style={{
-              marginBottom: "10px",
-              fontWeight: "bold",
-            }}
-          >
-            Timeline emocional
-          </div>
-
-          <div
-            style={{
-
-              display: "flex",
-
-              flexDirection:
-                "column",
-
-              gap: "10px",
-            }}
-          >
-
-            {historicoEmocional
-              .slice(0, 5)
-              .map(
-                (
-                  item,
-                  index
-                ) => (
-
-                <div
-                  key={index}
-
-                  style={{
-
-                    background:
-                      "rgba(255,255,255,0.05)",
-
-                    padding:
-                      "10px 14px",
-
-                    borderRadius:
-                      "14px",
-
-                    fontSize: "13px",
-                  }}
-                >
-                  ⏰
-                  {" "}
-                  {item.horario}
-                  {" — "}
-                  {item.emocao}
-                </div>
-              ))}
-
+            {estadoEmocional.trilha}
           </div>
 
         </div>
@@ -809,14 +660,14 @@ export default function AppInterno({
 
             marginTop: "auto",
 
-            background:
-              "linear-gradient(90deg,#ef4444,#fb7185)",
-
             border: "none",
 
-            padding: "16px",
+            borderRadius: "18px",
 
-            borderRadius: "14px",
+            padding: "18px",
+
+            background:
+              "linear-gradient(90deg,#fb7185,#fbcfe8)",
 
             color: "white",
 
@@ -830,7 +681,7 @@ export default function AppInterno({
 
       </div>
 
-      {/* CHAT */}
+      {/* ÁREA DIREITA */}
 
       <div
         style={{
@@ -842,187 +693,358 @@ export default function AppInterno({
           flexDirection: "column",
 
           padding: "30px",
+
+          overflow: "hidden",
         }}
       >
 
-        {/* GRÁFICO */}
+        {/* TOPO */}
 
         <div
           style={{
 
-            height: "180px",
+            display: "grid",
 
-            background:
-              "rgba(255,255,255,0.04)",
+            gridTemplateColumns:
+              "1fr 1fr 1fr",
 
-            borderRadius: "20px",
+            gap: "20px",
 
-            padding: "20px",
+            marginBottom: "25px",
+          }}
+        >
+
+          <div>
+            <div
+              style={{
+                fontWeight: "bold",
+                marginBottom: "10px",
+              }}
+            >
+              Score médio
+            </div>
+
+            <div
+              style={{
+                fontSize: "72px",
+                fontWeight: "bold",
+              }}
+            >
+              {estadoEmocional.score}
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontWeight: "bold",
+                marginBottom: "10px",
+              }}
+            >
+              Hawkins
+            </div>
+
+            <div
+              style={{
+                fontSize: "72px",
+                fontWeight: "bold",
+              }}
+            >
+              {estadoEmocional.hawkins}
+            </div>
+          </div>
+
+          <div>
+
+            <div
+              style={{
+                fontWeight: "bold",
+                marginBottom: "10px",
+              }}
+            >
+              Estado
+            </div>
+
+            <div
+              style={{
+                fontSize: "60px",
+                fontWeight: "bold",
+              }}
+            >
+              {estadoEmocional.emocao}
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* DASHBOARD */}
+
+        <div
+          style={{
+
+            display: "grid",
+
+            gridTemplateColumns:
+              "2fr 1fr",
+
+            gap: "20px",
 
             marginBottom: "20px",
           }}
         >
 
+          {/* GRÁFICO */}
+
           <div
             style={{
-              marginBottom: "15px",
-              fontWeight: "bold",
+
+              background:
+                "rgba(255,255,255,0.03)",
+
+              border:
+                `1px solid ${tema.border}`,
+
+              borderRadius: "26px",
+
+              padding: "20px",
+
+              height: "240px",
             }}
           >
-            Evolução emocional
-          </div>
 
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-
-            <LineChart
-              data={dadosGrafico}
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
             >
 
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#334155"
-              />
+              <LineChart
+                data={dadosGrafico}
+              >
 
-              <XAxis
-                dataKey="name"
-                stroke="#94a3b8"
-              />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#1e293b"
+                />
 
-              <Tooltip />
+                <XAxis
+                  dataKey="name"
+                  stroke="#64748b"
+                />
 
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#38bdf8"
-                strokeWidth={3}
-              />
+                <Tooltip />
 
-            </LineChart>
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#38bdf8"
+                  strokeWidth={4}
+                />
 
-          </ResponsiveContainer>
+              </LineChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+          {/* DONUT */}
+
+          <div
+            style={{
+
+              background:
+                "rgba(255,255,255,0.03)",
+
+              border:
+                `1px solid ${tema.border}`,
+
+              borderRadius: "26px",
+
+              padding: "20px",
+
+              height: "240px",
+
+              display: "flex",
+
+              alignItems: "center",
+
+              justifyContent: "center",
+            }}
+          >
+
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
+
+              <PieChart>
+
+                <Pie
+                  data={donutData}
+                  innerRadius={50}
+                  outerRadius={80}
+                  dataKey="value"
+                >
+
+                  <Cell
+                    fill="#5eead4"
+                  />
+
+                  <Cell
+                    fill="#1e293b"
+                  />
+
+                </Pie>
+
+              </PieChart>
+
+            </ResponsiveContainer>
+
+          </div>
 
         </div>
 
-        {/* CHAT HISTÓRICO */}
+        {/* CHAT AREA */}
 
         <div
           style={{
 
             flex: 1,
 
-            overflowY: "auto",
+            overflow: "hidden",
 
-            marginBottom: "20px",
+            display: "flex",
+
+            flexDirection: "column",
+
+            minHeight: 0,
           }}
         >
 
-          {historico.map(
-            (msg, index) => (
+          {/* HISTÓRICO */}
 
-            <div
-              key={index}
+          <div
+            id="chat-scroll"
 
-              style={{
+            style={{
 
-                display: "flex",
+              flex: 1,
 
-                flexDirection:
-                  "column",
+              overflowY: "auto",
 
-                alignItems:
-                  msg.tipo ===
-                  "usuario"
+              paddingRight: "10px",
 
-                    ? "flex-end"
+              paddingTop: "10px",
 
-                    : "flex-start",
+              display: "flex",
 
-                marginBottom:
-                  "24px",
-              }}
-            >
+              flexDirection: "column",
+
+              gap: "18px",
+
+              minHeight: 0,
+            }}
+          >
+
+            {historico.map(
+              (msg, index) => (
 
               <div
+                key={index}
+
                 style={{
 
-                  maxWidth: "72%",
+                  display: "flex",
 
-                  padding: "22px",
+                  flexDirection:
+                    "column",
 
-                  borderRadius:
-                    "22px",
-
-                  lineHeight: "1.8",
-
-                  fontSize: "17px",
-
-                  background:
+                  alignItems:
                     msg.tipo ===
                     "usuario"
 
-                      ? "linear-gradient(90deg,#22c55e,#4ade80)"
-
-                      : cores.card,
-
-                  boxShadow:
-                    "0 10px 35px rgba(0,0,0,0.25)",
+                      ? "flex-end"
+                      : "flex-start",
                 }}
               >
-                {msg.texto}
+
+                <div
+                  style={{
+
+                    maxWidth: "72%",
+
+                    padding: "22px",
+
+                    borderRadius:
+                      "24px",
+
+                    lineHeight: "1.9",
+
+                    fontSize: "17px",
+
+                    background:
+                      msg.tipo ===
+                      "usuario"
+
+                        ? "linear-gradient(90deg,#22c55e,#4ade80)"
+                        : tema.card,
+
+                    boxShadow:
+                      "0 10px 40px rgba(0,0,0,0.25)",
+                  }}
+                >
+                  {msg.texto}
+                </div>
+
+                <div
+                  style={{
+
+                    marginTop: "6px",
+
+                    fontSize: "12px",
+
+                    color:
+                      "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {msg.horario}
+                </div>
+
               </div>
+            ))}
+
+            {loading && (
 
               <div
                 style={{
 
-                  marginTop: "6px",
+                  color: "#4ade80",
 
-                  fontSize: "12px",
-
-                  color:
-                    "rgba(255,255,255,0.45)",
+                  fontWeight: "bold",
                 }}
               >
-                {msg.horario}
+                IA analisando...
               </div>
+            )}
 
-            </div>
-          ))}
+            <div ref={finalChatRef} />
 
-          {loading && (
+          </div>
 
-            <div
-              style={{
-
-                color: "#4ade80",
-              }}
-            >
-              IA analisando...
-            </div>
-          )}
-
-          <div ref={finalChatRef} />
-
-        </div>
-
-        {/* EMOÇÕES */}
-
-        <div
-          style={{
-            marginBottom: "18px",
-          }}
-        >
+          {/* EMOÇÕES */}
 
           <div
             style={{
 
               display: "flex",
 
+              gap: "12px",
+
               flexWrap: "wrap",
 
-              gap: "12px",
+              marginTop: "20px",
+
+              marginBottom: "20px",
             }}
           >
 
@@ -1045,16 +1067,7 @@ export default function AppInterno({
 
                 style={{
 
-                  background:
-                    emocaoAtiva ===
-                    emocao.nome
-
-                      ? cores.card
-
-                      : "rgba(255,255,255,0.05)",
-
-                  border:
-                    "1px solid rgba(255,255,255,0.08)",
+                  border: "none",
 
                   padding:
                     "12px 18px",
@@ -1062,22 +1075,18 @@ export default function AppInterno({
                   borderRadius:
                     "999px",
 
+                  background:
+                    emocaoAtiva ===
+                    emocao.nome
+
+                      ? tema.card
+                      : "rgba(255,255,255,0.05)",
+
                   color: "white",
 
                   cursor: "pointer",
 
                   fontWeight: "bold",
-
-                  transform:
-                    emocaoAtiva ===
-                    emocao.nome
-
-                      ? "scale(1.06)"
-
-                      : "scale(1)",
-
-                  transition:
-                    "all 0.3s ease",
                 }}
               >
                 {emocao.emoji}
@@ -1088,92 +1097,119 @@ export default function AppInterno({
 
           </div>
 
-        </div>
+          {/* INPUT */}
 
-        {/* INPUT */}
-
-        <div
-          style={{
-
-            display: "flex",
-
-            gap: "12px",
-          }}
-        >
-
-          <input
-            value={mensagem}
-
-            onChange={(e) =>
-              setMensagem(
-                e.target.value
-              )
-            }
-
-            onKeyDown={
-              handleKeyDown
-            }
-
-            placeholder="Como você está se sentindo?"
-
+          <div
             style={{
 
-              flex: 1,
+              display: "flex",
 
-              padding: "20px",
-
-              borderRadius: "16px",
-
-              border:
-                "1px solid rgba(255,255,255,0.08)",
-
-              background:
-                "rgba(255,255,255,0.05)",
-
-              color: "white",
-
-              fontSize: "16px",
-
-              outline: "none",
-            }}
-          />
-
-          <button
-            onClick={
-              enviarMensagem
-            }
-
-            disabled={loading}
-
-            style={{
-
-              background:
-                "linear-gradient(90deg,#22c55e,#4ade80)",
-
-              border: "none",
-
-              padding:
-                "20px 34px",
-
-              borderRadius:
-                "16px",
-
-              color: "white",
-
-              fontWeight:
-                "bold",
-
-              cursor: "pointer",
+              gap: "16px",
             }}
           >
-            {loading
-              ? "..."
-              : "Enviar"}
-          </button>
+
+            <input
+              value={mensagem}
+
+              onChange={(e) =>
+                setMensagem(
+                  e.target.value
+                )
+              }
+
+              onKeyDown={
+                handleKeyDown
+              }
+
+              placeholder="Como você está se sentindo?"
+
+              style={{
+
+                flex: 1,
+
+                padding: "22px",
+
+                borderRadius:
+                  "22px",
+
+                border:
+                  `1px solid ${tema.border}`,
+
+                background:
+                  "rgba(255,255,255,0.05)",
+
+                color: "white",
+
+                fontSize: "17px",
+
+                outline: "none",
+              }}
+            />
+
+            <button
+              onClick={
+                enviarMensagem
+              }
+
+              disabled={loading}
+
+              style={{
+
+                border: "none",
+
+                borderRadius:
+                  "22px",
+
+                padding:
+                  "0 40px",
+
+                background:
+                  "linear-gradient(90deg,#4ade80,#5eead4)",
+
+                color: "white",
+
+                fontWeight: "bold",
+
+                cursor: "pointer",
+              }}
+            >
+              Enviar
+            </button>
+
+          </div>
 
         </div>
 
       </div>
+
+      {/* ANIMAÇÃO */}
+
+      <style>
+        {`
+
+          @keyframes pulse {
+
+            0% {
+
+              transform: scale(1);
+
+            }
+
+            50% {
+
+              transform: scale(1.05);
+
+            }
+
+            100% {
+
+              transform: scale(1);
+
+            }
+          }
+
+        `}
+      </style>
 
     </div>
   );

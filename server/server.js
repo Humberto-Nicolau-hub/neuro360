@@ -124,6 +124,10 @@ function analisarEstadoEmocional(
 
     textoLower.includes(
       "nervoso"
+    ) ||
+
+    textoLower.includes(
+      "preocupado"
     )
 
   ) {
@@ -247,6 +251,14 @@ function analisarEstadoEmocional(
 
     textoLower.includes(
       "evoluindo"
+    ) ||
+
+    textoLower.includes(
+      "feliz"
+    ) ||
+
+    textoLower.includes(
+      "motivado"
     )
 
   ) {
@@ -285,7 +297,7 @@ function analisarEstadoEmocional(
 }
 
 /* ======================================================
-   CARREGAR MEMÓRIA DO SUPABASE
+   CARREGAR MEMÓRIA
 ====================================================== */
 
 async function carregarMemoriaUsuario(
@@ -363,7 +375,213 @@ async function carregarMemoriaUsuario(
 }
 
 /* ======================================================
-   BUSCAR PERFIL USUÁRIO
+   PERFIL EMOCIONAL
+====================================================== */
+
+async function gerarPerfilEmocional(
+  usuarioId
+) {
+
+  try {
+
+    const {
+
+      data,
+
+      error,
+
+    } = await supabase
+
+      .from("conversas")
+
+      .select("*")
+
+      .eq(
+        "user_id",
+        usuarioId
+      )
+
+      .order(
+        "created_at",
+        {
+          ascending: false,
+        }
+      )
+
+      .limit(20);
+
+    if (
+      error ||
+      !data ||
+      data.length === 0
+    ) {
+
+      return {
+
+        resumo:
+          "",
+
+        scoreMedio: 0,
+
+        emocaoDominante:
+          "Equilibrado",
+
+        tendencia:
+          "Neutra",
+      };
+    }
+
+    /* =========================================
+       SCORE MÉDIO
+    ========================================= */
+
+    const somaScores =
+      data.reduce(
+        (
+          total,
+          item
+        ) =>
+          total +
+          (item.score || 0),
+        0
+      );
+
+    const scoreMedio =
+      Math.round(
+        somaScores /
+          data.length
+      );
+
+    /* =========================================
+       EMOÇÃO DOMINANTE
+    ========================================= */
+
+    const contador = {};
+
+    data.forEach((item) => {
+
+      const emocao =
+        item.emocao ||
+        "Equilibrado";
+
+      contador[emocao] =
+
+        (
+          contador[emocao] || 0
+        ) + 1;
+    });
+
+    const emocaoDominante =
+      Object.keys(
+        contador
+      ).reduce((a, b) =>
+        contador[a] >
+        contador[b]
+          ? a
+          : b
+      );
+
+    /* =========================================
+       TENDÊNCIA
+    ========================================= */
+
+    let tendencia =
+      "Neutra";
+
+    if (
+      scoreMedio < 45
+    ) {
+
+      tendencia =
+        "Desgaste emocional";
+    }
+
+    if (
+      scoreMedio > 75
+    ) {
+
+      tendencia =
+        "Evolução positiva";
+    }
+
+    /* =========================================
+       RESUMO TERAPÊUTICO
+    ========================================= */
+
+    let resumo =
+      "";
+
+    if (
+      emocaoDominante ===
+      "Ansiedade"
+    ) {
+
+      resumo =
+        "Percebo sinais recorrentes de ansiedade e sobrecarga emocional nas últimas interações.";
+    }
+
+    if (
+      emocaoDominante ===
+      "Tristeza"
+    ) {
+
+      resumo =
+        "Seu histórico demonstra momentos de desmotivação emocional e necessidade de acolhimento terapêutico.";
+    }
+
+    if (
+      emocaoDominante ===
+      "Raiva"
+    ) {
+
+      resumo =
+        "Há sinais de tensão emocional e reatividade recorrente nas últimas sessões.";
+    }
+
+    if (
+      emocaoDominante ===
+      "Evolução"
+    ) {
+
+      resumo =
+        "Seu histórico emocional demonstra evolução positiva e maior clareza cognitiva.";
+    }
+
+    return {
+
+      resumo,
+
+      scoreMedio,
+
+      emocaoDominante,
+
+      tendencia,
+    };
+
+  } catch (erro) {
+
+    console.log(
+      "ERRO PERFIL:",
+      erro.message
+    );
+
+    return {
+
+      resumo: "",
+
+      scoreMedio: 0,
+
+      emocaoDominante:
+        "Equilibrado",
+
+      tendencia:
+        "Neutra",
+    };
+  }
+}
+
+/* ======================================================
+   BUSCAR PERFIL
 ====================================================== */
 
 async function buscarPerfilUsuario(
@@ -402,6 +620,213 @@ async function buscarPerfilUsuario(
 }
 
 /* ======================================================
+   DASHBOARD ANALÍTICO
+====================================================== */
+
+app.get(
+  "/dashboard/:user_id",
+  async (req, res) => {
+
+    try {
+
+      const {
+        user_id,
+      } = req.params;
+
+      const {
+
+        data,
+
+        error,
+
+      } = await supabase
+
+        .from("conversas")
+
+        .select("*")
+
+        .eq(
+          "user_id",
+          user_id
+        )
+
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
+
+        .limit(30);
+
+      if (error) {
+
+        return res
+          .status(500)
+          .json({
+
+            erro:
+              error.message,
+          });
+      }
+
+      if (
+        !data ||
+        data.length === 0
+      ) {
+
+        return res.json({
+
+          historico: [],
+
+          scoreMedio: 0,
+
+          hawkinsMedio: 0,
+
+          emocaoDominante:
+            "Sem dados",
+
+          insight:
+            "Ainda não há dados emocionais suficientes.",
+        });
+      }
+
+      const totalScore =
+        data.reduce(
+          (
+            acc,
+            item
+          ) =>
+            acc +
+            (item.score || 0),
+          0
+        );
+
+      const totalHawkins =
+        data.reduce(
+          (
+            acc,
+            item
+          ) =>
+            acc +
+            (item.hawkins || 0),
+          0
+        );
+
+      const scoreMedio =
+        Math.round(
+          totalScore /
+            data.length
+        );
+
+      const hawkinsMedio =
+        Math.round(
+          totalHawkins /
+            data.length
+        );
+
+      const contadorEmocoes =
+        {};
+
+      data.forEach((item) => {
+
+        const emocao =
+          item.emocao ||
+          "Neutro";
+
+        contadorEmocoes[
+          emocao
+        ] =
+
+          (
+            contadorEmocoes[
+              emocao
+            ] || 0
+          ) + 1;
+      });
+
+      const emocaoDominante =
+        Object.keys(
+          contadorEmocoes
+        ).reduce((a, b) =>
+          contadorEmocoes[a] >
+          contadorEmocoes[b]
+            ? a
+            : b
+        );
+
+      let insight =
+        "Seu padrão emocional está equilibrado.";
+
+      if (
+        scoreMedio < 40
+      ) {
+
+        insight =
+          "Detectamos sinais emocionais de desgaste e necessidade de acolhimento.";
+      }
+
+      if (
+        scoreMedio > 75
+      ) {
+
+        insight =
+          "Você apresenta evolução emocional positiva nas últimas sessões.";
+      }
+
+      const historico =
+        data.map(
+          (item) => ({
+
+            emocao:
+              item.emocao,
+
+            score:
+              item.score,
+
+            hawkins:
+              item.hawkins,
+
+            created_at:
+              item.created_at,
+          })
+        );
+
+      return res.json({
+
+        totalConversas:
+          data.length,
+
+        scoreMedio,
+
+        hawkinsMedio,
+
+        emocaoDominante,
+
+        insight,
+
+        historico,
+      });
+
+    } catch (erro) {
+
+      console.log(
+        "ERRO DASHBOARD:",
+        erro.message
+      );
+
+      return res
+        .status(500)
+        .json({
+
+          erro:
+            "Erro dashboard.",
+        });
+    }
+  }
+);
+
+/* ======================================================
    IA TERAPÊUTICA
 ====================================================== */
 
@@ -420,10 +845,6 @@ app.post("/ia", async (req, res) => {
       email,
     } = req.body;
 
-    /* =========================================
-       SEGURANÇA
-    ========================================= */
-
     if (!mensagem) {
 
       return res
@@ -438,11 +859,8 @@ app.post("/ia", async (req, res) => {
     const usuarioId =
       user_id || "anonimo";
 
-    /* =========================================
-       BUSCA PERFIL
-    ========================================= */
-
-    let perfilUsuario = null;
+    let perfilUsuario =
+      null;
 
     if (email) {
 
@@ -451,10 +869,6 @@ app.post("/ia", async (req, res) => {
           email
         );
     }
-
-    /* =========================================
-       DEFINE PLANO
-    ========================================= */
 
     const planoUsuario =
 
@@ -474,10 +888,6 @@ app.post("/ia", async (req, res) => {
       perfilUsuario?.is_admin ===
       true;
 
-    /* =========================================
-       CARREGA MEMÓRIA
-    ========================================= */
-
     if (
       !memoriaUsuarios[
         usuarioId
@@ -492,10 +902,6 @@ app.post("/ia", async (req, res) => {
         );
     }
 
-    /* =========================================
-       SALVA NOVA MSG
-    ========================================= */
-
     memoriaUsuarios[
       usuarioId
     ].push({
@@ -504,10 +910,6 @@ app.post("/ia", async (req, res) => {
 
       content: mensagem,
     });
-
-    /* =========================================
-       LIMITA MEMÓRIA
-    ========================================= */
 
     if (
 
@@ -525,18 +927,19 @@ app.post("/ia", async (req, res) => {
         ].slice(-14);
     }
 
-    /* =========================================
-       ANÁLISE EMOCIONAL
-    ========================================= */
-
     const emocional =
       analisarEstadoEmocional(
         mensagem
       );
 
     /* =========================================
-       PROMPT SISTEMA
+       PERFIL EMOCIONAL INTELIGENTE
     ========================================= */
+
+    const perfilEmocional =
+      await gerarPerfilEmocional(
+        usuarioId
+      );
 
     let promptSistema =
 
@@ -559,11 +962,21 @@ REGRAS:
 - Faça respostas terapêuticas
 - Respostas médias
 - Demonstre presença emocional
-`;
 
-    /* =========================================
-       PREMIUM
-    ========================================= */
+CONTEXTO EMOCIONAL DO USUÁRIO:
+
+- Emoção dominante:
+${perfilEmocional.emocaoDominante}
+
+- Tendência emocional:
+${perfilEmocional.tendencia}
+
+- Score emocional médio:
+${perfilEmocional.scoreMedio}
+
+- Resumo terapêutico:
+${perfilEmocional.resumo}
+`;
 
     if (
       isPremium
@@ -582,10 +995,6 @@ USUÁRIO PREMIUM:
 `;
     }
 
-    /* =========================================
-       ADMIN
-    ========================================= */
-
     if (
       isAdmin
     ) {
@@ -600,10 +1009,6 @@ USUÁRIO ADMIN:
 - análises mais completas
 `;
     }
-
-    /* =========================================
-       OPENAI
-    ========================================= */
 
     const completion =
       await openai.chat.completions.create({
@@ -633,10 +1038,6 @@ USUÁRIO ADMIN:
       completion.choices[0]
         .message.content;
 
-    /* =========================================
-       MEMÓRIA CACHE
-    ========================================= */
-
     memoriaUsuarios[
       usuarioId
     ].push({
@@ -645,10 +1046,6 @@ USUÁRIO ADMIN:
 
       content: respostaIA,
     });
-
-    /* =========================================
-       SALVA NO SUPABASE
-    ========================================= */
 
     await supabase
 
@@ -682,10 +1079,6 @@ USUÁRIO ADMIN:
         intervencao:
           emocional.intervencao,
       });
-
-    /* =========================================
-       RETORNO
-    ========================================= */
 
     return res.json({
 
@@ -721,6 +1114,9 @@ USUÁRIO ADMIN:
 
       admin:
         isAdmin,
+
+      perfil_emocional:
+        perfilEmocional,
     });
 
   } catch (erro) {

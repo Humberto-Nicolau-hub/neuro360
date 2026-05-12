@@ -57,24 +57,10 @@ export default function AppInterno({
     },
 
     {
-      emoji: "🔵",
-      nome: "Triste",
+      emoji: "🟤",
+      nome: "Cansado",
       texto:
-        "Estou me sentindo triste hoje",
-    },
-
-    {
-      emoji: "🟠",
-      nome: "Raiva",
-      texto:
-        "Estou com muita raiva hoje",
-    },
-
-    {
-      emoji: "🟢",
-      nome: "Motivado",
-      texto:
-        "Hoje estou me sentindo motivado",
+        "Estou mentalmente cansado",
     },
 
     {
@@ -85,10 +71,38 @@ export default function AppInterno({
     },
 
     {
-      emoji: "🔴",
-      nome: "Sobrecarregado",
+      emoji: "😔",
+      nome: "Deprimido",
       texto:
-        "Estou me sentindo sobrecarregado",
+        "Estou me sentindo deprimido",
+    },
+
+    {
+      emoji: "✨",
+      nome: "Esperançoso",
+      texto:
+        "Estou me sentindo esperançoso",
+    },
+
+    {
+      emoji: "😄",
+      nome: "Feliz",
+      texto:
+        "Hoje estou me sentindo feliz",
+    },
+
+    {
+      emoji: "🟢",
+      nome: "Motivado",
+      texto:
+        "Hoje estou me sentindo motivado",
+    },
+
+    {
+      emoji: "🟠",
+      nome: "Raiva",
+      texto:
+        "Estou com muita raiva hoje",
     },
 
     {
@@ -99,17 +113,17 @@ export default function AppInterno({
     },
 
     {
-      emoji: "🟤",
-      nome: "Cansado",
+      emoji: "🔴",
+      nome: "Sobrecarregado",
       texto:
-        "Estou mentalmente cansado",
+        "Estou me sentindo sobrecarregado",
     },
 
     {
-      emoji: "✨",
-      nome: "Esperançoso",
+      emoji: "🔵",
+      nome: "Triste",
       texto:
-        "Estou me sentindo esperançoso",
+        "Estou me sentindo triste hoje",
     },
   ];
 
@@ -201,16 +215,30 @@ export default function AppInterno({
     }
 
     if (
-      emocao?.includes("evol")
+      emocao?.includes("feliz")
     ) {
 
       return {
 
         sidebar:
-          "linear-gradient(180deg,#0f172a,#1e40af)",
+          "linear-gradient(180deg,#064e3b,#065f46)",
 
         card:
-          "linear-gradient(90deg,#2563eb,#60a5fa)",
+          "linear-gradient(90deg,#10b981,#34d399)",
+      };
+    }
+
+    if (
+      emocao?.includes("deprim")
+    ) {
+
+      return {
+
+        sidebar:
+          "linear-gradient(180deg,#111827,#1f2937)",
+
+        card:
+          "linear-gradient(90deg,#4b5563,#6b7280)",
       };
     }
 
@@ -311,13 +339,6 @@ export default function AppInterno({
         },
       ]);
 
-      const textoAnalise =
-        (
-          textoUsuario +
-          " " +
-          respostaIA
-        ).toLowerCase();
-
       let emocao =
         "Equilibrado";
 
@@ -334,24 +355,17 @@ export default function AppInterno({
       let intervencao =
         "Respiração guiada";
 
+      const textoAnalise =
+        (
+          textoUsuario +
+          " " +
+          respostaIA
+        ).toLowerCase();
+
       if (
-
         textoAnalise.includes(
-          "ansioso"
-        ) ||
-
-        textoAnalise.includes(
-          "ansiedade"
-        ) ||
-
-        textoAnalise.includes(
-          "medo"
-        ) ||
-
-        textoAnalise.includes(
-          "nervoso"
+          "ans"
         )
-
       ) {
 
         emocao =
@@ -372,23 +386,9 @@ export default function AppInterno({
       }
 
       if (
-
         textoAnalise.includes(
           "triste"
-        ) ||
-
-        textoAnalise.includes(
-          "depress"
-        ) ||
-
-        textoAnalise.includes(
-          "sozinho"
-        ) ||
-
-        textoAnalise.includes(
-          "desanimado"
         )
-
       ) {
 
         emocao =
@@ -409,23 +409,9 @@ export default function AppInterno({
       }
 
       if (
-
         textoAnalise.includes(
           "raiva"
-        ) ||
-
-        textoAnalise.includes(
-          "ódio"
-        ) ||
-
-        textoAnalise.includes(
-          "irritado"
-        ) ||
-
-        textoAnalise.includes(
-          "estresse"
         )
-
       ) {
 
         emocao =
@@ -446,73 +432,49 @@ export default function AppInterno({
       }
 
       if (
-
         textoAnalise.includes(
-          "foco"
-        ) ||
-
-        textoAnalise.includes(
-          "clareza"
-        ) ||
-
-        textoAnalise.includes(
-          "melhor"
-        ) ||
-
-        textoAnalise.includes(
-          "evoluindo"
-        ) ||
-
-        textoAnalise.includes(
-          "motivado"
+          "feliz"
         )
-
       ) {
 
         emocao =
-          "Evolução";
+          "Feliz";
 
-        score = 91;
+        score = 96;
 
-        hawkins = 700;
+        hawkins = 780;
 
         consciencia =
-          "Alta percepção";
+          "Plenitude";
 
         trilha =
-          "Expansão Cognitiva";
+          "Expansão Positiva";
 
         intervencao =
-          "Potencialização mental";
+          "Potencialização emocional";
       }
 
       if (
-
         textoAnalise.includes(
-          "sobrecarregado"
-        ) ||
-
-        textoAnalise.includes(
-          "cansado"
+          "deprim"
         )
-
       ) {
 
         emocao =
-          "Sobrecarregado";
+          "Deprimido";
 
-        score = 38;
+        score = 18;
 
-        hawkins = 110;
+        hawkins = 50;
 
         consciencia =
-          "Sob pressão";
+          "Desconexão";
 
         trilha =
-          "Alívio Mental";
+          "Reconstrução Emocional";
 
         intervencao =
-          "Desaceleração guiada";
+          "Apoio terapêutico profundo";
       }
 
       setEstadoEmocional({
@@ -582,11 +544,12 @@ export default function AppInterno({
         height: "100vh",
 
         background:
-          "linear-gradient(135deg,#0f172a,#111827,#1e293b)",
+          "linear-gradient(135deg,#020617,#0f172a,#111827)",
 
         color: "white",
 
-        fontFamily: "Arial",
+        fontFamily:
+          "Arial, sans-serif",
       }}
     >
 
@@ -599,6 +562,15 @@ export default function AppInterno({
 
           background:
             cores.sidebar,
+
+          backdropFilter:
+            "blur(14px)",
+
+          border:
+            "1px solid rgba(255,255,255,0.08)",
+
+          boxShadow:
+            "0 8px 40px rgba(0,0,0,0.25)",
 
           padding: "25px",
 
@@ -617,9 +589,11 @@ export default function AppInterno({
         <h1
           style={{
 
-            fontSize: "52px",
+            fontSize: "48px",
 
-            marginBottom: "20px",
+            marginBottom: "15px",
+
+            fontWeight: "bold",
           }}
         >
           Neuro360
@@ -648,10 +622,10 @@ export default function AppInterno({
 
               border: "none",
 
-              padding: "18px",
+              padding: "16px",
 
               borderRadius:
-                "12px",
+                "14px",
 
               color: "white",
 
@@ -671,21 +645,30 @@ export default function AppInterno({
           </button>
         )}
 
+        {/* STATUS */}
+
         <div
           style={{
 
-            marginTop: "30px",
-
-            opacity: 0.95,
-
-            lineHeight: "2",
+            marginTop: "20px",
 
             background:
-              "rgba(255,255,255,0.05)",
+              "rgba(255,255,255,0.06)",
 
-            padding: "20px",
+            backdropFilter:
+              "blur(14px)",
 
-            borderRadius: "16px",
+            border:
+              "1px solid rgba(255,255,255,0.08)",
+
+            boxShadow:
+              "0 8px 40px rgba(0,0,0,0.25)",
+
+            padding: "22px",
+
+            borderRadius: "18px",
+
+            lineHeight: "2",
           }}
         >
 
@@ -710,9 +693,7 @@ export default function AppInterno({
           <div>
             🌎 Consciência:
             {" "}
-            {
-              estadoEmocional.consciencia
-            }
+            {estadoEmocional.consciencia}
           </div>
 
           <div>
@@ -724,9 +705,7 @@ export default function AppInterno({
           <div>
             ⚡ Intervenção:
             {" "}
-            {
-              estadoEmocional.intervencao
-            }
+            {estadoEmocional.intervencao}
           </div>
 
           <div>
@@ -740,6 +719,8 @@ export default function AppInterno({
           </div>
 
         </div>
+
+        {/* BOTÃO SAIR */}
 
         <button
           onClick={sair}
@@ -756,17 +737,15 @@ export default function AppInterno({
             padding: "15px",
 
             borderRadius:
-              "12px",
+              "14px",
 
             color: "white",
 
-            fontWeight:
-              "bold",
+            fontWeight: "bold",
 
             cursor: "pointer",
 
-            boxShadow:
-              "0 0 20px rgba(0,0,0,0.2)",
+            marginBottom: "10px",
           }}
         >
           SAIR
@@ -789,7 +768,7 @@ export default function AppInterno({
         }}
       >
 
-        {/* HISTORICO */}
+        {/* HISTÓRICO */}
 
         <div
           style={{
@@ -828,22 +807,28 @@ export default function AppInterno({
               <div
                 style={{
 
-                  maxWidth: "70%",
+                  maxWidth: "75%",
 
-                  padding: "20px",
+                  padding: "22px",
 
                   borderRadius:
-                    "18px",
+                    "20px",
 
-                  lineHeight: "1.7",
+                  lineHeight: "1.9",
 
-                  fontSize: "18px",
+                  fontSize: "17px",
 
                   whiteSpace:
                     "pre-wrap",
 
+                  backdropFilter:
+                    "blur(10px)",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+
                   boxShadow:
-                    "0 0 20px rgba(0,0,0,0.2)",
+                    "0 8px 30px rgba(0,0,0,0.25)",
 
                   background:
                     msg.tipo ===
@@ -872,7 +857,7 @@ export default function AppInterno({
 
                 marginTop: "10px",
 
-                fontSize: "16px",
+                fontSize: "15px",
               }}
             >
               IA analisando...
@@ -883,9 +868,7 @@ export default function AppInterno({
 
         </div>
 
-        {/* ======================================================
-           EMOÇÕES RÁPIDAS
-        ====================================================== */}
+        {/* EMOÇÕES RÁPIDAS */}
 
         <div
           style={{
@@ -897,7 +880,7 @@ export default function AppInterno({
           <div
             style={{
 
-              marginBottom: "12px",
+              marginBottom: "14px",
 
               fontSize: "15px",
 
@@ -935,10 +918,13 @@ export default function AppInterno({
                 style={{
 
                   background:
-                    "rgba(255,255,255,0.08)",
+                    "rgba(255,255,255,0.06)",
+
+                  backdropFilter:
+                    "blur(12px)",
 
                   border:
-                    "1px solid rgba(255,255,255,0.1)",
+                    "1px solid rgba(255,255,255,0.08)",
 
                   padding:
                     "12px 18px",
@@ -956,9 +942,6 @@ export default function AppInterno({
 
                   transition:
                     "all 0.3s ease",
-
-                  backdropFilter:
-                    "blur(10px)",
 
                   boxShadow:
                     "0 0 15px rgba(0,0,0,0.15)",
@@ -979,7 +962,7 @@ export default function AppInterno({
                     "scale(1)";
 
                   e.target.style.background =
-                    "rgba(255,255,255,0.08)";
+                    "rgba(255,255,255,0.06)";
                 }}
               >
 
@@ -1001,7 +984,7 @@ export default function AppInterno({
 
             display: "flex",
 
-            gap: "10px",
+            gap: "12px",
           }}
         >
 
@@ -1029,12 +1012,16 @@ export default function AppInterno({
               padding: "18px",
 
               borderRadius:
-                "12px",
+                "14px",
 
-              border: "none",
+              border:
+                "1px solid rgba(255,255,255,0.08)",
 
               background:
-                "rgba(255,255,255,0.08)",
+                "rgba(255,255,255,0.06)",
+
+              backdropFilter:
+                "blur(12px)",
 
               color: "white",
 
@@ -1062,7 +1049,7 @@ export default function AppInterno({
                 "18px 30px",
 
               borderRadius:
-                "12px",
+                "14px",
 
               color: "white",
 

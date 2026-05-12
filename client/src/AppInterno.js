@@ -22,6 +22,14 @@ export default function AppInterno({
   const [loading, setLoading] =
     useState(false);
 
+  const [emocaoAtiva,
+    setEmocaoAtiva] =
+    useState("");
+
+  const [historicoEmocional,
+    setHistoricoEmocional] =
+    useState([]);
+
   const [estadoEmocional,
     setEstadoEmocional] =
     useState({
@@ -163,7 +171,7 @@ export default function AppInterno({
   }
 
   /* ======================================================
-     COR DINAMICA
+     COR DINÂMICA
   ====================================================== */
 
   function obterCorEmocional() {
@@ -225,20 +233,6 @@ export default function AppInterno({
 
         card:
           "linear-gradient(90deg,#10b981,#34d399)",
-      };
-    }
-
-    if (
-      emocao?.includes("deprim")
-    ) {
-
-      return {
-
-        sidebar:
-          "linear-gradient(180deg,#111827,#1f2937)",
-
-        card:
-          "linear-gradient(90deg,#4b5563,#6b7280)",
       };
     }
 
@@ -315,13 +309,6 @@ export default function AppInterno({
           }
         );
 
-      if (!resposta.ok) {
-
-        throw new Error(
-          "Erro servidor"
-        );
-      }
-
       const data =
         await resposta.json();
 
@@ -339,158 +326,48 @@ export default function AppInterno({
         },
       ]);
 
-      let emocao =
+      const emocaoDetectada =
+        data
+          ?.emocao_detectada
+          ?.emocao ||
         "Equilibrado";
-
-      let score = 82;
-
-      let hawkins = 540;
-
-      let consciencia =
-        "Expansão";
-
-      let trilha =
-        "Reequilíbrio";
-
-      let intervencao =
-        "Respiração guiada";
-
-      const textoAnalise =
-        (
-          textoUsuario +
-          " " +
-          respostaIA
-        ).toLowerCase();
-
-      if (
-        textoAnalise.includes(
-          "ans"
-        )
-      ) {
-
-        emocao =
-          "Ansiedade";
-
-        score = 42;
-
-        hawkins = 125;
-
-        consciencia =
-          "Contração";
-
-        trilha =
-          "Acalmamento Neural";
-
-        intervencao =
-          "Respiração profunda";
-      }
-
-      if (
-        textoAnalise.includes(
-          "triste"
-        )
-      ) {
-
-        emocao =
-          "Tristeza";
-
-        score = 28;
-
-        hawkins = 75;
-
-        consciencia =
-          "Desmotivação";
-
-        trilha =
-          "Reconexão Emocional";
-
-        intervencao =
-          "Acolhimento terapêutico";
-      }
-
-      if (
-        textoAnalise.includes(
-          "raiva"
-        )
-      ) {
-
-        emocao =
-          "Raiva";
-
-        score = 35;
-
-        hawkins = 150;
-
-        consciencia =
-          "Reatividade";
-
-        trilha =
-          "Descompressão";
-
-        intervencao =
-          "Relaxamento neural";
-      }
-
-      if (
-        textoAnalise.includes(
-          "feliz"
-        )
-      ) {
-
-        emocao =
-          "Feliz";
-
-        score = 96;
-
-        hawkins = 780;
-
-        consciencia =
-          "Plenitude";
-
-        trilha =
-          "Expansão Positiva";
-
-        intervencao =
-          "Potencialização emocional";
-      }
-
-      if (
-        textoAnalise.includes(
-          "deprim"
-        )
-      ) {
-
-        emocao =
-          "Deprimido";
-
-        score = 18;
-
-        hawkins = 50;
-
-        consciencia =
-          "Desconexão";
-
-        trilha =
-          "Reconstrução Emocional";
-
-        intervencao =
-          "Apoio terapêutico profundo";
-      }
 
       setEstadoEmocional({
 
-        score,
+        score:
+          data?.score_emocional || 82,
 
-        hawkins,
+        hawkins:
+          data
+            ?.frequencia_hawkins
+            ?.frequencia || 540,
 
-        consciencia,
+        consciencia:
+          data
+            ?.nivel_consciencia ||
+          "Expansão",
 
-        trilha,
+        trilha:
+          data
+            ?.trilha_terapeutica ||
+          "Reequilíbrio",
 
-        intervencao,
+        intervencao:
+          data?.intervencao ||
+          "Respiração guiada",
 
-        emocao,
+        emocao:
+          emocaoDetectada,
       });
+
+      setHistoricoEmocional(
+        (prev) => [
+
+          emocaoDetectada,
+
+          ...prev,
+        ].slice(0, 5)
+      );
 
     } catch (erro) {
 
@@ -558,7 +435,7 @@ export default function AppInterno({
       <div
         style={{
 
-          width: "320px",
+          width: "340px",
 
           background:
             cores.sidebar,
@@ -574,9 +451,6 @@ export default function AppInterno({
 
           padding: "25px",
 
-          borderRight:
-            "1px solid rgba(255,255,255,0.1)",
-
           display: "flex",
 
           flexDirection: "column",
@@ -586,14 +460,43 @@ export default function AppInterno({
         }}
       >
 
+        {/* AVATAR */}
+
+        <div
+          style={{
+
+            width: "90px",
+
+            height: "90px",
+
+            borderRadius: "50%",
+
+            background:
+              "linear-gradient(135deg,#38bdf8,#2563eb)",
+
+            display: "flex",
+
+            alignItems: "center",
+
+            justifyContent: "center",
+
+            fontSize: "38px",
+
+            marginBottom: "20px",
+
+            boxShadow:
+              "0 0 30px rgba(56,189,248,0.4)",
+          }}
+        >
+          🧠
+        </div>
+
         <h1
           style={{
 
-            fontSize: "48px",
+            fontSize: "42px",
 
-            marginBottom: "15px",
-
-            fontWeight: "bold",
+            marginBottom: "8px",
           }}
         >
           Neuro360
@@ -604,7 +507,7 @@ export default function AppInterno({
 
             color: "#4ade80",
 
-            marginBottom: "20px",
+            marginBottom: "25px",
 
             fontWeight: "bold",
           }}
@@ -612,45 +515,10 @@ export default function AppInterno({
           IA Terapêutica Ativa ✅
         </div>
 
-        {usuario?.admin && (
-
-          <button
-            style={{
-
-              background:
-                cores.card,
-
-              border: "none",
-
-              padding: "16px",
-
-              borderRadius:
-                "14px",
-
-              color: "white",
-
-              fontWeight:
-                "bold",
-
-              marginBottom:
-                "20px",
-
-              cursor: "pointer",
-
-              boxShadow:
-                "0 0 20px rgba(0,0,0,0.2)",
-            }}
-          >
-            ADMIN 👑
-          </button>
-        )}
-
         {/* STATUS */}
 
         <div
           style={{
-
-            marginTop: "20px",
 
             background:
               "rgba(255,255,255,0.06)",
@@ -720,7 +588,126 @@ export default function AppInterno({
 
         </div>
 
-        {/* BOTÃO SAIR */}
+        {/* ENERGIA */}
+
+        <div
+          style={{
+
+            marginTop: "20px",
+          }}
+        >
+
+          <div
+            style={{
+
+              marginBottom: "8px",
+
+              color: "#cbd5e1",
+
+              fontSize: "14px",
+            }}
+          >
+            Energia emocional
+          </div>
+
+          <div
+            style={{
+
+              width: "100%",
+
+              height: "10px",
+
+              borderRadius: "999px",
+
+              background:
+                "rgba(255,255,255,0.08)",
+
+              overflow: "hidden",
+            }}
+          >
+
+            <div
+              style={{
+
+                width:
+                  `${estadoEmocional.score}%`,
+
+                height: "100%",
+
+                background:
+                  cores.card,
+
+                transition:
+                  "all 0.6s ease",
+              }}
+            />
+
+          </div>
+
+        </div>
+
+        {/* HISTÓRICO */}
+
+        <div
+          style={{
+
+            marginTop: "25px",
+          }}
+        >
+
+          <div
+            style={{
+
+              marginBottom: "10px",
+
+              fontWeight: "bold",
+
+              color: "#cbd5e1",
+            }}
+          >
+            Histórico emocional
+          </div>
+
+          <div
+            style={{
+
+              display: "flex",
+
+              flexWrap: "wrap",
+
+              gap: "8px",
+            }}
+          >
+
+            {historicoEmocional.map(
+              (emocao, index) => (
+
+              <div
+                key={index}
+
+                style={{
+
+                  background:
+                    "rgba(255,255,255,0.08)",
+
+                  padding:
+                    "8px 12px",
+
+                  borderRadius:
+                    "999px",
+
+                  fontSize: "13px",
+                }}
+              >
+                {emocao}
+              </div>
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* SAIR */}
 
         <button
           onClick={sair}
@@ -744,8 +731,6 @@ export default function AppInterno({
             fontWeight: "bold",
 
             cursor: "pointer",
-
-            marginBottom: "10px",
           }}
         >
           SAIR
@@ -778,8 +763,6 @@ export default function AppInterno({
             overflowY: "auto",
 
             marginBottom: "20px",
-
-            paddingRight: "10px",
           }}
         >
 
@@ -837,9 +820,6 @@ export default function AppInterno({
                       ? "linear-gradient(90deg,#22c55e,#4ade80)"
 
                       : cores.card,
-
-                  transition:
-                    "all 0.5s ease",
                 }}
               >
                 {msg.texto}
@@ -848,19 +828,44 @@ export default function AppInterno({
             </div>
           ))}
 
+          {/* TYPING */}
+
           {loading && (
 
             <div
               style={{
 
-                color: "#4ade80",
+                display: "flex",
+
+                gap: "8px",
 
                 marginTop: "10px",
-
-                fontSize: "15px",
               }}
             >
-              IA analisando...
+
+              {[1,2,3].map((dot) => (
+
+                <div
+                  key={dot}
+
+                  style={{
+
+                    width: "10px",
+
+                    height: "10px",
+
+                    borderRadius:
+                      "50%",
+
+                    background:
+                      "#4ade80",
+
+                    animation:
+                      "pulse 1s infinite",
+                  }}
+                />
+              ))}
+
             </div>
           )}
 
@@ -868,7 +873,7 @@ export default function AppInterno({
 
         </div>
 
-        {/* EMOÇÕES RÁPIDAS */}
+        {/* EMOÇÕES */}
 
         <div
           style={{
@@ -909,22 +914,34 @@ export default function AppInterno({
               <button
                 key={index}
 
-                onClick={() =>
+                onClick={() => {
+
                   setMensagem(
                     emocao.texto
-                  )
-                }
+                  );
+
+                  setEmocaoAtiva(
+                    emocao.nome
+                  );
+                }}
 
                 style={{
 
                   background:
-                    "rgba(255,255,255,0.06)",
+                    emocaoAtiva ===
+                    emocao.nome
 
-                  backdropFilter:
-                    "blur(12px)",
+                      ? cores.card
+
+                      : "rgba(255,255,255,0.06)",
 
                   border:
-                    "1px solid rgba(255,255,255,0.08)",
+                    emocaoAtiva ===
+                    emocao.nome
+
+                      ? "1px solid rgba(255,255,255,0.4)"
+
+                      : "1px solid rgba(255,255,255,0.08)",
 
                   padding:
                     "12px 18px",
@@ -943,26 +960,21 @@ export default function AppInterno({
                   transition:
                     "all 0.3s ease",
 
+                  transform:
+                    emocaoAtiva ===
+                    emocao.nome
+
+                      ? "scale(1.05)"
+
+                      : "scale(1)",
+
                   boxShadow:
-                    "0 0 15px rgba(0,0,0,0.15)",
-                }}
+                    emocaoAtiva ===
+                    emocao.nome
 
-                onMouseEnter={(e) => {
+                      ? "0 0 25px rgba(56,189,248,0.35)"
 
-                  e.target.style.transform =
-                    "scale(1.05)";
-
-                  e.target.style.background =
-                    "rgba(255,255,255,0.15)";
-                }}
-
-                onMouseLeave={(e) => {
-
-                  e.target.style.transform =
-                    "scale(1)";
-
-                  e.target.style.background =
-                    "rgba(255,255,255,0.06)";
+                      : "0 0 15px rgba(0,0,0,0.15)",
                 }}
               >
 

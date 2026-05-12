@@ -4,6 +4,15 @@ import React, {
   useRef,
 } from "react";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+
 export default function AppInterno({
   usuario,
   onLogout,
@@ -29,6 +38,10 @@ export default function AppInterno({
   const [historicoEmocional,
     setHistoricoEmocional] =
     useState([]);
+
+  const [modoFoco,
+    setModoFoco] =
+    useState(false);
 
   const [estadoEmocional,
     setEstadoEmocional] =
@@ -266,6 +279,33 @@ export default function AppInterno({
     obterCorEmocional();
 
   /* ======================================================
+     INSIGHT AUTOMÁTICO
+  ====================================================== */
+
+  function gerarInsight() {
+
+    const score =
+      estadoEmocional.score;
+
+    if (score <= 35) {
+
+      return "Há sinais emocionais de sobrecarga. A desaceleração terapêutica pode ajudar.";
+    }
+
+    if (score <= 60) {
+
+      return "Você apresenta oscilações emocionais moderadas nas últimas interações.";
+    }
+
+    if (score >= 80) {
+
+      return "Seu padrão emocional demonstra evolução cognitiva positiva.";
+    }
+
+    return "Seu estado emocional está em processo de estabilização.";
+  }
+
+  /* ======================================================
      ENVIAR
   ====================================================== */
 
@@ -357,7 +397,7 @@ export default function AppInterno({
           ?.emocao ||
         "Equilibrado";
 
-      setEstadoEmocional({
+      const novoEstado = {
 
         score:
           data?.score_emocional || 82,
@@ -383,15 +423,28 @@ export default function AppInterno({
 
         emocao:
           emocaoDetectada,
-      });
+      };
+
+      setEstadoEmocional(
+        novoEstado
+      );
 
       setHistoricoEmocional(
         (prev) => [
 
-          emocaoDetectada,
+          {
+            emocao:
+              emocaoDetectada,
+
+            score:
+              novoEstado.score,
+
+            horario:
+              obterHorarioAtual(),
+          },
 
           ...prev,
-        ].slice(0, 5)
+        ].slice(0, 7)
       );
 
     } catch (erro) {
@@ -436,6 +489,23 @@ export default function AppInterno({
   }
 
   /* ======================================================
+     DADOS GRÁFICO
+  ====================================================== */
+
+  const dadosGrafico =
+    historicoEmocional
+      .slice()
+      .reverse()
+      .map((item, index) => ({
+
+        name:
+          `${index + 1}`,
+
+        score:
+          item.score || 50,
+      }));
+
+  /* ======================================================
      RENDER
   ====================================================== */
 
@@ -449,23 +519,29 @@ export default function AppInterno({
         height: "100vh",
 
         background:
-          "linear-gradient(135deg,#020617,#0f172a,#111827)",
+          modoFoco
+            ? "#020617"
+            : "linear-gradient(135deg,#020617,#0f172a,#111827)",
 
         color: "white",
 
         fontFamily:
           "Arial, sans-serif",
+
+        transition:
+          "all 0.5s ease",
       }}
     >
 
-      {/* ======================================================
-         SIDEBAR
-      ====================================================== */}
+      {/* SIDEBAR */}
 
       <div
         style={{
 
-          width: "340px",
+          width:
+            modoFoco
+              ? "260px"
+              : "340px",
 
           background:
             cores.sidebar,
@@ -479,18 +555,13 @@ export default function AppInterno({
           borderRight:
             "1px solid rgba(255,255,255,0.08)",
 
-          boxShadow:
-            "0 10px 40px rgba(0,0,0,0.35)",
-
           backdropFilter:
-            "blur(14px)",
+            "blur(16px)",
 
           transition:
             "all 0.5s ease",
         }}
       >
-
-        {/* AVATAR */}
 
         <div
           style={{
@@ -515,10 +586,7 @@ export default function AppInterno({
             marginBottom: "20px",
 
             boxShadow:
-              "0 0 40px rgba(56,189,248,0.4)",
-
-            animation:
-              "pulse 3s infinite",
+              "0 0 40px rgba(56,189,248,0.35)",
           }}
         >
           🧠
@@ -526,12 +594,7 @@ export default function AppInterno({
 
         <h1
           style={{
-
-            fontSize: "52px",
-
-            marginBottom: "10px",
-
-            fontWeight: "bold",
+            fontSize: "48px",
           }}
         >
           Neuro360
@@ -542,7 +605,7 @@ export default function AppInterno({
 
             color: "#4ade80",
 
-            marginBottom: "25px",
+            marginBottom: "20px",
 
             fontWeight: "bold",
           }}
@@ -550,31 +613,54 @@ export default function AppInterno({
           IA Terapêutica Ativa ✅
         </div>
 
-        {/* CARD STATUS */}
+        {/* MODO FOCO */}
+
+        <button
+          onClick={() =>
+            setModoFoco(
+              !modoFoco
+            )
+          }
+
+          style={{
+
+            background:
+              "rgba(255,255,255,0.08)",
+
+            border:
+              "1px solid rgba(255,255,255,0.08)",
+
+            padding: "14px",
+
+            borderRadius: "14px",
+
+            color: "white",
+
+            marginBottom: "20px",
+
+            cursor: "pointer",
+          }}
+        >
+          {
+            modoFoco
+              ? "🧘 Modo Normal"
+              : "🎯 Modo Foco TDAH"
+          }
+        </button>
+
+        {/* DASHBOARD */}
 
         <div
           style={{
 
             background:
-              "rgba(255,255,255,0.06)",
+              "rgba(255,255,255,0.05)",
 
-            border:
-              "1px solid rgba(255,255,255,0.08)",
+            padding: "20px",
 
-            backdropFilter:
-              "blur(14px)",
-
-            borderRadius: "20px",
-
-            padding: "22px",
+            borderRadius: "18px",
 
             lineHeight: "2",
-
-            boxShadow:
-              "0 10px 30px rgba(0,0,0,0.2)",
-
-            animation:
-              "fadein 0.5s ease",
           }}
         >
 
@@ -599,19 +685,17 @@ export default function AppInterno({
           <div>
             🌎 Consciência:
             {" "}
-            {estadoEmocional.consciencia}
+            {
+              estadoEmocional.consciencia
+            }
           </div>
 
           <div>
             🛤️ Trilha:
             {" "}
-            {estadoEmocional.trilha}
-          </div>
-
-          <div>
-            ⚡ Intervenção:
-            {" "}
-            {estadoEmocional.intervencao}
+            {
+              estadoEmocional.trilha
+            }
           </div>
 
           <div>
@@ -626,7 +710,33 @@ export default function AppInterno({
 
         </div>
 
-        {/* ENERGIA */}
+        {/* INSIGHT */}
+
+        <div
+          style={{
+
+            marginTop: "20px",
+
+            background:
+              "rgba(255,255,255,0.05)",
+
+            padding: "18px",
+
+            borderRadius: "18px",
+
+            lineHeight: "1.8",
+
+            fontSize: "14px",
+
+            color: "#cbd5e1",
+          }}
+        >
+          💡
+          {" "}
+          {gerarInsight()}
+        </div>
+
+        {/* TIMELINE */}
 
         <div
           style={{
@@ -637,70 +747,10 @@ export default function AppInterno({
           <div
             style={{
               marginBottom: "10px",
-            }}
-          >
-            Energia emocional
-          </div>
-
-          <div
-            style={{
-
-              width: "100%",
-
-              height: "12px",
-
-              background:
-                "rgba(255,255,255,0.08)",
-
-              borderRadius:
-                "999px",
-
-              overflow: "hidden",
-            }}
-          >
-
-            <div
-              style={{
-
-                width:
-                  `${estadoEmocional.score}%`,
-
-                height: "100%",
-
-                background:
-                  cores.card,
-
-                borderRadius:
-                  "999px",
-
-                transition:
-                  "all 0.6s ease",
-
-                boxShadow:
-                  "0 0 20px rgba(56,189,248,0.5)",
-              }}
-            />
-
-          </div>
-
-        </div>
-
-        {/* HISTÓRICO */}
-
-        <div
-          style={{
-            marginTop: "25px",
-          }}
-        >
-
-          <div
-            style={{
-              marginBottom: "12px",
-
               fontWeight: "bold",
             }}
           >
-            Histórico emocional
+            Timeline emocional
           </div>
 
           <div
@@ -708,47 +758,49 @@ export default function AppInterno({
 
               display: "flex",
 
-              flexWrap: "wrap",
+              flexDirection:
+                "column",
 
               gap: "10px",
             }}
           >
 
-            {historicoEmocional.map(
-              (emocao, index) => (
+            {historicoEmocional
+              .slice(0, 5)
+              .map(
+                (
+                  item,
+                  index
+                ) => (
 
-              <div
-                key={index}
+                <div
+                  key={index}
 
-                style={{
+                  style={{
 
-                  background:
-                    "rgba(255,255,255,0.08)",
+                    background:
+                      "rgba(255,255,255,0.05)",
 
-                  border:
-                    "1px solid rgba(255,255,255,0.08)",
+                    padding:
+                      "10px 14px",
 
-                  padding:
-                    "8px 14px",
+                    borderRadius:
+                      "14px",
 
-                  borderRadius:
-                    "999px",
-
-                  fontSize: "13px",
-
-                  backdropFilter:
-                    "blur(10px)",
-                }}
-              >
-                {emocao}
-              </div>
-            ))}
+                    fontSize: "13px",
+                  }}
+                >
+                  ⏰
+                  {" "}
+                  {item.horario}
+                  {" — "}
+                  {item.emocao}
+                </div>
+              ))}
 
           </div>
 
         </div>
-
-        {/* BOTÃO SAIR */}
 
         <button
           onClick={sair}
@@ -764,21 +816,13 @@ export default function AppInterno({
 
             padding: "16px",
 
-            borderRadius:
-              "14px",
+            borderRadius: "14px",
 
             color: "white",
 
-            fontWeight:
-              "bold",
+            fontWeight: "bold",
 
             cursor: "pointer",
-
-            transition:
-              "all 0.3s ease",
-
-            boxShadow:
-              "0 10px 25px rgba(239,68,68,0.25)",
           }}
         >
           SAIR
@@ -786,9 +830,7 @@ export default function AppInterno({
 
       </div>
 
-      {/* ======================================================
-         CHAT
-      ====================================================== */}
+      {/* CHAT */}
 
       <div
         style={{
@@ -803,7 +845,68 @@ export default function AppInterno({
         }}
       >
 
-        {/* HISTÓRICO */}
+        {/* GRÁFICO */}
+
+        <div
+          style={{
+
+            height: "180px",
+
+            background:
+              "rgba(255,255,255,0.04)",
+
+            borderRadius: "20px",
+
+            padding: "20px",
+
+            marginBottom: "20px",
+          }}
+        >
+
+          <div
+            style={{
+              marginBottom: "15px",
+              fontWeight: "bold",
+            }}
+          >
+            Evolução emocional
+          </div>
+
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+          >
+
+            <LineChart
+              data={dadosGrafico}
+            >
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#334155"
+              />
+
+              <XAxis
+                dataKey="name"
+                stroke="#94a3b8"
+              />
+
+              <Tooltip />
+
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke="#38bdf8"
+                strokeWidth={3}
+              />
+
+            </LineChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+        {/* CHAT HISTÓRICO */}
 
         <div
           style={{
@@ -811,8 +914,6 @@ export default function AppInterno({
             flex: 1,
 
             overflowY: "auto",
-
-            paddingRight: "10px",
 
             marginBottom: "20px",
           }}
@@ -841,9 +942,6 @@ export default function AppInterno({
 
                 marginBottom:
                   "24px",
-
-                animation:
-                  "fadein 0.5s ease",
               }}
             >
 
@@ -861,9 +959,6 @@ export default function AppInterno({
 
                   fontSize: "17px",
 
-                  whiteSpace:
-                    "pre-wrap",
-
                   background:
                     msg.tipo ===
                     "usuario"
@@ -874,21 +969,10 @@ export default function AppInterno({
 
                   boxShadow:
                     "0 10px 35px rgba(0,0,0,0.25)",
-
-                  border:
-                    "1px solid rgba(255,255,255,0.08)",
-
-                  backdropFilter:
-                    "blur(10px)",
-
-                  transition:
-                    "all 0.3s ease",
                 }}
               >
                 {msg.texto}
               </div>
-
-              {/* HORÁRIO */}
 
               <div
                 style={{
@@ -898,7 +982,7 @@ export default function AppInterno({
                   fontSize: "12px",
 
                   color:
-                    "rgba(255,255,255,0.5)",
+                    "rgba(255,255,255,0.45)",
                 }}
               >
                 {msg.horario}
@@ -907,44 +991,15 @@ export default function AppInterno({
             </div>
           ))}
 
-          {/* TYPING */}
-
           {loading && (
 
             <div
               style={{
 
-                display: "flex",
-
-                gap: "8px",
-
-                paddingLeft: "10px",
+                color: "#4ade80",
               }}
             >
-
-              {[1,2,3].map((dot) => (
-
-                <div
-                  key={dot}
-
-                  style={{
-
-                    width: "10px",
-
-                    height: "10px",
-
-                    borderRadius:
-                      "50%",
-
-                    background:
-                      "#4ade80",
-
-                    animation:
-                      "pulse 1s infinite",
-                  }}
-                />
-              ))}
-
+              IA analisando...
             </div>
           )}
 
@@ -956,24 +1011,9 @@ export default function AppInterno({
 
         <div
           style={{
-            marginBottom: "20px",
+            marginBottom: "18px",
           }}
         >
-
-          <div
-            style={{
-
-              marginBottom: "14px",
-
-              fontSize: "15px",
-
-              color: "#cbd5e1",
-
-              fontWeight: "bold",
-            }}
-          >
-            Como você está se sentindo hoje?
-          </div>
 
           <div
             style={{
@@ -1011,7 +1051,7 @@ export default function AppInterno({
 
                       ? cores.card
 
-                      : "rgba(255,255,255,0.06)",
+                      : "rgba(255,255,255,0.05)",
 
                   border:
                     "1px solid rgba(255,255,255,0.08)",
@@ -1026,12 +1066,7 @@ export default function AppInterno({
 
                   cursor: "pointer",
 
-                  fontSize: "14px",
-
                   fontWeight: "bold",
-
-                  transition:
-                    "all 0.3s ease",
 
                   transform:
                     emocaoAtiva ===
@@ -1041,23 +1076,13 @@ export default function AppInterno({
 
                       : "scale(1)",
 
-                  boxShadow:
-                    emocaoAtiva ===
-                    emocao.nome
-
-                      ? "0 0 30px rgba(56,189,248,0.45)"
-
-                      : "0 8px 20px rgba(0,0,0,0.15)",
-
-                  backdropFilter:
-                    "blur(10px)",
+                  transition:
+                    "all 0.3s ease",
                 }}
               >
-
                 {emocao.emoji}
                 {" "}
                 {emocao.nome}
-
               </button>
             ))}
 
@@ -1079,19 +1104,17 @@ export default function AppInterno({
           <input
             value={mensagem}
 
-            onKeyDown={
-              handleKeyDown
-            }
-
             onChange={(e) =>
               setMensagem(
                 e.target.value
               )
             }
 
-            placeholder="Como você está se sentindo?"
+            onKeyDown={
+              handleKeyDown
+            }
 
-            disabled={loading}
+            placeholder="Como você está se sentindo?"
 
             style={{
 
@@ -1099,26 +1122,19 @@ export default function AppInterno({
 
               padding: "20px",
 
-              borderRadius:
-                "16px",
+              borderRadius: "16px",
 
               border:
                 "1px solid rgba(255,255,255,0.08)",
 
               background:
-                "rgba(255,255,255,0.06)",
+                "rgba(255,255,255,0.05)",
 
               color: "white",
 
               fontSize: "16px",
 
               outline: "none",
-
-              backdropFilter:
-                "blur(12px)",
-
-              boxShadow:
-                "0 10px 30px rgba(0,0,0,0.15)",
             }}
           />
 
@@ -1148,12 +1164,6 @@ export default function AppInterno({
                 "bold",
 
               cursor: "pointer",
-
-              transition:
-                "all 0.3s ease",
-
-              boxShadow:
-                "0 10px 30px rgba(34,197,94,0.25)",
             }}
           >
             {loading

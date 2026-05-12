@@ -156,6 +156,22 @@ export default function AppInterno({
   }, [historico, loading]);
 
   /* ======================================================
+     HORÁRIO
+  ====================================================== */
+
+  function obterHorarioAtual() {
+
+    return new Date()
+      .toLocaleTimeString(
+        "pt-BR",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+  }
+
+  /* ======================================================
      ENTER
   ====================================================== */
 
@@ -190,7 +206,7 @@ export default function AppInterno({
           "linear-gradient(180deg,#172554,#1e3a8a)",
 
         card:
-          "linear-gradient(90deg,#1d4ed8,#3b82f6)",
+          "linear-gradient(90deg,#1d4ed8,#38bdf8)",
       };
     }
 
@@ -218,7 +234,7 @@ export default function AppInterno({
           "linear-gradient(180deg,#450a0a,#7f1d1d)",
 
         card:
-          "linear-gradient(90deg,#dc2626,#ef4444)",
+          "linear-gradient(90deg,#dc2626,#f87171)",
       };
     }
 
@@ -250,7 +266,7 @@ export default function AppInterno({
     obterCorEmocional();
 
   /* ======================================================
-     ENVIAR MENSAGEM
+     ENVIAR
   ====================================================== */
 
   async function enviarMensagem() {
@@ -260,11 +276,16 @@ export default function AppInterno({
       loading
     ) return;
 
+    const horario =
+      obterHorarioAtual();
+
     const novaMensagem = {
 
       tipo: "usuario",
 
       texto: mensagem,
+
+      horario,
     };
 
     setHistorico((prev) => [
@@ -322,7 +343,11 @@ export default function AppInterno({
 
         {
           tipo: "ia",
+
           texto: respostaIA,
+
+          horario:
+            obterHorarioAtual(),
         },
       ]);
 
@@ -382,6 +407,9 @@ export default function AppInterno({
 
           texto:
             "Erro ao conectar com IA terapêutica.",
+
+          horario:
+            obterHorarioAtual(),
         },
       ]);
     }
@@ -430,7 +458,9 @@ export default function AppInterno({
       }}
     >
 
-      {/* SIDEBAR */}
+      {/* ======================================================
+         SIDEBAR
+      ====================================================== */}
 
       <div
         style={{
@@ -440,20 +470,20 @@ export default function AppInterno({
           background:
             cores.sidebar,
 
-          backdropFilter:
-            "blur(14px)",
-
-          border:
-            "1px solid rgba(255,255,255,0.08)",
-
-          boxShadow:
-            "0 8px 40px rgba(0,0,0,0.25)",
-
           padding: "25px",
 
           display: "flex",
 
           flexDirection: "column",
+
+          borderRight:
+            "1px solid rgba(255,255,255,0.08)",
+
+          boxShadow:
+            "0 10px 40px rgba(0,0,0,0.35)",
+
+          backdropFilter:
+            "blur(14px)",
 
           transition:
             "all 0.5s ease",
@@ -472,7 +502,7 @@ export default function AppInterno({
             borderRadius: "50%",
 
             background:
-              "linear-gradient(135deg,#38bdf8,#2563eb)",
+              cores.card,
 
             display: "flex",
 
@@ -485,7 +515,10 @@ export default function AppInterno({
             marginBottom: "20px",
 
             boxShadow:
-              "0 0 30px rgba(56,189,248,0.4)",
+              "0 0 40px rgba(56,189,248,0.4)",
+
+            animation:
+              "pulse 3s infinite",
           }}
         >
           🧠
@@ -494,9 +527,11 @@ export default function AppInterno({
         <h1
           style={{
 
-            fontSize: "42px",
+            fontSize: "52px",
 
-            marginBottom: "8px",
+            marginBottom: "10px",
+
+            fontWeight: "bold",
           }}
         >
           Neuro360
@@ -515,7 +550,7 @@ export default function AppInterno({
           IA Terapêutica Ativa ✅
         </div>
 
-        {/* STATUS */}
+        {/* CARD STATUS */}
 
         <div
           style={{
@@ -523,20 +558,23 @@ export default function AppInterno({
             background:
               "rgba(255,255,255,0.06)",
 
-            backdropFilter:
-              "blur(14px)",
-
             border:
               "1px solid rgba(255,255,255,0.08)",
 
-            boxShadow:
-              "0 8px 40px rgba(0,0,0,0.25)",
+            backdropFilter:
+              "blur(14px)",
+
+            borderRadius: "20px",
 
             padding: "22px",
 
-            borderRadius: "18px",
-
             lineHeight: "2",
+
+            boxShadow:
+              "0 10px 30px rgba(0,0,0,0.2)",
+
+            animation:
+              "fadein 0.5s ease",
           }}
         >
 
@@ -592,19 +630,13 @@ export default function AppInterno({
 
         <div
           style={{
-
             marginTop: "20px",
           }}
         >
 
           <div
             style={{
-
-              marginBottom: "8px",
-
-              color: "#cbd5e1",
-
-              fontSize: "14px",
+              marginBottom: "10px",
             }}
           >
             Energia emocional
@@ -615,12 +647,13 @@ export default function AppInterno({
 
               width: "100%",
 
-              height: "10px",
-
-              borderRadius: "999px",
+              height: "12px",
 
               background:
                 "rgba(255,255,255,0.08)",
+
+              borderRadius:
+                "999px",
 
               overflow: "hidden",
             }}
@@ -637,8 +670,14 @@ export default function AppInterno({
                 background:
                   cores.card,
 
+                borderRadius:
+                  "999px",
+
                 transition:
                   "all 0.6s ease",
+
+                boxShadow:
+                  "0 0 20px rgba(56,189,248,0.5)",
               }}
             />
 
@@ -650,19 +689,15 @@ export default function AppInterno({
 
         <div
           style={{
-
             marginTop: "25px",
           }}
         >
 
           <div
             style={{
-
-              marginBottom: "10px",
+              marginBottom: "12px",
 
               fontWeight: "bold",
-
-              color: "#cbd5e1",
             }}
           >
             Histórico emocional
@@ -675,7 +710,7 @@ export default function AppInterno({
 
               flexWrap: "wrap",
 
-              gap: "8px",
+              gap: "10px",
             }}
           >
 
@@ -690,13 +725,19 @@ export default function AppInterno({
                   background:
                     "rgba(255,255,255,0.08)",
 
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+
                   padding:
-                    "8px 12px",
+                    "8px 14px",
 
                   borderRadius:
                     "999px",
 
                   fontSize: "13px",
+
+                  backdropFilter:
+                    "blur(10px)",
                 }}
               >
                 {emocao}
@@ -707,7 +748,7 @@ export default function AppInterno({
 
         </div>
 
-        {/* SAIR */}
+        {/* BOTÃO SAIR */}
 
         <button
           onClick={sair}
@@ -721,16 +762,23 @@ export default function AppInterno({
 
             border: "none",
 
-            padding: "15px",
+            padding: "16px",
 
             borderRadius:
               "14px",
 
             color: "white",
 
-            fontWeight: "bold",
+            fontWeight:
+              "bold",
 
             cursor: "pointer",
+
+            transition:
+              "all 0.3s ease",
+
+            boxShadow:
+              "0 10px 25px rgba(239,68,68,0.25)",
           }}
         >
           SAIR
@@ -738,7 +786,9 @@ export default function AppInterno({
 
       </div>
 
-      {/* CHAT */}
+      {/* ======================================================
+         CHAT
+      ====================================================== */}
 
       <div
         style={{
@@ -762,6 +812,8 @@ export default function AppInterno({
 
             overflowY: "auto",
 
+            paddingRight: "10px",
+
             marginBottom: "20px",
           }}
         >
@@ -776,42 +828,41 @@ export default function AppInterno({
 
                 display: "flex",
 
-                justifyContent:
+                flexDirection:
+                  "column",
+
+                alignItems:
                   msg.tipo ===
                   "usuario"
+
                     ? "flex-end"
+
                     : "flex-start",
 
                 marginBottom:
-                  "20px",
+                  "24px",
+
+                animation:
+                  "fadein 0.5s ease",
               }}
             >
 
               <div
                 style={{
 
-                  maxWidth: "75%",
+                  maxWidth: "72%",
 
                   padding: "22px",
 
                   borderRadius:
-                    "20px",
+                    "22px",
 
-                  lineHeight: "1.9",
+                  lineHeight: "1.8",
 
                   fontSize: "17px",
 
                   whiteSpace:
                     "pre-wrap",
-
-                  backdropFilter:
-                    "blur(10px)",
-
-                  border:
-                    "1px solid rgba(255,255,255,0.08)",
-
-                  boxShadow:
-                    "0 8px 30px rgba(0,0,0,0.25)",
 
                   background:
                     msg.tipo ===
@@ -820,9 +871,37 @@ export default function AppInterno({
                       ? "linear-gradient(90deg,#22c55e,#4ade80)"
 
                       : cores.card,
+
+                  boxShadow:
+                    "0 10px 35px rgba(0,0,0,0.25)",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+
+                  backdropFilter:
+                    "blur(10px)",
+
+                  transition:
+                    "all 0.3s ease",
                 }}
               >
                 {msg.texto}
+              </div>
+
+              {/* HORÁRIO */}
+
+              <div
+                style={{
+
+                  marginTop: "6px",
+
+                  fontSize: "12px",
+
+                  color:
+                    "rgba(255,255,255,0.5)",
+                }}
+              >
+                {msg.horario}
               </div>
 
             </div>
@@ -839,7 +918,7 @@ export default function AppInterno({
 
                 gap: "8px",
 
-                marginTop: "10px",
+                paddingLeft: "10px",
               }}
             >
 
@@ -877,7 +956,6 @@ export default function AppInterno({
 
         <div
           style={{
-
             marginBottom: "20px",
           }}
         >
@@ -936,12 +1014,7 @@ export default function AppInterno({
                       : "rgba(255,255,255,0.06)",
 
                   border:
-                    emocaoAtiva ===
-                    emocao.nome
-
-                      ? "1px solid rgba(255,255,255,0.4)"
-
-                      : "1px solid rgba(255,255,255,0.08)",
+                    "1px solid rgba(255,255,255,0.08)",
 
                   padding:
                     "12px 18px",
@@ -964,7 +1037,7 @@ export default function AppInterno({
                     emocaoAtiva ===
                     emocao.nome
 
-                      ? "scale(1.05)"
+                      ? "scale(1.06)"
 
                       : "scale(1)",
 
@@ -972,9 +1045,12 @@ export default function AppInterno({
                     emocaoAtiva ===
                     emocao.nome
 
-                      ? "0 0 25px rgba(56,189,248,0.35)"
+                      ? "0 0 30px rgba(56,189,248,0.45)"
 
-                      : "0 0 15px rgba(0,0,0,0.15)",
+                      : "0 8px 20px rgba(0,0,0,0.15)",
+
+                  backdropFilter:
+                    "blur(10px)",
                 }}
               >
 
@@ -1021,10 +1097,10 @@ export default function AppInterno({
 
               flex: 1,
 
-              padding: "18px",
+              padding: "20px",
 
               borderRadius:
-                "14px",
+                "16px",
 
               border:
                 "1px solid rgba(255,255,255,0.08)",
@@ -1032,14 +1108,17 @@ export default function AppInterno({
               background:
                 "rgba(255,255,255,0.06)",
 
-              backdropFilter:
-                "blur(12px)",
-
               color: "white",
 
               fontSize: "16px",
 
               outline: "none",
+
+              backdropFilter:
+                "blur(12px)",
+
+              boxShadow:
+                "0 10px 30px rgba(0,0,0,0.15)",
             }}
           />
 
@@ -1058,10 +1137,10 @@ export default function AppInterno({
               border: "none",
 
               padding:
-                "18px 30px",
+                "20px 34px",
 
               borderRadius:
-                "14px",
+                "16px",
 
               color: "white",
 
@@ -1070,10 +1149,11 @@ export default function AppInterno({
 
               cursor: "pointer",
 
-              opacity:
-                loading
-                  ? 0.7
-                  : 1,
+              transition:
+                "all 0.3s ease",
+
+              boxShadow:
+                "0 10px 30px rgba(34,197,94,0.25)",
             }}
           >
             {loading

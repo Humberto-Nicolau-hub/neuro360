@@ -1,11 +1,7 @@
 import express from "express";
-
 import cors from "cors";
-
 import OpenAI from "openai";
-
 import dotenv from "dotenv";
-
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
@@ -20,54 +16,53 @@ app.use(cors());
 
 app.use(express.json());
 
-const PORT =
-  process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001;
 
 /* ======================================================
    OPENAI
 ====================================================== */
 
-const openai =
-  new OpenAI({
-
-    apiKey:
-      process.env.OPENAI_API_KEY,
-  });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /* ======================================================
    SUPABASE
 ====================================================== */
 
-const supabase =
-  createClient(
-
-    process.env.SUPABASE_URL,
-
-    process.env
-      .SUPABASE_SERVICE_ROLE_KEY
-  );
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 /* ======================================================
    HEALTH
 ====================================================== */
 
 app.get("/", (req, res) => {
-
   res.json({
-
     online: true,
-
     api: "NeuroMapa360",
-
     banco: "Supabase conectado",
+    status: "ONLINE",
   });
 });
 
 app.get("/health", (req, res) => {
-
   res.json({
-
     status: "ok",
+  });
+});
+
+/* ======================================================
+   TESTE API IA
+====================================================== */
+
+app.get("/api/ia", (req, res) => {
+  res.json({
+    online: true,
+    rota: "/api/ia",
+    status: "funcionando",
   });
 });
 
@@ -81,72 +76,33 @@ const memoriaUsuarios = {};
    ANALISE EMOCIONAL
 ====================================================== */
 
-function analisarEstadoEmocional(
-  texto
-) {
+function analisarEstadoEmocional(texto) {
+  const textoLower = texto.toLowerCase();
 
-  const textoLower =
-    texto.toLowerCase();
-
-  let emocao =
-    "Equilibrado";
-
+  let emocao = "Equilibrado";
   let score = 82;
-
   let hawkins = 540;
-
-  let consciencia =
-    "Expansão";
-
-  let trilha =
-    "Reequilíbrio";
-
-  let intervencao =
-    "Respiração guiada";
+  let consciencia = "Expansão";
+  let trilha = "Reequilíbrio";
+  let intervencao = "Respiração guiada";
 
   /* =========================================
      ANSIEDADE
   ========================================= */
 
   if (
-
-    textoLower.includes(
-      "ansioso"
-    ) ||
-
-    textoLower.includes(
-      "ansiedade"
-    ) ||
-
-    textoLower.includes(
-      "medo"
-    ) ||
-
-    textoLower.includes(
-      "nervoso"
-    ) ||
-
-    textoLower.includes(
-      "preocupado"
-    )
-
+    textoLower.includes("ansioso") ||
+    textoLower.includes("ansiedade") ||
+    textoLower.includes("medo") ||
+    textoLower.includes("nervoso") ||
+    textoLower.includes("preocupado")
   ) {
-
-    emocao =
-      "Ansiedade";
-
+    emocao = "Ansiedade";
     score = 42;
-
     hawkins = 125;
-
-    consciencia =
-      "Contração";
-
-    trilha =
-      "Acalmamento Neural";
-
-    intervencao =
-      "Respiração profunda";
+    consciencia = "Contração";
+    trilha = "Acalmamento Neural";
+    intervencao = "Respiração profunda";
   }
 
   /* =========================================
@@ -154,40 +110,17 @@ function analisarEstadoEmocional(
   ========================================= */
 
   if (
-
-    textoLower.includes(
-      "triste"
-    ) ||
-
-    textoLower.includes(
-      "depress"
-    ) ||
-
-    textoLower.includes(
-      "sozinho"
-    ) ||
-
-    textoLower.includes(
-      "desanimado"
-    )
-
+    textoLower.includes("triste") ||
+    textoLower.includes("depress") ||
+    textoLower.includes("sozinho") ||
+    textoLower.includes("desanimado")
   ) {
-
-    emocao =
-      "Tristeza";
-
+    emocao = "Tristeza";
     score = 28;
-
     hawkins = 75;
-
-    consciencia =
-      "Desmotivação";
-
-    trilha =
-      "Reconexão Emocional";
-
-    intervencao =
-      "Acolhimento terapêutico";
+    consciencia = "Desmotivação";
+    trilha = "Reconexão Emocional";
+    intervencao = "Acolhimento terapêutico";
   }
 
   /* =========================================
@@ -195,40 +128,17 @@ function analisarEstadoEmocional(
   ========================================= */
 
   if (
-
-    textoLower.includes(
-      "raiva"
-    ) ||
-
-    textoLower.includes(
-      "ódio"
-    ) ||
-
-    textoLower.includes(
-      "irritado"
-    ) ||
-
-    textoLower.includes(
-      "estresse"
-    )
-
+    textoLower.includes("raiva") ||
+    textoLower.includes("ódio") ||
+    textoLower.includes("irritado") ||
+    textoLower.includes("estresse")
   ) {
-
-    emocao =
-      "Raiva";
-
+    emocao = "Raiva";
     score = 35;
-
     hawkins = 150;
-
-    consciencia =
-      "Reatividade";
-
-    trilha =
-      "Descompressão";
-
-    intervencao =
-      "Relaxamento neural";
+    consciencia = "Reatividade";
+    trilha = "Descompressão";
+    intervencao = "Relaxamento neural";
   }
 
   /* =========================================
@@ -236,62 +146,27 @@ function analisarEstadoEmocional(
   ========================================= */
 
   if (
-
-    textoLower.includes(
-      "clareza"
-    ) ||
-
-    textoLower.includes(
-      "foco"
-    ) ||
-
-    textoLower.includes(
-      "melhor"
-    ) ||
-
-    textoLower.includes(
-      "evoluindo"
-    ) ||
-
-    textoLower.includes(
-      "feliz"
-    ) ||
-
-    textoLower.includes(
-      "motivado"
-    )
-
+    textoLower.includes("clareza") ||
+    textoLower.includes("foco") ||
+    textoLower.includes("melhor") ||
+    textoLower.includes("evoluindo") ||
+    textoLower.includes("feliz") ||
+    textoLower.includes("motivado")
   ) {
-
-    emocao =
-      "Evolução";
-
+    emocao = "Evolução";
     score = 91;
-
     hawkins = 700;
-
-    consciencia =
-      "Alta percepção";
-
-    trilha =
-      "Expansão Cognitiva";
-
-    intervencao =
-      "Potencialização mental";
+    consciencia = "Alta percepção";
+    trilha = "Expansão Cognitiva";
+    intervencao = "Potencialização mental";
   }
 
   return {
-
     emocao,
-
     score,
-
     hawkins,
-
     consciencia,
-
     trilha,
-
     intervencao,
   };
 }
@@ -300,76 +175,37 @@ function analisarEstadoEmocional(
    CARREGAR MEMÓRIA
 ====================================================== */
 
-async function carregarMemoriaUsuario(
-  usuarioId
-) {
-
+async function carregarMemoriaUsuario(usuarioId) {
   try {
-
-    const {
-
-      data,
-
-      error,
-
-    } = await supabase
-
+    const { data, error } = await supabase
       .from("conversas")
-
       .select("*")
-
-      .eq(
-        "user_id",
-        usuarioId
-      )
-
-      .order(
-        "created_at",
-        { ascending: true }
-      )
-
+      .eq("user_id", usuarioId)
+      .order("created_at", { ascending: true })
       .limit(10);
 
     if (error) {
-
-      console.log(
-        "ERRO MEMÓRIA:",
-        error.message
-      );
-
+      console.log("ERRO MEMÓRIA:", error.message);
       return [];
     }
 
     const memoria = [];
 
     data.forEach((item) => {
-
       memoria.push({
-
         role: "user",
-
-        content:
-          item.mensagem,
+        content: item.mensagem,
       });
 
       memoria.push({
-
         role: "assistant",
-
-        content:
-          item.resposta,
+        content: item.resposta,
       });
     });
 
     return memoria;
-
   } catch (erro) {
-
-    console.log(
-      "ERRO CARREGAR MEMÓRIA:",
-      erro.message
-    );
-
+    console.log("ERRO CARREGAR MEMÓRIA:", erro.message);
     return [];
   }
 }
@@ -378,726 +214,228 @@ async function carregarMemoriaUsuario(
    PERFIL EMOCIONAL
 ====================================================== */
 
-async function gerarPerfilEmocional(
-  usuarioId
-) {
-
+async function gerarPerfilEmocional(usuarioId) {
   try {
-
-    const {
-
-      data,
-
-      error,
-
-    } = await supabase
-
+    const { data, error } = await supabase
       .from("conversas")
-
       .select("*")
-
-      .eq(
-        "user_id",
-        usuarioId
-      )
-
-      .order(
-        "created_at",
-        {
-          ascending: false,
-        }
-      )
-
+      .eq("user_id", usuarioId)
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(20);
 
-    if (
-      error ||
-      !data ||
-      data.length === 0
-    ) {
-
+    if (error || !data || data.length === 0) {
       return {
-
-        resumo:
-          "",
-
+        resumo: "",
         scoreMedio: 0,
-
-        emocaoDominante:
-          "Equilibrado",
-
-        tendencia:
-          "Neutra",
+        emocaoDominante: "Equilibrado",
+        tendencia: "Neutra",
       };
     }
 
-    /* =========================================
-       SCORE MÉDIO
-    ========================================= */
+    const somaScores = data.reduce(
+      (total, item) => total + (item.score || 0),
+      0
+    );
 
-    const somaScores =
-      data.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          (item.score || 0),
-        0
-      );
-
-    const scoreMedio =
-      Math.round(
-        somaScores /
-          data.length
-      );
-
-    /* =========================================
-       EMOÇÃO DOMINANTE
-    ========================================= */
+    const scoreMedio = Math.round(
+      somaScores / data.length
+    );
 
     const contador = {};
 
     data.forEach((item) => {
-
       const emocao =
-        item.emocao ||
-        "Equilibrado";
+        item.emocao || "Equilibrado";
 
       contador[emocao] =
-
-        (
-          contador[emocao] || 0
-        ) + 1;
+        (contador[emocao] || 0) + 1;
     });
 
     const emocaoDominante =
-      Object.keys(
-        contador
-      ).reduce((a, b) =>
-        contador[a] >
-        contador[b]
+      Object.keys(contador).reduce((a, b) =>
+        contador[a] > contador[b]
           ? a
           : b
       );
 
-    /* =========================================
-       TENDÊNCIA
-    ========================================= */
+    let tendencia = "Neutra";
 
-    let tendencia =
-      "Neutra";
-
-    if (
-      scoreMedio < 45
-    ) {
-
-      tendencia =
-        "Desgaste emocional";
+    if (scoreMedio < 45) {
+      tendencia = "Desgaste emocional";
     }
 
-    if (
-      scoreMedio > 75
-    ) {
-
-      tendencia =
-        "Evolução positiva";
+    if (scoreMedio > 75) {
+      tendencia = "Evolução positiva";
     }
 
-    /* =========================================
-       RESUMO TERAPÊUTICO
-    ========================================= */
+    let resumo = "";
 
-    let resumo =
-      "";
-
-    if (
-      emocaoDominante ===
-      "Ansiedade"
-    ) {
-
+    if (emocaoDominante === "Ansiedade") {
       resumo =
-        "Percebo sinais recorrentes de ansiedade e sobrecarga emocional nas últimas interações.";
+        "Percebo sinais recorrentes de ansiedade e sobrecarga emocional.";
     }
 
-    if (
-      emocaoDominante ===
-      "Tristeza"
-    ) {
-
+    if (emocaoDominante === "Tristeza") {
       resumo =
-        "Seu histórico demonstra momentos de desmotivação emocional e necessidade de acolhimento terapêutico.";
+        "Seu histórico demonstra necessidade de acolhimento emocional.";
     }
 
-    if (
-      emocaoDominante ===
-      "Raiva"
-    ) {
-
+    if (emocaoDominante === "Raiva") {
       resumo =
-        "Há sinais de tensão emocional e reatividade recorrente nas últimas sessões.";
+        "Há sinais de tensão emocional e reatividade.";
     }
 
-    if (
-      emocaoDominante ===
-      "Evolução"
-    ) {
-
+    if (emocaoDominante === "Evolução") {
       resumo =
-        "Seu histórico emocional demonstra evolução positiva e maior clareza cognitiva.";
+        "Seu histórico demonstra evolução emocional positiva.";
     }
 
     return {
-
       resumo,
-
       scoreMedio,
-
       emocaoDominante,
-
       tendencia,
     };
-
   } catch (erro) {
-
-    console.log(
-      "ERRO PERFIL:",
-      erro.message
-    );
+    console.log("ERRO PERFIL:", erro.message);
 
     return {
-
       resumo: "",
-
       scoreMedio: 0,
-
-      emocaoDominante:
-        "Equilibrado",
-
-      tendencia:
-        "Neutra",
+      emocaoDominante: "Equilibrado",
+      tendencia: "Neutra",
     };
   }
 }
 
 /* ======================================================
-   BUSCAR PERFIL
+   IA TERAPÊUTICA PRINCIPAL
 ====================================================== */
 
-async function buscarPerfilUsuario(
-  email
-) {
-
+app.post("/api/ia", async (req, res) => {
   try {
-
     const {
-
-      data,
-
-      error,
-
-    } = await supabase
-
-      .from("profiles")
-
-      .select("*")
-
-      .eq("email", email)
-
-      .single();
-
-    if (error) {
-
-      return null;
-    }
-
-    return data;
-
-  } catch {
-
-    return null;
-  }
-}
-
-/* ======================================================
-   DASHBOARD ANALÍTICO
-====================================================== */
-
-app.get(
-  "/dashboard/:user_id",
-  async (req, res) => {
-
-    try {
-
-      const {
-        user_id,
-      } = req.params;
-
-      const {
-
-        data,
-
-        error,
-
-      } = await supabase
-
-        .from("conversas")
-
-        .select("*")
-
-        .eq(
-          "user_id",
-          user_id
-        )
-
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        )
-
-        .limit(30);
-
-      if (error) {
-
-        return res
-          .status(500)
-          .json({
-
-            erro:
-              error.message,
-          });
-      }
-
-      if (
-        !data ||
-        data.length === 0
-      ) {
-
-        return res.json({
-
-          historico: [],
-
-          scoreMedio: 0,
-
-          hawkinsMedio: 0,
-
-          emocaoDominante:
-            "Sem dados",
-
-          insight:
-            "Ainda não há dados emocionais suficientes.",
-        });
-      }
-
-      const totalScore =
-        data.reduce(
-          (
-            acc,
-            item
-          ) =>
-            acc +
-            (item.score || 0),
-          0
-        );
-
-      const totalHawkins =
-        data.reduce(
-          (
-            acc,
-            item
-          ) =>
-            acc +
-            (item.hawkins || 0),
-          0
-        );
-
-      const scoreMedio =
-        Math.round(
-          totalScore /
-            data.length
-        );
-
-      const hawkinsMedio =
-        Math.round(
-          totalHawkins /
-            data.length
-        );
-
-      const contadorEmocoes =
-        {};
-
-      data.forEach((item) => {
-
-        const emocao =
-          item.emocao ||
-          "Neutro";
-
-        contadorEmocoes[
-          emocao
-        ] =
-
-          (
-            contadorEmocoes[
-              emocao
-            ] || 0
-          ) + 1;
-      });
-
-      const emocaoDominante =
-        Object.keys(
-          contadorEmocoes
-        ).reduce((a, b) =>
-          contadorEmocoes[a] >
-          contadorEmocoes[b]
-            ? a
-            : b
-        );
-
-      let insight =
-        "Seu padrão emocional está equilibrado.";
-
-      if (
-        scoreMedio < 40
-      ) {
-
-        insight =
-          "Detectamos sinais emocionais de desgaste e necessidade de acolhimento.";
-      }
-
-      if (
-        scoreMedio > 75
-      ) {
-
-        insight =
-          "Você apresenta evolução emocional positiva nas últimas sessões.";
-      }
-
-      const historico =
-        data.map(
-          (item) => ({
-
-            emocao:
-              item.emocao,
-
-            score:
-              item.score,
-
-            hawkins:
-              item.hawkins,
-
-            created_at:
-              item.created_at,
-          })
-        );
-
-      return res.json({
-
-        totalConversas:
-          data.length,
-
-        scoreMedio,
-
-        hawkinsMedio,
-
-        emocaoDominante,
-
-        insight,
-
-        historico,
-      });
-
-    } catch (erro) {
-
-      console.log(
-        "ERRO DASHBOARD:",
-        erro.message
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          erro:
-            "Erro dashboard.",
-        });
-    }
-  }
-);
-
-/* ======================================================
-   IA TERAPÊUTICA
-====================================================== */
-
-app.post("/ia", async (req, res) => {
-
-  try {
-
-    const {
-
       mensagem,
-
-      perfil,
-
       user_id,
-
       email,
+      perfil,
     } = req.body;
 
     if (!mensagem) {
-
-      return res
-        .status(400)
-        .json({
-
-          erro:
-            "Mensagem obrigatória.",
-        });
+      return res.status(400).json({
+        erro: "Mensagem obrigatória.",
+      });
     }
 
-    const usuarioId =
-      user_id || "anonimo";
+    const usuarioId = user_id || "anonimo";
 
-    let perfilUsuario =
-      null;
+    const emocional =
+      analisarEstadoEmocional(mensagem);
 
-    if (email) {
-
-      perfilUsuario =
-        await buscarPerfilUsuario(
-          email
-        );
-    }
-
-    const planoUsuario =
-
-      perfilUsuario?.plano ||
-
-      perfil ||
-
-      "free";
-
-    const isPremium =
-
-      planoUsuario ===
-      "premium";
-
-    const isAdmin =
-
-      perfilUsuario?.is_admin ===
-      true;
-
-    if (
-      !memoriaUsuarios[
-        usuarioId
-      ]
-    ) {
-
-      memoriaUsuarios[
-        usuarioId
-      ] =
+    if (!memoriaUsuarios[usuarioId]) {
+      memoriaUsuarios[usuarioId] =
         await carregarMemoriaUsuario(
           usuarioId
         );
     }
 
-    memoriaUsuarios[
-      usuarioId
-    ].push({
-
+    memoriaUsuarios[usuarioId].push({
       role: "user",
-
       content: mensagem,
     });
 
     if (
-
-      memoriaUsuarios[
-        usuarioId
-      ].length > 14
-
+      memoriaUsuarios[usuarioId].length > 14
     ) {
-
-      memoriaUsuarios[
-        usuarioId
-      ] =
-        memoriaUsuarios[
-          usuarioId
-        ].slice(-14);
+      memoriaUsuarios[usuarioId] =
+        memoriaUsuarios[usuarioId].slice(-14);
     }
 
-    const emocional =
-      analisarEstadoEmocional(
-        mensagem
-      );
-
-    /* =========================================
-       PERFIL EMOCIONAL INTELIGENTE
-    ========================================= */
-
     const perfilEmocional =
-      await gerarPerfilEmocional(
-        usuarioId
-      );
+      await gerarPerfilEmocional(usuarioId);
 
-    let promptSistema =
-
-      `
+    const promptSistema = `
 Você é a NeuroMapa360.
 
 Uma IA terapêutica emocional,
-acolhedora, humana,
-profissional e neuro sistêmica.
+acolhedora,
+humana,
+profissional,
+especialista em:
+PNL,
+neurociência,
+inteligência emocional,
+terapia neuro sistêmica.
 
-REGRAS:
+OBJETIVOS:
+- acolher emocionalmente
+- gerar clareza mental
+- reduzir ansiedade
+- reorganizar emoções
+- responder como terapeuta humana
+- evitar respostas robóticas
 
-- Seja extremamente humana
-- Seja emocionalmente inteligente
-- Nunca seja fria
-- Nunca pareça robótica
-- Gere acolhimento emocional
-- Utilize linguagem natural
-- Português do Brasil
-- Faça respostas terapêuticas
-- Respostas médias
-- Demonstre presença emocional
-
-CONTEXTO EMOCIONAL DO USUÁRIO:
-
-- Emoção dominante:
+CONTEXTO:
+Emoção dominante:
 ${perfilEmocional.emocaoDominante}
 
-- Tendência emocional:
+Tendência:
 ${perfilEmocional.tendencia}
 
-- Score emocional médio:
-${perfilEmocional.scoreMedio}
-
-- Resumo terapêutico:
+Resumo:
 ${perfilEmocional.resumo}
 `;
 
-    if (
-      isPremium
-    ) {
-
-      promptSistema +=
-
-        `
-USUÁRIO PREMIUM:
-
-- respostas profundas
-- mais inteligência emocional
-- análise emocional avançada
-- maior personalização
-- linguagem terapêutica avançada
-`;
-    }
-
-    if (
-      isAdmin
-    ) {
-
-      promptSistema +=
-
-        `
-USUÁRIO ADMIN:
-
-- acesso total
-- sem limitações
-- análises mais completas
-`;
-    }
-
     const completion =
       await openai.chat.completions.create({
-
-        model:
-          "gpt-4o-mini",
+        model: "gpt-4o-mini",
 
         temperature: 0.8,
 
         messages: [
-
           {
             role: "system",
-
-            content:
-              promptSistema,
+            content: promptSistema,
           },
 
-          ...memoriaUsuarios[
-            usuarioId
-          ],
+          ...memoriaUsuarios[usuarioId],
         ],
       });
 
     const respostaIA =
+      completion.choices[0].message.content;
 
-      completion.choices[0]
-        .message.content;
-
-    memoriaUsuarios[
-      usuarioId
-    ].push({
-
+    memoriaUsuarios[usuarioId].push({
       role: "assistant",
-
       content: respostaIA,
     });
 
-    await supabase
-
-      .from("conversas")
-
-      .insert({
-
-        user_id:
-          usuarioId,
-
-        mensagem,
-
-        resposta:
-          respostaIA,
-
-        emocao:
-          emocional.emocao,
-
-        score:
-          emocional.score,
-
-        hawkins:
-          emocional.hawkins,
-
-        consciencia:
-          emocional.consciencia,
-
-        trilha:
-          emocional.trilha,
-
-        intervencao:
-          emocional.intervencao,
-      });
+    await supabase.from("conversas").insert({
+      user_id: usuarioId,
+      mensagem,
+      resposta: respostaIA,
+      emocao: emocional.emocao,
+      score: emocional.score,
+      hawkins: emocional.hawkins,
+      consciencia: emocional.consciencia,
+      trilha: emocional.trilha,
+      intervencao: emocional.intervencao,
+    });
 
     return res.json({
-
-      resposta:
-        respostaIA,
+      resposta: respostaIA,
 
       emocao_detectada: {
-
-        emocao:
-          emocional.emocao,
+        emocao: emocional.emocao,
       },
 
       score_emocional:
         emocional.score,
 
       frequencia_hawkins: {
-
-        frequencia:
-          emocional.hawkins,
+        frequencia: emocional.hawkins,
       },
 
       nivel_consciencia:
@@ -1108,34 +446,14 @@ USUÁRIO ADMIN:
 
       intervencao:
         emocional.intervencao,
-
-      premium:
-        isPremium,
-
-      admin:
-        isAdmin,
-
-      perfil_emocional:
-        perfilEmocional,
     });
-
   } catch (erro) {
+    console.log("ERRO IA:", erro);
 
-    console.log(
-      "ERRO IA:",
-      erro?.message
-    );
-
-    return res
-      .status(500)
-      .json({
-
-        erro:
-          "Erro interno IA.",
-
-        detalhe:
-          erro?.message,
-      });
+    return res.status(500).json({
+      erro: "Erro interno IA.",
+      detalhe: erro?.message,
+    });
   }
 });
 
@@ -1144,9 +462,7 @@ USUÁRIO ADMIN:
 ====================================================== */
 
 app.listen(PORT, () => {
-
   console.log(
-
     `NeuroMapa360 ONLINE na porta ${PORT}`
   );
 });

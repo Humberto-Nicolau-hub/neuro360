@@ -30,10 +30,112 @@ export default function AppInterno({
   const [loading, setLoading] =
     useState(false);
 
-  const [plano] =
-    useState("PREMIUM");
+  const finalChatRef =
+    useRef(null);
 
-  const emocoes = [
+  /* ======================================================
+     PLANO
+  ====================================================== */
+
+  const plano =
+    usuario?.plano || "free";
+
+  /* ======================================================
+     CORES EMOCIONAIS
+  ====================================================== */
+
+  const emotionStyles = {
+
+    Ansioso: {
+      background:
+        "rgba(249,115,22,0.18)",
+      color: "#fdba74",
+      border:
+        "1px solid #fb923c",
+    },
+
+    Cansado: {
+      background:
+        "rgba(107,114,128,0.18)",
+      color: "#d1d5db",
+      border:
+        "1px solid #9ca3af",
+    },
+
+    Confuso: {
+      background:
+        "rgba(99,102,241,0.18)",
+      color: "#a5b4fc",
+      border:
+        "1px solid #818cf8",
+    },
+
+    Deprimido: {
+      background:
+        "rgba(30,58,138,0.25)",
+      color: "#93c5fd",
+      border:
+        "1px solid #3b82f6",
+    },
+
+    Esperançoso: {
+      background:
+        "rgba(6,182,212,0.18)",
+      color: "#67e8f9",
+      border:
+        "1px solid #22d3ee",
+    },
+
+    Feliz: {
+      background:
+        "rgba(234,179,8,0.18)",
+      color: "#fde047",
+      border:
+        "1px solid #facc15",
+    },
+
+    Motivado: {
+      background:
+        "rgba(34,197,94,0.18)",
+      color: "#86efac",
+      border:
+        "1px solid #4ade80",
+    },
+
+    Raiva: {
+      background:
+        "rgba(239,68,68,0.18)",
+      color: "#fca5a5",
+      border:
+        "1px solid #ef4444",
+    },
+
+    "Sem foco": {
+      background:
+        "rgba(71,85,105,0.18)",
+      color: "#cbd5e1",
+      border:
+        "1px solid #64748b",
+    },
+
+    Sobrecarregado: {
+      background:
+        "rgba(168,85,247,0.18)",
+      color: "#d8b4fe",
+      border:
+        "1px solid #a855f7",
+    },
+
+    Triste: {
+      background:
+        "rgba(59,130,246,0.18)",
+      color: "#93c5fd",
+      border:
+        "1px solid #3b82f6",
+    },
+  };
+
+  const emotions = [
 
     "Ansioso",
     "Cansado",
@@ -48,8 +150,9 @@ export default function AppInterno({
     "Triste",
   ];
 
-  const finalChatRef =
-    useRef(null);
+  /* ======================================================
+     ESTADO EMOCIONAL
+  ====================================================== */
 
   const [estadoEmocional] =
     useState({
@@ -68,6 +171,10 @@ export default function AppInterno({
         "Equilibrado",
     });
 
+  /* ======================================================
+     SCROLL CHAT
+  ====================================================== */
+
   useEffect(() => {
 
     finalChatRef.current?.scrollIntoView({
@@ -75,6 +182,10 @@ export default function AppInterno({
     });
 
   }, [historico]);
+
+  /* ======================================================
+     ENVIAR
+  ====================================================== */
 
   function enviarMensagem() {
 
@@ -115,6 +226,10 @@ export default function AppInterno({
 
     }, 1500);
   }
+
+  /* ======================================================
+     DADOS
+  ====================================================== */
 
   const dadosGrafico = [
 
@@ -169,18 +284,44 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
+        {/* PLANO */}
+
         <div style={styles.planoBadge}>
 
           Plano:
           {" "}
 
-          <span style={styles.planoTexto}>
-            {plano}
+          <span
+            style={{
+              color:
+                plano ===
+                "admin_premium"
+
+                  ? "#f472b6"
+
+                  : plano ===
+                    "premium"
+
+                    ? "#4ade80"
+
+                    : "#60a5fa",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            {plano.toUpperCase()}
           </span>
 
         </div>
 
+        {/* INFO */}
+
         <div style={styles.infoCard}>
+
+          <div>
+            👤 {usuario?.nome}
+          </div>
 
           <div>
             🧠 Emoção:
@@ -395,26 +536,32 @@ export default function AppInterno({
 
           </div>
 
-          {/* EMOÇÕES */}
+          {/* BOTÕES EMOCIONAIS */}
 
           <div style={styles.emocoes}>
 
-            {emocoes.map((emocao) => (
+            {emotions.map(
+              (emotion) => (
 
               <button
-                key={emocao}
-
-                style={styles.emocaoBtn}
+                key={emotion}
 
                 onClick={() =>
                   setMensagem(
-                    `Estou me sentindo ${emocao}`
+                    `Estou me sentindo ${emotion}`
                   )
                 }
-              >
-                {emocao}
-              </button>
 
+                style={{
+                  ...styles.emocaoBtn,
+
+                  ...emotionStyles[
+                    emotion
+                  ],
+                }}
+              >
+                {emotion}
+              </button>
             ))}
 
           </div>
@@ -517,6 +664,13 @@ const styles = {
     margin: 0,
   },
 
+  sub: {
+
+    color: "#4ade80",
+
+    fontSize: 14,
+  },
+
   planoBadge: {
 
     background: "#111827",
@@ -530,23 +684,7 @@ const styles = {
 
     fontSize: 13,
 
-    color: "#94a3b8",
-
     width: "fit-content",
-  },
-
-  planoTexto: {
-
-    color: "#4ade80",
-
-    fontWeight: "bold",
-  },
-
-  sub: {
-
-    color: "#4ade80",
-
-    fontSize: 14,
   },
 
   infoCard: {
@@ -719,21 +857,20 @@ const styles = {
 
   emocaoBtn: {
 
-    border: "none",
-
     borderRadius: 999,
 
     padding: "10px 16px",
-
-    background: "#111827",
-
-    color: "#cbd5e1",
 
     cursor: "pointer",
 
     fontSize: 13,
 
+    fontWeight: "600",
+
     transition: "0.2s",
+
+    backdropFilter:
+      "blur(10px)",
   },
 
   inputArea: {

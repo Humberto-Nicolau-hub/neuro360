@@ -195,14 +195,11 @@ export default function AppInterno({
 
       const response =
         await fetch(
-
-          "https://neuro360-tkyx.onrender.com/api/ia",
-
+          "https://neuro360-api.onrender.com/api/chat",
           {
             method: "POST",
 
             headers: {
-
               "Content-Type":
                 "application/json",
             },
@@ -220,11 +217,8 @@ export default function AppInterno({
                 plano === "admin_premium",
 
               user_id:
-
                 usuario?.id ||
-
                 usuario?.email ||
-
                 "anonimo",
 
               email:

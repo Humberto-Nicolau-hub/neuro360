@@ -12,7 +12,13 @@ const app = express();
    CONFIG
 ====================================================== */
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 app.use(express.json());
 
@@ -36,21 +42,29 @@ const supabase = createClient(
 );
 
 /* ======================================================
-   HEALTH
+   HEALTH CHECKS
 ====================================================== */
 
 app.get("/", (req, res) => {
   res.json({
     online: true,
     api: "NeuroMapa360",
-    banco: "Supabase conectado",
     status: "ONLINE",
+    servidor: "Render",
   });
 });
 
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "online",
+    api: "NeuroMapa360",
+    backend: true,
   });
 });
 
@@ -319,8 +333,6 @@ app.post("/api/ia", async (req, res) => {
     const {
       mensagem,
       user_id,
-      email,
-      perfil,
     } = req.body;
 
     if (!mensagem) {
@@ -412,17 +424,24 @@ ${perfilEmocional.resumo}
       content: respostaIA,
     });
 
-    await supabase.from("conversas").insert({
-      user_id: usuarioId,
-      mensagem,
-      resposta: respostaIA,
-      emocao: emocional.emocao,
-      score: emocional.score,
-      hawkins: emocional.hawkins,
-      consciencia: emocional.consciencia,
-      trilha: emocional.trilha,
-      intervencao: emocional.intervencao,
-    });
+    try {
+      await supabase.from("conversas").insert({
+        user_id: usuarioId,
+        mensagem,
+        resposta: respostaIA,
+        emocao: emocional.emocao,
+        score: emocional.score,
+        hawkins: emocional.hawkins,
+        consciencia: emocional.consciencia,
+        trilha: emocional.trilha,
+        intervencao: emocional.intervencao,
+      });
+    } catch (erroBanco) {
+      console.log(
+        "ERRO AO SALVAR:",
+        erroBanco.message
+      );
+    }
 
     return res.json({
       resposta: respostaIA,

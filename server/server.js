@@ -421,20 +421,59 @@ ${perfilEmocional.resumo}
     });
 
     try {
-      await supabase.from("conversas").insert({
-        user_id: usuarioId,
-        mensagem,
-        resposta: respostaIA,
-        emocao: emocional.emocao,
-        score: emocional.score,
-        hawkins: emocional.hawkins,
-        consciencia: emocional.consciencia,
-        trilha: emocional.trilha,
-        intervencao: emocional.intervencao,
-      });
+      /* =========================================
+         SALVAMENTO PRINCIPAL
+      ========================================= */
+
+      const { error: erroConversas } =
+        await supabase.from("conversas").insert({
+          user_id: usuarioId,
+          mensagem,
+          resposta: respostaIA,
+          emocao: emocional.emocao,
+          score: emocional.score,
+          hawkins: emocional.hawkins,
+          consciencia: emocional.consciencia,
+          trilha: emocional.trilha,
+          intervencao: emocional.intervencao,
+        });
+
+      if (erroConversas) {
+        console.log(
+          "ERRO TABELA CONVERSAS:",
+          erroConversas.message
+        );
+      }
+
+      /* =========================================
+         HISTORICO EMOCIONAL
+      ========================================= */
+
+      const { error: erroHistorico } =
+        await supabase
+          .from("historico_emocional")
+          .insert({
+            user_id: usuarioId,
+            emocao: emocional.emocao,
+            mensagem,
+            resposta_ia: respostaIA,
+            score_hawkins: emocional.hawkins,
+          });
+
+      if (erroHistorico) {
+        console.log(
+          "ERRO HISTORICO EMOCIONAL:",
+          erroHistorico.message
+        );
+      }
+
+      console.log(
+        "MEMÓRIA EMOCIONAL SALVA COM SUCESSO"
+      );
+
     } catch (erroBanco) {
       console.log(
-        "ERRO AO SALVAR:",
+        "ERRO GERAL AO SALVAR:",
         erroBanco.message
       );
     }

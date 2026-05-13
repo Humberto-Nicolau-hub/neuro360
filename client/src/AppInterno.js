@@ -196,7 +196,7 @@ export default function AppInterno({
       const response =
         await fetch(
 
-          "https://backend-neuro360.onrender.com/api/ia",
+          "https://neuro360-tkyx.onrender.com/api/ia",
 
           {
             method: "POST",

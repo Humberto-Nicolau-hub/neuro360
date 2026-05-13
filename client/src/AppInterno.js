@@ -30,6 +30,24 @@ export default function AppInterno({
   const [loading, setLoading] =
     useState(false);
 
+  const [plano] =
+    useState("PREMIUM");
+
+  const emocoes = [
+
+    "Ansioso",
+    "Cansado",
+    "Confuso",
+    "Deprimido",
+    "Esperançoso",
+    "Feliz",
+    "Motivado",
+    "Raiva",
+    "Sem foco",
+    "Sobrecarregado",
+    "Triste",
+  ];
+
   const finalChatRef =
     useRef(null);
 
@@ -151,6 +169,17 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
+        <div style={styles.planoBadge}>
+
+          Plano:
+          {" "}
+
+          <span style={styles.planoTexto}>
+            {plano}
+          </span>
+
+        </div>
+
         <div style={styles.infoCard}>
 
           <div>
@@ -177,6 +206,12 @@ export default function AppInterno({
             {estadoEmocional.consciencia}
           </div>
 
+          <div>
+            🛤️ Trilha:
+            {" "}
+            {estadoEmocional.trilha}
+          </div>
+
         </div>
 
         <button
@@ -197,27 +232,39 @@ export default function AppInterno({
         <div style={styles.topGrid}>
 
           <div style={styles.metricCard}>
-            <span>Score</span>
 
-            <h2>
+            <span style={styles.metricLabel}>
+              Score
+            </span>
+
+            <h2 style={styles.metricValue}>
               {estadoEmocional.score}
             </h2>
+
           </div>
 
           <div style={styles.metricCard}>
-            <span>Hawkins</span>
 
-            <h2>
+            <span style={styles.metricLabel}>
+              Hawkins
+            </span>
+
+            <h2 style={styles.metricValue}>
               {estadoEmocional.hawkins}
             </h2>
+
           </div>
 
           <div style={styles.metricCard}>
-            <span>Estado</span>
 
-            <h2>
+            <span style={styles.metricLabel}>
+              Estado
+            </span>
+
+            <h2 style={styles.metricValue}>
               {estadoEmocional.emocao}
             </h2>
+
           </div>
 
         </div>
@@ -348,6 +395,32 @@ export default function AppInterno({
 
           </div>
 
+          {/* EMOÇÕES */}
+
+          <div style={styles.emocoes}>
+
+            {emocoes.map((emocao) => (
+
+              <button
+                key={emocao}
+
+                style={styles.emocaoBtn}
+
+                onClick={() =>
+                  setMensagem(
+                    `Estou me sentindo ${emocao}`
+                  )
+                }
+              >
+                {emocao}
+              </button>
+
+            ))}
+
+          </div>
+
+          {/* INPUT */}
+
           <div style={styles.inputArea}>
 
             <input
@@ -444,6 +517,31 @@ const styles = {
     margin: 0,
   },
 
+  planoBadge: {
+
+    background: "#111827",
+
+    border:
+      "1px solid #1e293b",
+
+    borderRadius: 14,
+
+    padding: "10px 14px",
+
+    fontSize: 13,
+
+    color: "#94a3b8",
+
+    width: "fit-content",
+  },
+
+  planoTexto: {
+
+    color: "#4ade80",
+
+    fontWeight: "bold",
+  },
+
   sub: {
 
     color: "#4ade80",
@@ -524,6 +622,20 @@ const styles = {
     padding: 20,
   },
 
+  metricLabel: {
+
+    color: "#94a3b8",
+
+    fontSize: 14,
+  },
+
+  metricValue: {
+
+    fontSize: 38,
+
+    marginTop: 10,
+  },
+
   chartGrid: {
 
     display: "grid",
@@ -592,6 +704,36 @@ const styles = {
     borderRadius: 18,
 
     lineHeight: 1.6,
+  },
+
+  emocoes: {
+
+    display: "flex",
+
+    flexWrap: "wrap",
+
+    gap: 10,
+
+    padding: "16px 20px 0px",
+  },
+
+  emocaoBtn: {
+
+    border: "none",
+
+    borderRadius: 999,
+
+    padding: "10px 16px",
+
+    background: "#111827",
+
+    color: "#cbd5e1",
+
+    cursor: "pointer",
+
+    fontSize: 13,
+
+    transition: "0.2s",
   },
 
   inputArea: {

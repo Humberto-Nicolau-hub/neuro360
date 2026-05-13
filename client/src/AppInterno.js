@@ -184,31 +184,73 @@ export default function AppInterno({
   }, [historico]);
 
   /* ======================================================
-     ENVIAR
+     IA REAL
   ====================================================== */
 
-  function enviarMensagem() {
+  async function enviarMensagem() {
 
-    if (!mensagem.trim())
-      return;
+    if (!mensagem.trim()) return;
 
-    const nova = {
+    const textoUsuario =
+      mensagem;
+
+    const novaMensagem = {
 
       tipo: "usuario",
 
-      texto: mensagem,
+      texto:
+        textoUsuario,
     };
 
     setHistorico((prev) => [
       ...prev,
-      nova,
+      novaMensagem,
     ]);
 
     setMensagem("");
 
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+
+      const response =
+        await fetch(
+
+          "https://SEU-BACKEND-VERCEL/ia",
+
+          {
+            method: "POST",
+
+            headers: {
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+
+              mensagem:
+                textoUsuario,
+
+              perfil:
+                plano,
+
+              user_id:
+
+                usuario?.id ||
+
+                usuario?.email ||
+
+                "anonimo",
+
+              email:
+                usuario?.email,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
 
       setHistorico((prev) => [
 
@@ -218,13 +260,33 @@ export default function AppInterno({
           tipo: "ia",
 
           texto:
-            "Estou analisando seu estado emocional e preparando sua trilha terapêutica personalizada.",
+
+            data.resposta ||
+
+            "Não consegui responder agora.",
         },
       ]);
 
-      setLoading(false);
+    } catch (erro) {
 
-    }, 1500);
+      console.log(erro);
+
+      setHistorico((prev) => [
+
+        ...prev,
+
+        {
+          tipo: "ia",
+
+          texto:
+            "Erro ao conectar com a IA terapêutica.",
+        },
+      ]);
+
+    } finally {
+
+      setLoading(false);
+    }
   }
 
   /* ======================================================
@@ -268,8 +330,6 @@ export default function AppInterno({
 
     <div style={styles.container}>
 
-      {/* SIDEBAR */}
-
       <aside style={styles.sidebar}>
 
         <div
@@ -284,8 +344,6 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
-        {/* PLANO */}
-
         <div style={styles.planoBadge}>
 
           Plano:
@@ -294,6 +352,7 @@ export default function AppInterno({
           <span
             style={{
               color:
+
                 plano ===
                 "admin_premium"
 
@@ -314,8 +373,6 @@ export default function AppInterno({
           </span>
 
         </div>
-
-        {/* INFO */}
 
         <div style={styles.infoCard}>
 
@@ -364,11 +421,7 @@ export default function AppInterno({
 
       </aside>
 
-      {/* MAIN */}
-
       <main style={styles.main}>
-
-        {/* TOP */}
 
         <div style={styles.topGrid}>
 
@@ -409,8 +462,6 @@ export default function AppInterno({
           </div>
 
         </div>
-
-        {/* CHARTS */}
 
         <div style={styles.chartGrid}>
 
@@ -479,8 +530,6 @@ export default function AppInterno({
 
         </div>
 
-        {/* CHAT */}
-
         <div style={styles.chatContainer}>
 
           <div style={styles.chatArea}>
@@ -495,10 +544,12 @@ export default function AppInterno({
                   display: "flex",
 
                   justifyContent:
+
                     msg.tipo ===
                     "usuario"
 
                       ? "flex-end"
+
                       : "flex-start",
                 }}
               >
@@ -508,10 +559,12 @@ export default function AppInterno({
                     ...styles.msg,
 
                     background:
+
                       msg.tipo ===
                       "usuario"
 
                         ? "#10b981"
+
                         : "#111827",
                   }}
                 >
@@ -535,8 +588,6 @@ export default function AppInterno({
             <div ref={finalChatRef} />
 
           </div>
-
-          {/* BOTÕES EMOCIONAIS */}
 
           <div style={styles.emocoes}>
 
@@ -565,8 +616,6 @@ export default function AppInterno({
             ))}
 
           </div>
-
-          {/* INPUT */}
 
           <div style={styles.inputArea}>
 

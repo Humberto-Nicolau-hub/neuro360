@@ -7,10 +7,6 @@ import AppInterno from "./AppInterno";
 
 export default function App() {
 
-  /* ======================================================
-     STATES
-  ====================================================== */
-
   const [logado, setLogado] =
     useState(false);
 
@@ -29,7 +25,7 @@ export default function App() {
     useState(true);
 
   /* ======================================================
-     USUÁRIOS
+     USUÁRIOS TESTE
   ====================================================== */
 
   const usuarios = [
@@ -59,36 +55,10 @@ export default function App() {
 
       plano: "free",
     },
-
-    {
-      email:
-        "segredodavida88@gmail.com",
-
-      senha: "123456",
-
-      admin: false,
-
-      premium: false,
-
-      plano: "free",
-    },
-
-    {
-      email:
-        "segurosbrokerdf@gmail.com",
-
-      senha: "123456",
-
-      admin: false,
-
-      premium: false,
-
-      plano: "free",
-    },
   ];
 
   /* ======================================================
-     VERIFICA SESSÃO
+     VERIFICA LOGIN
   ====================================================== */
 
   useEffect(() => {
@@ -123,32 +93,13 @@ export default function App() {
           "usuario"
         );
 
-        setUsuarioAtual(null);
-
-        setLogado(false);
-
         setCarregandoSessao(false);
 
         return;
       }
 
-      const sessaoLimpa = {
-
-        email:
-          usuarioValido.email,
-
-        admin:
-          usuarioValido.admin,
-
-        premium:
-          usuarioValido.premium,
-
-        plano:
-          usuarioValido.plano,
-      };
-
       setUsuarioAtual(
-        sessaoLimpa
+        usuarioParseado
       );
 
       setLogado(true);
@@ -160,10 +111,6 @@ export default function App() {
       localStorage.removeItem(
         "usuario"
       );
-
-      setUsuarioAtual(null);
-
-      setLogado(false);
 
     } finally {
 
@@ -178,53 +125,17 @@ export default function App() {
 
   function entrar() {
 
-    const emailLimpo =
-      email
-        .trim()
-        .toLowerCase();
-
-    const senhaLimpa =
-      senha.trim();
-
-    if (
-      !emailLimpo ||
-      !senhaLimpa
-    ) {
-
-      alert(
-        "Preencha email e senha."
-      );
-
-      return;
-    }
-
-    /* =========================================
-       LIMPA SESSÃO ANTERIOR
-    ========================================= */
-
-    setUsuarioAtual(null);
-
-    setLogado(false);
-
-    localStorage.removeItem(
-      "usuario"
-    );
-
-    sessionStorage.clear();
-
-    /* =========================================
-       PROCURA USUÁRIO
-    ========================================= */
-
     const usuarioEncontrado =
       usuarios.find(
         (usuario) =>
 
           usuario.email ===
-            emailLimpo &&
+            email
+              .trim()
+              .toLowerCase() &&
 
           usuario.senha ===
-            senhaLimpa
+            senha.trim()
       );
 
     if (!usuarioEncontrado) {
@@ -235,10 +146,6 @@ export default function App() {
 
       return;
     }
-
-    /* =========================================
-       NOVA SESSÃO SEGURA
-    ========================================= */
 
     const novaSessao = {
 
@@ -253,11 +160,6 @@ export default function App() {
 
       plano:
         usuarioEncontrado.plano,
-
-      loginAtivo: true,
-
-      ultimoLogin:
-        new Date().toISOString(),
     };
 
     localStorage.setItem(
@@ -267,19 +169,11 @@ export default function App() {
       )
     );
 
-    /* =========================================
-       ATUALIZA ESTADO
-    ========================================= */
-
     setUsuarioAtual(
       novaSessao
     );
 
     setLogado(true);
-
-    /* =========================================
-       LIMPA INPUTS
-    ========================================= */
 
     setEmail("");
 
@@ -296,54 +190,27 @@ export default function App() {
       "usuario"
     );
 
-    sessionStorage.clear();
-
     setUsuarioAtual(null);
 
     setLogado(false);
-
-    window.location.reload();
   }
 
   /* ======================================================
-     CARREGANDO
+     LOADING
   ====================================================== */
 
   if (carregandoSessao) {
 
     return (
 
-      <div
-        style={{
-
-          height: "100vh",
-
-          display: "flex",
-
-          justifyContent:
-            "center",
-
-          alignItems:
-            "center",
-
-          background:
-            "#020617",
-
-          color: "white",
-
-          fontSize: "22px",
-
-          fontFamily:
-            "Arial",
-        }}
-      >
+      <div style={styles.loading}>
         Carregando NeuroMapa360...
       </div>
     );
   }
 
   /* ======================================================
-     APP INTERNO
+     DASHBOARD
   ====================================================== */
 
   if (
@@ -366,70 +233,81 @@ export default function App() {
   }
 
   /* ======================================================
-     LOGIN
+     LOGIN SCREEN
   ====================================================== */
 
   return (
 
     <div style={styles.container}>
 
+      <div style={styles.blur}></div>
+
       <div style={styles.card}>
 
-        <h1 style={styles.logo}>
-          NeuroMapa360
-        </h1>
+        <div style={styles.logoContainer}>
 
-        <p style={styles.subtitle}>
-          IA Terapêutica Neuro Sistêmica
-        </p>
+          <div style={styles.logoCircle}></div>
 
-        <input
-          type="email"
+          <h1 style={styles.logo}>
+            NeuroMapa360
+          </h1>
 
-          placeholder="Email"
+          <p style={styles.subtitle}>
+            IA Terapêutica Neuro Sistêmica
+          </p>
 
-          value={email}
+        </div>
 
-          onChange={(e) =>
-            setEmail(
-              e.target.value
-            )
-          }
+        <div style={styles.form}>
 
-          style={styles.input}
-        />
+          <input
+            type="email"
 
-        <input
-          type="password"
+            placeholder="Seu email"
 
-          placeholder="Senha"
+            value={email}
 
-          value={senha}
+            onChange={(e) =>
+              setEmail(
+                e.target.value
+              )
+            }
 
-          onChange={(e) =>
-            setSenha(
-              e.target.value
-            )
-          }
+            style={styles.input}
+          />
 
-          style={styles.input}
-        />
+          <input
+            type="password"
 
-        <button
-          style={styles.button}
+            placeholder="Sua senha"
 
-          onClick={entrar}
-        >
-          Entrar
-        </button>
+            value={senha}
 
-        <button
-          style={
-            styles.secondaryButton
-          }
-        >
-          Criar Conta
-        </button>
+            onChange={(e) =>
+              setSenha(
+                e.target.value
+              )
+            }
+
+            style={styles.input}
+          />
+
+          <button
+            style={styles.button}
+            onClick={entrar}
+          >
+            Entrar
+          </button>
+
+          <button
+            style={
+              styles.secondaryButton
+            }
+          >
+            Criar Conta
+          </button>
+
+        </div>
 
       </div>
 
@@ -454,105 +332,201 @@ const styles = {
     alignItems: "center",
 
     background:
-      "linear-gradient(135deg,#020617,#0f172a)",
+      "linear-gradient(135deg,#020617,#0f172a,#111827)",
+
+    overflow: "hidden",
+
+    position: "relative",
 
     fontFamily:
-      "Arial, sans-serif",
+      "Inter, Arial, sans-serif",
+  },
+
+  blur: {
+
+    position: "absolute",
+
+    width: 500,
+
+    height: 500,
+
+    borderRadius: "50%",
+
+    background:
+      "rgba(56,189,248,0.12)",
+
+    filter: "blur(120px)",
+
+    top: -100,
+
+    right: -100,
+  },
+
+  loading: {
+
+    height: "100vh",
+
+    display: "flex",
+
+    justifyContent: "center",
+
+    alignItems: "center",
+
+    background:
+      "#020617",
+
+    color: "white",
+
+    fontSize: 20,
+
+    fontFamily:
+      "Inter",
   },
 
   card: {
 
-    width: 400,
+    width: 380,
 
-    background: "#111827",
+    background:
+      "rgba(15,23,42,0.88)",
 
-    borderRadius: 24,
+    border:
+      "1px solid rgba(255,255,255,0.06)",
 
-    padding: 40,
+    backdropFilter:
+      "blur(18px)",
+
+    borderRadius: 28,
+
+    padding: 36,
 
     display: "flex",
 
     flexDirection: "column",
 
-    gap: 20,
+    gap: 28,
+
+    zIndex: 2,
 
     boxShadow:
-      "0 0 40px rgba(0,0,0,0.5)",
+      "0 20px 60px rgba(0,0,0,0.45)",
+  },
+
+  logoContainer: {
+
+    display: "flex",
+
+    flexDirection: "column",
+
+    alignItems: "center",
+
+    gap: 12,
+  },
+
+  logoCircle: {
+
+    width: 80,
+
+    height: 80,
+
+    borderRadius: "50%",
+
+    background:
+      "linear-gradient(135deg,#67e8f9,#38bdf8)",
+
+    boxShadow:
+      "0 0 40px rgba(56,189,248,0.45)",
   },
 
   logo: {
 
     color: "#ffffff",
 
-    textAlign: "center",
+    fontSize: 42,
 
-    fontSize: 34,
+    fontWeight: 800,
 
-    marginBottom: 0,
+    margin: 0,
   },
 
   subtitle: {
 
-    textAlign: "center",
-
     color: "#94a3b8",
 
-    marginTop: -10,
+    fontSize: 15,
 
-    marginBottom: 20,
+    textAlign: "center",
+
+    margin: 0,
+  },
+
+  form: {
+
+    display: "flex",
+
+    flexDirection: "column",
+
+    gap: 16,
   },
 
   input: {
 
-    padding: 16,
+    height: 52,
 
-    borderRadius: 12,
+    borderRadius: 14,
 
     border:
-      "1px solid #1e293b",
+      "1px solid rgba(255,255,255,0.08)",
 
-    background: "#0f172a",
+    background:
+      "rgba(15,23,42,0.75)",
 
     color: "#ffffff",
 
-    fontSize: 16,
+    paddingLeft: 18,
+
+    fontSize: 15,
 
     outline: "none",
   },
 
   button: {
 
-    padding: 16,
+    height: 52,
 
-    borderRadius: 12,
+    borderRadius: 14,
 
     border: "none",
 
-    background: "#22c55e",
+    background:
+      "linear-gradient(135deg,#34d399,#10b981)",
 
     color: "#ffffff",
 
-    fontWeight: "bold",
+    fontWeight: 700,
 
-    fontSize: 16,
+    fontSize: 15,
 
     cursor: "pointer",
+
+    transition: "0.2s",
   },
 
   secondaryButton: {
 
-    padding: 14,
+    height: 48,
 
-    borderRadius: 12,
+    borderRadius: 14,
 
     border:
-      "1px solid #334155",
+      "1px solid rgba(255,255,255,0.08)",
 
-    background: "transparent",
+    background:
+      "transparent",
 
-    color: "#38bdf8",
+    color: "#67e8f9",
 
-    fontWeight: "bold",
+    fontWeight: 600,
 
     cursor: "pointer",
   },

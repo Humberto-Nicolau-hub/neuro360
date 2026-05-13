@@ -28,6 +28,10 @@ const PORT = process.env.PORT || 3001;
    OPENAI
 ====================================================== */
 
+if (!process.env.OPENAI_API_KEY) {
+  console.log("❌ OPENAI_API_KEY NÃO ENCONTRADA");
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -100,10 +104,6 @@ function analisarEstadoEmocional(texto) {
   let trilha = "Reequilíbrio";
   let intervencao = "Respiração guiada";
 
-  /* =========================================
-     ANSIEDADE
-  ========================================= */
-
   if (
     textoLower.includes("ansioso") ||
     textoLower.includes("ansiedade") ||
@@ -119,10 +119,6 @@ function analisarEstadoEmocional(texto) {
     intervencao = "Respiração profunda";
   }
 
-  /* =========================================
-     TRISTEZA
-  ========================================= */
-
   if (
     textoLower.includes("triste") ||
     textoLower.includes("depress") ||
@@ -137,10 +133,6 @@ function analisarEstadoEmocional(texto) {
     intervencao = "Acolhimento terapêutico";
   }
 
-  /* =========================================
-     RAIVA
-  ========================================= */
-
   if (
     textoLower.includes("raiva") ||
     textoLower.includes("ódio") ||
@@ -154,10 +146,6 @@ function analisarEstadoEmocional(texto) {
     trilha = "Descompressão";
     intervencao = "Relaxamento neural";
   }
-
-  /* =========================================
-     EVOLUÇÃO
-  ========================================= */
 
   if (
     textoLower.includes("clareza") ||
@@ -330,6 +318,8 @@ async function gerarPerfilEmocional(usuarioId) {
 
 async function processarIA(req, res) {
   try {
+    console.log("BODY RECEBIDO:", req.body);
+
     const {
       mensagem,
       user_id,
@@ -338,6 +328,12 @@ async function processarIA(req, res) {
     if (!mensagem) {
       return res.status(400).json({
         erro: "Mensagem obrigatória.",
+      });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        erro: "OPENAI_API_KEY ausente",
       });
     }
 
@@ -467,11 +463,11 @@ ${perfilEmocional.resumo}
         emocional.intervencao,
     });
   } catch (erro) {
-    console.log("ERRO IA:", erro);
+    console.log("ERRO IA COMPLETO:", erro);
 
     return res.status(500).json({
       erro: "Erro interno IA.",
-      detalhe: erro?.message,
+      detalhe: erro.message,
     });
   }
 }

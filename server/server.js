@@ -328,7 +328,7 @@ async function gerarPerfilEmocional(usuarioId) {
    IA TERAPÊUTICA PRINCIPAL
 ====================================================== */
 
-app.post("/api/ia", async (req, res) => {
+async function processarIA(req, res) {
   try {
     const {
       mensagem,
@@ -474,7 +474,15 @@ ${perfilEmocional.resumo}
       detalhe: erro?.message,
     });
   }
-});
+}
+
+/* ======================================================
+   ROTAS IA
+====================================================== */
+
+app.post("/api/ia", processarIA);
+
+app.post("/api/chat", processarIA);
 
 /* ======================================================
    START

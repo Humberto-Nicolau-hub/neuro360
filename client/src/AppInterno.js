@@ -33,16 +33,8 @@ export default function AppInterno({
   const finalChatRef =
     useRef(null);
 
-  /* ======================================================
-     PLANO
-  ====================================================== */
-
   const plano =
     usuario?.plano || "free";
-
-  /* ======================================================
-     CORES EMOCIONAIS
-  ====================================================== */
 
   const emotionStyles = {
 
@@ -150,10 +142,6 @@ export default function AppInterno({
     "Triste",
   ];
 
-  /* ======================================================
-     ESTADO EMOCIONAL
-  ====================================================== */
-
   const [estadoEmocional] =
     useState({
 
@@ -171,10 +159,6 @@ export default function AppInterno({
         "Equilibrado",
     });
 
-  /* ======================================================
-     SCROLL CHAT
-  ====================================================== */
-
   useEffect(() => {
 
     finalChatRef.current?.scrollIntoView({
@@ -182,10 +166,6 @@ export default function AppInterno({
     });
 
   }, [historico]);
-
-  /* ======================================================
-     IA REAL
-  ====================================================== */
 
   async function enviarMensagem() {
 
@@ -216,7 +196,7 @@ export default function AppInterno({
       const response =
         await fetch(
 
-          "https://SEU-BACKEND-VERCEL/ia",
+          "https://backend-neuro360.onrender.com/api/ia",
 
           {
             method: "POST",
@@ -235,6 +215,10 @@ export default function AppInterno({
               perfil:
                 plano,
 
+              premium:
+                plano === "premium" ||
+                plano === "admin_premium",
+
               user_id:
 
                 usuario?.id ||
@@ -248,6 +232,13 @@ export default function AppInterno({
             }),
           }
         );
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Erro no backend"
+        );
+      }
 
       const data =
         await response.json();
@@ -269,7 +260,10 @@ export default function AppInterno({
 
     } catch (erro) {
 
-      console.log(erro);
+      console.log(
+        "ERRO IA:",
+        erro
+      );
 
       setHistorico((prev) => [
 
@@ -279,7 +273,7 @@ export default function AppInterno({
           tipo: "ia",
 
           texto:
-            "Erro ao conectar com a IA terapêutica.",
+            "A IA terapêutica está temporariamente indisponível. Tente novamente em alguns instantes.",
         },
       ]);
 
@@ -288,10 +282,6 @@ export default function AppInterno({
       setLoading(false);
     }
   }
-
-  /* ======================================================
-     DADOS
-  ====================================================== */
 
   const dadosGrafico = [
 

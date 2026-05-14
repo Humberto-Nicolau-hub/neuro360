@@ -1,14 +1,21 @@
 import React from "react";
 
-export default function AdminDashboard({ user, onVoltar }) {
+export default function AdminDashboard(props) {
+  const user = props?.user || {};
+  const onVoltar =
+    typeof props?.onVoltar === "function"
+      ? props.onVoltar
+      : () => console.log("Voltar");
+
   return (
     <div
       style={{
         minHeight: "100vh",
         background: "#050816",
-        color: "white",
+        color: "#ffffff",
         padding: "30px",
-        fontFamily: "Arial",
+        fontFamily: "Arial, sans-serif",
+        overflowX: "hidden",
       }}
     >
       {/* HEADER */}
@@ -18,6 +25,8 @@ export default function AdminDashboard({ user, onVoltar }) {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "30px",
+          flexWrap: "wrap",
+          gap: "20px",
         }}
       >
         <div>
@@ -52,6 +61,7 @@ export default function AdminDashboard({ user, onVoltar }) {
             cursor: "pointer",
             fontWeight: "bold",
             fontSize: "15px",
+            boxShadow: "0 0 15px rgba(0,255,213,0.3)",
           }}
         >
           Voltar ao App
@@ -78,7 +88,8 @@ export default function AdminDashboard({ user, onVoltar }) {
         </h2>
 
         <p>
-          <strong>Email:</strong> {user?.email}
+          <strong>Email:</strong>{" "}
+          {user?.email || "admin@neuromapa360.com"}
         </p>
 
         <p>
@@ -99,6 +110,7 @@ export default function AdminDashboard({ user, onVoltar }) {
           marginBottom: "30px",
         }}
       >
+        {/* CARD */}
         <div
           style={{
             background: "#11182b",
@@ -122,6 +134,7 @@ export default function AdminDashboard({ user, onVoltar }) {
           </p>
         </div>
 
+        {/* CARD */}
         <div
           style={{
             background: "#11182b",
@@ -145,6 +158,7 @@ export default function AdminDashboard({ user, onVoltar }) {
           </p>
         </div>
 
+        {/* CARD */}
         <div
           style={{
             background: "#11182b",
@@ -168,6 +182,7 @@ export default function AdminDashboard({ user, onVoltar }) {
           </p>
         </div>
 
+        {/* CARD */}
         <div
           style={{
             background: "#11182b",

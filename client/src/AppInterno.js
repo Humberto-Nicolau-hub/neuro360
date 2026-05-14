@@ -16,6 +16,8 @@ import {
   Cell,
 } from "recharts";
 
+import AdminDashboard from "./AdminDashboard";
+
 export default function AppInterno({
   usuario,
   onLogout,
@@ -28,6 +30,9 @@ export default function AppInterno({
     useState([]);
 
   const [loading, setLoading] =
+    useState(false);
+
+  const [mostrarAdmin, setMostrarAdmin] =
     useState(false);
 
   const finalChatRef =
@@ -46,6 +51,21 @@ export default function AppInterno({
       : (
           usuario?.plano || "free"
         ).toUpperCase();
+
+  /* ======================================================
+     DASHBOARD ADMIN
+  ====================================================== */
+
+  if (mostrarAdmin && isAdmin) {
+
+    return (
+      <AdminDashboard
+        voltar={() =>
+          setMostrarAdmin(false)
+        }
+      />
+    );
+  }
 
   const emotionStyles = {
 
@@ -339,10 +359,6 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
-        {/* ======================================================
-            BADGE ADMIN PREMIUM
-        ====================================================== */}
-
         <div
           style={{
             display: "flex",
@@ -382,38 +398,50 @@ export default function AppInterno({
           {
             isAdmin && (
 
-              <div
-                style={{
-                  background:
-                    "linear-gradient(135deg,#facc15,#eab308)",
+              <>
+                <div
+                  style={{
+                    background:
+                      "linear-gradient(135deg,#facc15,#eab308)",
 
-                  color:
-                    "#111827",
+                    color:
+                      "#111827",
 
-                  padding:
-                    "8px 14px",
+                    padding:
+                      "8px 14px",
 
-                  borderRadius:
-                    999,
+                    borderRadius:
+                      999,
 
-                  width:
-                    "fit-content",
+                    width:
+                      "fit-content",
 
-                  fontSize:
-                    12,
+                    fontSize:
+                      12,
 
-                  fontWeight:
-                    "bold",
+                    fontWeight:
+                      "bold",
 
-                  letterSpacing:
-                    1,
+                    letterSpacing:
+                      1,
 
-                  boxShadow:
-                    "0 0 20px rgba(250,204,21,0.45)",
-                }}
-              >
-                ADMIN MASTER
-              </div>
+                    boxShadow:
+                      "0 0 20px rgba(250,204,21,0.45)",
+                  }}
+                >
+                  ADMIN MASTER
+                </div>
+
+                <button
+                  onClick={() =>
+                    setMostrarAdmin(true)
+                  }
+
+                  style={styles.adminBtn}
+                >
+                  Painel Admin
+                </button>
+              </>
             )
           }
 
@@ -782,6 +810,27 @@ const styles = {
     fontSize: 13,
 
     width: "fit-content",
+  },
+
+  adminBtn: {
+
+    border: "none",
+
+    background:
+      "linear-gradient(90deg,#facc15,#f59e0b)",
+
+    color: "#111827",
+
+    fontWeight: "bold",
+
+    padding: "12px 16px",
+
+    borderRadius: 14,
+
+    cursor: "pointer",
+
+    boxShadow:
+      "0 0 20px rgba(250,204,21,0.3)",
   },
 
   infoCard: {

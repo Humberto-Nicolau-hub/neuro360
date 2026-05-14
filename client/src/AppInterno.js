@@ -11,9 +11,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 
 import AdminDashboard from "./AdminDashboard";
@@ -23,9 +20,44 @@ export default function AppInterno({
   onLogout,
 }) {
 
-  /* ======================================================
+  const [mensagem, setMensagem] =
+    useState("");
+
+  const [historico, setHistorico] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [mostrarAdmin, setMostrarAdmin] =
+    useState(false);
+
+  const [saindo, setSaindo] =
+    useState(false);
+
+  const finalChatRef =
+    useRef(null);
+
+  /* =========================================
      PROTEÇÃO ANTI LOOP
-  ====================================================== */
+  ========================================= */
+
+  useEffect(() => {
+
+    if (!usuario) {
+
+      const timer =
+        setTimeout(() => {
+
+          window.location.reload();
+
+        }, 3000);
+
+      return () =>
+        clearTimeout(timer);
+    }
+
+  }, [usuario]);
 
   if (!usuario) {
 
@@ -47,27 +79,9 @@ export default function AppInterno({
     );
   }
 
-  const [mensagem, setMensagem] =
-    useState("");
-
-  const [historico, setHistorico] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [mostrarAdmin, setMostrarAdmin] =
-    useState(false);
-
-  const [saindo, setSaindo] =
-    useState(false);
-
-  const finalChatRef =
-    useRef(null);
-
-  /* ======================================================
+  /* =========================================
      AUTO SCROLL
-  ====================================================== */
+  ========================================= */
 
   useEffect(() => {
 
@@ -77,9 +91,9 @@ export default function AppInterno({
 
   }, [historico]);
 
-  /* ======================================================
+  /* =========================================
      ADMIN
-  ====================================================== */
+  ========================================= */
 
   const isAdmin =
     usuario?.admin === true;
@@ -88,32 +102,31 @@ export default function AppInterno({
     isAdmin
       ? "ADMIN PREMIUM"
       : (
-          usuario?.plano || "free"
+          usuario?.plano || "FREE"
         ).toUpperCase();
 
-  /* ======================================================
+  /* =========================================
      ESTADO EMOCIONAL
-  ====================================================== */
+  ========================================= */
 
-  const estadoEmocional = {
-
+  const estado = {
     score: 82,
-
     hawkins: 540,
-
-    consciencia:
-      "Expansão",
-
-    trilha:
-      "Reequilíbrio",
-
-    emocao:
-      "Equilibrado",
+    consciencia: "Expansão",
+    trilha: "Reequilíbrio",
+    emocao: "Equilibrado",
   };
 
-  /* ======================================================
-     LOGOUT ESTÁVEL
-  ====================================================== */
+  const graficoData = [
+    { dia: 1, valor: 72 },
+    { dia: 2, valor: 76 },
+    { dia: 3, valor: 81 },
+    { dia: 4, valor: 82 },
+  ];
+
+  /* =========================================
+     LOGOUT
+  ========================================= */
 
   async function sair() {
 
@@ -132,39 +145,31 @@ export default function AppInterno({
         await onLogout();
       }
 
-      setTimeout(() => {
-
-        window.location.reload();
-
-      }, 500);
+      window.location.reload();
 
     } catch (erro) {
 
-      console.log(
-        "ERRO LOGOUT:",
-        erro
-      );
+      console.log(erro);
 
       setSaindo(false);
     }
   }
 
-  /* ======================================================
+  /* =========================================
      CHAT IA
-  ====================================================== */
+  ========================================= */
 
   async function enviarMensagem() {
 
     if (!mensagem.trim()) return;
 
-    const textoUsuario =
-      mensagem;
+    const texto = mensagem;
 
     setHistorico((prev) => [
       ...prev,
       {
         tipo: "usuario",
-        texto: textoUsuario,
+        texto,
       },
     ]);
 
@@ -186,22 +191,11 @@ export default function AppInterno({
             },
 
             body: JSON.stringify({
-
-              mensagem:
-                textoUsuario,
-
-              perfil:
-                plano,
-
+              mensagem: texto,
+              perfil: plano,
               premium:
                 isAdmin ||
                 usuario?.premium,
-
-              user_id:
-                usuario?.id ||
-                usuario?.email ||
-                "anonimo",
-
               email:
                 usuario?.email,
             }),
@@ -212,34 +206,21 @@ export default function AppInterno({
         await response.json();
 
       setHistorico((prev) => [
-
         ...prev,
-
         {
           tipo: "ia",
-
           texto:
-
             data?.resposta ||
-
             "Não consegui responder agora.",
         },
       ]);
 
     } catch (erro) {
 
-      console.log(
-        "ERRO IA:",
-        erro
-      );
-
       setHistorico((prev) => [
-
         ...prev,
-
         {
           tipo: "ia",
-
           texto:
             "IA temporariamente indisponível.",
         },
@@ -251,9 +232,9 @@ export default function AppInterno({
     }
   }
 
-  /* ======================================================
-     DASHBOARD ADMIN
-  ====================================================== */
+  /* =========================================
+     ADMIN DASHBOARD
+  ========================================= */
 
   if (
     mostrarAdmin &&
@@ -261,7 +242,6 @@ export default function AppInterno({
   ) {
 
     return (
-
       <AdminDashboard
         user={usuario}
         onVoltar={() =>
@@ -271,11 +251,19 @@ export default function AppInterno({
     );
   }
 
+  /* =========================================
+     RENDER
+  ========================================= */
+
   return (
 
     <div style={styles.container}>
 
       <aside style={styles.sidebar}>
+
+        <div
+          style={styles.avatar}
+        />
 
         <h1 style={styles.logo}>
           NeuroMapa360
@@ -284,6 +272,33 @@ export default function AppInterno({
         <p style={styles.sub}>
           IA Terapêutica Ativa
         </p>
+
+        <div style={styles.plano}>
+          Plano:
+          {" "}
+          {plano}
+        </div>
+
+        {
+          isAdmin && (
+            <div style={styles.master}>
+              ADMIN MASTER
+            </div>
+          )
+        }
+
+        {
+          isAdmin && (
+            <button
+              onClick={() =>
+                setMostrarAdmin(true)
+              }
+              style={styles.adminBtn}
+            >
+              Painel Admin
+            </button>
+          )
+        }
 
         <div style={styles.infoCard}>
 
@@ -294,35 +309,37 @@ export default function AppInterno({
           <div>
             🧠 Emoção:
             {" "}
-            {estadoEmocional.emocao}
+            {estado.emocao}
           </div>
 
           <div>
             📊 Score:
             {" "}
-            {estadoEmocional.score}
+            {estado.score}
+          </div>
+
+          <div>
+            🔥 Hawkins:
+            {" "}
+            {estado.hawkins}
+          </div>
+
+          <div>
+            🌐 Consciência:
+            {" "}
+            {estado.consciencia}
+          </div>
+
+          <div>
+            🛤️ Trilha:
+            {" "}
+            {estado.trilha}
           </div>
 
         </div>
 
-        {
-          isAdmin && (
-
-            <button
-              onClick={() =>
-                setMostrarAdmin(true)
-              }
-
-              style={styles.adminBtn}
-            >
-              Painel Admin
-            </button>
-          )
-        }
-
         <button
           onClick={sair}
-          disabled={saindo}
           style={styles.logout}
         >
           {
@@ -336,6 +353,80 @@ export default function AppInterno({
 
       <main style={styles.main}>
 
+        <div style={styles.topCards}>
+
+          <div style={styles.card}>
+            <h3>Score</h3>
+            <h1>82</h1>
+          </div>
+
+          <div style={styles.card}>
+            <h3>Hawkins</h3>
+            <h1>540</h1>
+          </div>
+
+          <div style={styles.card}>
+            <h3>Estado</h3>
+            <h1>Equilibrado</h1>
+          </div>
+
+        </div>
+
+        <div style={styles.graphCard}>
+
+          <ResponsiveContainer
+            width="100%"
+            height={260}
+          >
+
+            <LineChart data={graficoData}>
+
+              <CartesianGrid
+                stroke="#1e293b"
+              />
+
+              <XAxis dataKey="dia" />
+
+              <Tooltip />
+
+              <Line
+                type="monotone"
+                dataKey="valor"
+                stroke="#22d3ee"
+                strokeWidth={4}
+              />
+
+            </LineChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+        <div style={styles.emocoes}>
+
+          {[
+            "Ansioso",
+            "Cansado",
+            "Confuso",
+            "Deprimido",
+            "Esperançoso",
+            "Feliz",
+            "Motivado",
+            "Raiva",
+            "Sem foco",
+          ].map((emocao) => (
+
+            <button
+              key={emocao}
+              style={styles.emocaoBtn}
+            >
+              {emocao}
+            </button>
+
+          ))}
+
+        </div>
+
         <div style={styles.chatContainer}>
 
           <div style={styles.chatArea}>
@@ -345,17 +436,12 @@ export default function AppInterno({
 
               <div
                 key={index}
-
                 style={{
                   display: "flex",
-
                   justifyContent:
-
                     msg.tipo ===
                     "usuario"
-
                       ? "flex-end"
-
                       : "flex-start",
                 }}
               >
@@ -365,12 +451,9 @@ export default function AppInterno({
                     ...styles.msg,
 
                     background:
-
                       msg.tipo ===
                       "usuario"
-
                         ? "#10b981"
-
                         : "#111827",
                   }}
                 >
@@ -381,7 +464,6 @@ export default function AppInterno({
             ))}
 
             {loading && (
-
               <div
                 style={{
                   color: "#4ade80",
@@ -399,15 +481,12 @@ export default function AppInterno({
 
             <input
               value={mensagem}
-
               onChange={(e) =>
                 setMensagem(
                   e.target.value
                 )
               }
-
               placeholder="Como você está se sentindo?"
-
               style={styles.input}
             />
 
@@ -415,7 +494,6 @@ export default function AppInterno({
               onClick={
                 enviarMensagem
               }
-
               style={styles.send}
             >
               Enviar
@@ -442,27 +520,45 @@ const styles = {
   },
 
   sidebar: {
-    width: 260,
+    width: 300,
     background: "#0f172a",
     padding: 24,
     display: "flex",
     flexDirection: "column",
-    gap: 20,
+    gap: 18,
+  },
+
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: "50%",
+    background:
+      "linear-gradient(90deg,#22d3ee,#67e8f9)",
   },
 
   logo: {
-    fontSize: 32,
+    fontSize: 28,
+    fontWeight: "bold",
   },
 
   sub: {
     color: "#4ade80",
+    fontWeight: "bold",
   },
 
-  infoCard: {
-    background: "#111827",
-    padding: 18,
-    borderRadius: 20,
-    lineHeight: 2,
+  plano: {
+    color: "#facc15",
+    fontWeight: "bold",
+  },
+
+  master: {
+    background:
+      "linear-gradient(90deg,#facc15,#f59e0b)",
+    color: "#111827",
+    padding: "10px 14px",
+    borderRadius: 30,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 
   adminBtn: {
@@ -471,9 +567,16 @@ const styles = {
       "linear-gradient(90deg,#facc15,#f59e0b)",
     color: "#111827",
     fontWeight: "bold",
-    padding: "12px 16px",
+    padding: "14px",
     borderRadius: 14,
     cursor: "pointer",
+  },
+
+  infoCard: {
+    background: "#111827",
+    padding: 18,
+    borderRadius: 20,
+    lineHeight: 2,
   },
 
   logout: {
@@ -490,17 +593,54 @@ const styles = {
 
   main: {
     flex: 1,
-    padding: 24,
+    padding: 20,
     display: "flex",
     flexDirection: "column",
+    gap: 20,
+    overflow: "hidden",
+  },
+
+  topCards: {
+    display: "flex",
+    gap: 20,
+  },
+
+  card: {
+    flex: 1,
+    background: "#111827",
+    padding: 20,
+    borderRadius: 20,
+  },
+
+  graphCard: {
+    background: "#111827",
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  emocoes: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+
+  emocaoBtn: {
+    border: "none",
+    borderRadius: 30,
+    padding: "12px 18px",
+    background:
+      "linear-gradient(90deg,#38bdf8,#22d3ee)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 
   chatContainer: {
     flex: 1,
-    display: "flex",
-    flexDirection: "column",
     background: "#0f172a",
     borderRadius: 20,
+    display: "flex",
+    flexDirection: "column",
     overflow: "hidden",
   },
 

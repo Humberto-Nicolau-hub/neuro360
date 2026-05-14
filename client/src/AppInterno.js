@@ -35,6 +35,10 @@ export default function AppInterno({
   const [saindo, setSaindo] =
     useState(false);
 
+  const [emocaoSelecionada,
+    setEmocaoSelecionada] =
+      useState("");
+
   const finalChatRef =
     useRef(null);
 
@@ -114,7 +118,8 @@ export default function AppInterno({
     hawkins: 540,
     consciencia: "Expansão",
     trilha: "Reequilíbrio",
-    emocao: "Equilibrado",
+    emocao:
+      emocaoSelecionada || "Equilibrado",
   };
 
   const graficoData = [
@@ -367,7 +372,7 @@ export default function AppInterno({
 
           <div style={styles.card}>
             <h3>Estado</h3>
-            <h1>Equilibrado</h1>
+            <h1>{estado.emocao}</h1>
           </div>
 
         </div>
@@ -376,7 +381,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={260}
+            height={140}
           >
 
             <LineChart data={graficoData}>
@@ -412,13 +417,39 @@ export default function AppInterno({
             "Esperançoso",
             "Feliz",
             "Motivado",
+            "Desmotivado",
+            "Procrastinador",
+            "Triste",
             "Raiva",
             "Sem foco",
           ].map((emocao) => (
 
             <button
               key={emocao}
-              style={styles.emocaoBtn}
+
+              onClick={() => {
+
+                setEmocaoSelecionada(
+                  emocao
+                );
+
+                setMensagem(
+                  `Estou me sentindo ${emocao}`
+                );
+              }}
+
+              style={{
+                ...styles.emocaoBtn,
+
+                background:
+
+                  emocaoSelecionada ===
+                  emocao
+
+                    ? "linear-gradient(90deg,#facc15,#f59e0b)"
+
+                    : "linear-gradient(90deg,#38bdf8,#22d3ee)",
+              }}
             >
               {emocao}
             </button>
@@ -467,9 +498,10 @@ export default function AppInterno({
               <div
                 style={{
                   color: "#4ade80",
+                  fontWeight: "bold",
                 }}
               >
-                IA analisando...
+                IA analisando emoções...
               </div>
             )}
 
@@ -596,7 +628,7 @@ const styles = {
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    gap: 20,
+    gap: 16,
     overflow: "hidden",
   },
 
@@ -615,7 +647,7 @@ const styles = {
   graphCard: {
     background: "#111827",
     borderRadius: 20,
-    padding: 20,
+    padding: 10,
   },
 
   emocoes: {
@@ -628,15 +660,14 @@ const styles = {
     border: "none",
     borderRadius: 30,
     padding: "12px 18px",
-    background:
-      "linear-gradient(90deg,#38bdf8,#22d3ee)",
     color: "white",
     cursor: "pointer",
     fontWeight: "bold",
+    transition: "0.3s",
   },
 
   chatContainer: {
-    flex: 1,
+    flex: 2,
     background: "#0f172a",
     borderRadius: 20,
     display: "flex",

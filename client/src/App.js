@@ -58,12 +58,23 @@ export default function App() {
 
       const {
         data: profileExistente,
+        error,
       } =
         await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
+
+      if (error) {
+
+        console.log(
+          "ERRO BUSCAR PROFILE:",
+          error
+        );
+
+        return;
+      }
 
       /* =========================================
          SE NÃO EXISTIR -> CRIAR
@@ -92,11 +103,22 @@ export default function App() {
             isAdmin,
         };
 
-        await supabase
-          .from("profiles")
-          .insert(
-            novoProfile
+        const {
+          error: erroInsert,
+        } =
+          await supabase
+            .from("profiles")
+            .insert(
+              novoProfile
+            );
+
+        if (erroInsert) {
+
+          console.log(
+            "ERRO INSERT PROFILE:",
+            erroInsert
           );
+        }
 
         setUsuarioAtual(
           novoProfile
@@ -166,8 +188,23 @@ export default function App() {
 
         const {
           data: { session },
+          error,
         } =
           await supabase.auth.getSession();
+
+        if (error) {
+
+          console.log(
+            "ERRO GET SESSION:",
+            error
+          );
+
+          setLogado(false);
+
+          setUsuarioAtual(null);
+
+          return;
+        }
 
         if (session?.user) {
 
@@ -176,6 +213,12 @@ export default function App() {
           );
 
           setLogado(true);
+
+        } else {
+
+          setLogado(false);
+
+          setUsuarioAtual(null);
         }
 
       } catch (erro) {
@@ -184,6 +227,10 @@ export default function App() {
           "ERRO SESSÃO:",
           erro
         );
+
+        setLogado(false);
+
+        setUsuarioAtual(null);
 
       } finally {
 
@@ -203,6 +250,11 @@ export default function App() {
           session
         ) => {
 
+          console.log(
+            "AUTH EVENT:",
+            event
+          );
+
           if (
             session?.user
           ) {
@@ -221,6 +273,8 @@ export default function App() {
 
             setLogado(false);
           }
+
+          setCarregandoSessao(false);
         }
       );
 
@@ -383,13 +437,19 @@ export default function App() {
 
     try {
 
+      setCarregandoSessao(true);
+
       await supabase.auth.signOut();
 
-      setUsuarioAtual(
-        null
-      );
+      localStorage.clear();
+
+      sessionStorage.clear();
+
+      setUsuarioAtual(null);
 
       setLogado(false);
+
+      window.location.href = "/";
 
     } catch (erro) {
 
@@ -397,6 +457,10 @@ export default function App() {
         "ERRO LOGOUT:",
         erro
       );
+
+    } finally {
+
+      setCarregandoSessao(false);
     }
   }
 

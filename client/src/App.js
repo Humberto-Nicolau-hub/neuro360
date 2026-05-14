@@ -5,7 +5,7 @@ import React, {
 
 import AppInterno from "./AppInterno";
 
-import { supabase } from "./supabase";
+import { supabase } from "./supabaseClient";
 
 /* ======================================================
    APP

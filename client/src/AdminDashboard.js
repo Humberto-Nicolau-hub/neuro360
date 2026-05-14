@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 const styles = {
   container: {
@@ -68,13 +68,10 @@ const styles = {
   },
 };
 
-function AdminDashboard(props) {
-  const user = props?.user || {};
-
-  const handleVoltar =
-    typeof props?.onVoltar === "function"
-      ? props.onVoltar
-      : () => window.history.back();
+function AdminDashboard({
+  user = {},
+  onVoltar = () => {},
+}) {
 
   const cards = [
     {
@@ -82,16 +79,19 @@ function AdminDashboard(props) {
       valor: "0",
       texto: "Total cadastrados",
     },
+
     {
       titulo: "Premium",
       valor: "0",
       texto: "Usuários premium",
     },
+
     {
       titulo: "Admins",
       valor: "1",
       texto: "Administradores",
     },
+
     {
       titulo: "IA Ativa",
       valor: "100%",
@@ -101,9 +101,12 @@ function AdminDashboard(props) {
 
   return (
     <div style={styles.container}>
+
       {/* HEADER */}
       <div style={styles.header}>
+
         <div>
+
           <h1 style={styles.title}>
             Painel Administrativo
           </h1>
@@ -111,19 +114,22 @@ function AdminDashboard(props) {
           <p style={styles.subtitle}>
             NeuroMapa360 • ADMIN MASTER
           </p>
+
         </div>
 
         <button
           type="button"
-          onClick={handleVoltar}
+          onClick={onVoltar}
           style={styles.button}
         >
           Voltar ao App
         </button>
+
       </div>
 
       {/* ADMIN */}
       <div style={styles.section}>
+
         <h2
           style={{
             marginTop: 0,
@@ -136,7 +142,7 @@ function AdminDashboard(props) {
 
         <p>
           <strong>Email:</strong>{" "}
-          {user.email || "admin@neuromapa360.com"}
+          {user?.email || "admin@neuromapa360.com"}
         </p>
 
         <p>
@@ -146,15 +152,19 @@ function AdminDashboard(props) {
         <p>
           <strong>Status:</strong> MASTER ACCESS
         </p>
+
       </div>
 
       {/* CARDS */}
       <div style={styles.grid}>
-        {cards.map((card, index) => (
+
+        {cards.map((card) => (
+
           <div
-            key={`card-${index}`}
+            key={card.titulo}
             style={styles.card}
           >
+
             <h3
               style={{
                 color: "#00ffd5",
@@ -182,12 +192,15 @@ function AdminDashboard(props) {
             >
               {card.texto}
             </p>
+
           </div>
         ))}
+
       </div>
 
       {/* CONTEÚDO */}
       <div style={styles.section}>
+
         <h2
           style={{
             marginTop: 0,
@@ -235,9 +248,11 @@ function AdminDashboard(props) {
           <li>✔ Dashboard financeiro</li>
           <li>✔ Analytics terapêutico</li>
         </ul>
+
       </div>
+
     </div>
   );
 }
 
-export default AdminDashboard;
+export default memo(AdminDashboard);

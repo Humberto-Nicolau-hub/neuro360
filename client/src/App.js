@@ -74,6 +74,8 @@ export default function App() {
           error
         );
 
+        setCarregandoSessao(false);
+
         return;
       }
 
@@ -89,9 +91,6 @@ export default function App() {
 
           email: user.email,
 
-          nome:
-            user.email,
-
           plano:
             isAdmin
               ? "premium"
@@ -104,25 +103,46 @@ export default function App() {
             isAdmin,
         };
 
+        console.log(
+          "CRIANDO PROFILE:",
+          novoProfile
+        );
+
         const {
+          data: insertedProfile,
           error: erroInsert,
         } =
           await supabase
             .from("profiles")
-            .insert(
+            .insert([
               novoProfile
-            );
+            ])
+            .select()
+            .single();
 
         if (erroInsert) {
 
           console.log(
             "ERRO INSERT PROFILE:",
-            erroInsert
+            JSON.stringify(
+              erroInsert,
+              null,
+              2
+            )
           );
+
+          setCarregandoSessao(false);
+
+          return;
         }
 
+        console.log(
+          "PROFILE CRIADO:",
+          insertedProfile
+        );
+
         setUsuarioAtual(
-          novoProfile
+          insertedProfile
         );
 
         return;
@@ -134,35 +154,46 @@ export default function App() {
 
       if (isAdmin) {
 
-        const profileAdmin = {
+        const {
+          data: profileAtualizado,
+          error: updateError,
+        } =
+          await supabase
+            .from("profiles")
+            .update({
 
-          ...profileExistente,
+              plano: "premium",
 
-          plano: "premium",
+              premium: true,
 
-          premium: true,
+              admin: true,
+            })
 
-          admin: true,
-        };
+            .eq(
+              "id",
+              user.id
+            )
 
-        await supabase
-          .from("profiles")
-          .update({
+            .select()
 
-            plano: "premium",
+            .single();
 
-            premium: true,
+        if (updateError) {
 
-            admin: true,
-          })
-
-          .eq(
-            "id",
-            user.id
+          console.log(
+            "ERRO UPDATE ADMIN:",
+            updateError
           );
 
+          setUsuarioAtual(
+            profileExistente
+          );
+
+          return;
+        }
+
         setUsuarioAtual(
-          profileAdmin
+          profileAtualizado
         );
 
         return;
@@ -172,32 +203,43 @@ export default function App() {
          USUÁRIO FREE
       ========================================= */
 
-      const profileFree = {
+      const {
+        data: profileFree,
+        error: freeError,
+      } =
+        await supabase
+          .from("profiles")
+          .update({
 
-        ...profileExistente,
+            plano: "free",
 
-        plano: "free",
+            premium: false,
 
-        premium: false,
+            admin: false,
+          })
 
-        admin: false,
-      };
+          .eq(
+            "id",
+            user.id
+          )
 
-      await supabase
-        .from("profiles")
-        .update({
+          .select()
 
-          plano: "free",
+          .single();
 
-          premium: false,
+      if (freeError) {
 
-          admin: false,
-        })
-
-        .eq(
-          "id",
-          user.id
+        console.log(
+          "ERRO UPDATE FREE:",
+          freeError
         );
+
+        setUsuarioAtual(
+          profileExistente
+        );
+
+        return;
+      }
 
       setUsuarioAtual(
         profileFree
@@ -209,6 +251,8 @@ export default function App() {
         "ERRO PROFILE:",
         erro
       );
+
+      setCarregandoSessao(false);
     }
   }
 

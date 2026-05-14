@@ -1,86 +1,129 @@
 import React from "react";
 
-function AdminDashboard({ user = {}, onVoltar }) {
+const styles = {
+  container: {
+    minHeight: "100vh",
+    backgroundColor: "#050816",
+    color: "#ffffff",
+    padding: "30px",
+    fontFamily: "Arial, sans-serif",
+    overflowX: "hidden",
+    boxSizing: "border-box",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px",
+    flexWrap: "wrap",
+    gap: "20px",
+  },
+
+  title: {
+    fontSize: "36px",
+    fontWeight: "bold",
+    margin: 0,
+    marginBottom: "10px",
+  },
+
+  subtitle: {
+    color: "#00ffd5",
+    fontSize: "16px",
+    margin: 0,
+  },
+
+  button: {
+    background: "#00ffd5",
+    color: "#000",
+    border: "none",
+    padding: "12px 24px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "15px",
+    boxShadow: "0 0 15px rgba(0,255,213,0.3)",
+  },
+
+  card: {
+    background: "#11182b",
+    padding: "25px",
+    borderRadius: "20px",
+    border: "1px solid rgba(255,255,255,0.08)",
+  },
+
+  section: {
+    background: "#11182b",
+    borderRadius: "20px",
+    padding: "30px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    marginBottom: "30px",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "20px",
+    marginBottom: "30px",
+  },
+};
+
+function AdminDashboard(props) {
+  const user = props?.user || {};
+
   const handleVoltar =
-    typeof onVoltar === "function"
-      ? onVoltar
+    typeof props?.onVoltar === "function"
+      ? props.onVoltar
       : () => window.history.back();
 
+  const cards = [
+    {
+      titulo: "Usuários",
+      valor: "0",
+      texto: "Total cadastrados",
+    },
+    {
+      titulo: "Premium",
+      valor: "0",
+      texto: "Usuários premium",
+    },
+    {
+      titulo: "Admins",
+      valor: "1",
+      texto: "Administradores",
+    },
+    {
+      titulo: "IA Ativa",
+      valor: "100%",
+      texto: "Sistema operacional",
+    },
+  ];
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#050816",
-        color: "#ffffff",
-        padding: "30px",
-        fontFamily: "Arial, sans-serif",
-        overflowX: "hidden",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={styles.container}>
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "30px",
-          flexWrap: "wrap",
-          gap: "20px",
-        }}
-      >
+      <div style={styles.header}>
         <div>
-          <h1
-            style={{
-              fontSize: "36px",
-              fontWeight: "bold",
-              margin: 0,
-              marginBottom: "10px",
-            }}
-          >
+          <h1 style={styles.title}>
             Painel Administrativo
           </h1>
 
-          <p
-            style={{
-              color: "#00ffd5",
-              fontSize: "16px",
-              margin: 0,
-            }}
-          >
+          <p style={styles.subtitle}>
             NeuroMapa360 • ADMIN MASTER
           </p>
         </div>
 
         <button
-          onClick={handleVoltar}
           type="button"
-          style={{
-            background: "#00ffd5",
-            color: "#000",
-            border: "none",
-            padding: "12px 24px",
-            borderRadius: "12px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "15px",
-            boxShadow: "0 0 15px rgba(0,255,213,0.3)",
-          }}
+          onClick={handleVoltar}
+          style={styles.button}
         >
           Voltar ao App
         </button>
       </div>
 
-      {/* INFO ADMIN */}
-      <div
-        style={{
-          background: "#11182b",
-          padding: "20px",
-          borderRadius: "20px",
-          marginBottom: "30px",
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+      {/* ADMIN */}
+      <div style={styles.section}>
         <h2
           style={{
             marginTop: 0,
@@ -93,7 +136,7 @@ function AdminDashboard({ user = {}, onVoltar }) {
 
         <p>
           <strong>Email:</strong>{" "}
-          {user?.email ? user.email : "admin@neuromapa360.com"}
+          {user.email || "admin@neuromapa360.com"}
         </p>
 
         <p>
@@ -106,43 +149,11 @@ function AdminDashboard({ user = {}, onVoltar }) {
       </div>
 
       {/* CARDS */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "20px",
-          marginBottom: "30px",
-        }}
-      >
-        {[
-          {
-            titulo: "Usuários",
-            valor: "0",
-            texto: "Total cadastrados",
-          },
-          {
-            titulo: "Premium",
-            valor: "0",
-            texto: "Usuários premium",
-          },
-          {
-            titulo: "Admins",
-            valor: "1",
-            texto: "Administradores",
-          },
-          {
-            titulo: "IA Ativa",
-            valor: "100%",
-            texto: "Sistema operacional",
-          },
-        ].map((card, index) => (
+      <div style={styles.grid}>
+        {cards.map((card, index) => (
           <div
-            key={index}
-            style={{
-              background: "#11182b",
-              padding: "25px",
-              borderRadius: "20px",
-            }}
+            key={`card-${index}`}
+            style={styles.card}
           >
             <h3
               style={{
@@ -175,15 +186,8 @@ function AdminDashboard({ user = {}, onVoltar }) {
         ))}
       </div>
 
-      {/* ÁREA FUTURA */}
-      <div
-        style={{
-          background: "#11182b",
-          borderRadius: "20px",
-          padding: "30px",
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+      {/* CONTEÚDO */}
+      <div style={styles.section}>
         <h2
           style={{
             marginTop: 0,
@@ -200,8 +204,8 @@ function AdminDashboard({ user = {}, onVoltar }) {
             opacity: 0.85,
           }}
         >
-          Este painel será responsável por toda a inteligência administrativa
-          da plataforma NeuroMapa360.
+          Este painel será responsável por toda a inteligência
+          administrativa da plataforma NeuroMapa360.
         </p>
 
         <p

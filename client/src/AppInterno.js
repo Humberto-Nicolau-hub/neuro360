@@ -23,6 +23,30 @@ export default function AppInterno({
   onLogout,
 }) {
 
+  /* ======================================================
+     PROTEÇÃO ANTI LOOP
+  ====================================================== */
+
+  if (!usuario) {
+
+    return (
+      <div
+        style={{
+          height: "100vh",
+          background: "#020617",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "white",
+          fontSize: 22,
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        Carregando NeuroMapa360...
+      </div>
+    );
+  }
+
   const [mensagem, setMensagem] =
     useState("");
 
@@ -42,7 +66,19 @@ export default function AppInterno({
     useRef(null);
 
   /* ======================================================
-     ADMIN DETECTION
+     AUTO SCROLL
+  ====================================================== */
+
+  useEffect(() => {
+
+    finalChatRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+
+  }, [historico]);
+
+  /* ======================================================
+     ADMIN
   ====================================================== */
 
   const isAdmin =
@@ -56,268 +92,65 @@ export default function AppInterno({
         ).toUpperCase();
 
   /* ======================================================
-     ADMIN COMPONENT VALIDATION
+     ESTADO EMOCIONAL
   ====================================================== */
 
-  const AdminComponentValido =
-    AdminDashboard &&
-    typeof AdminDashboard ===
-      "function";
+  const estadoEmocional = {
+
+    score: 82,
+
+    hawkins: 540,
+
+    consciencia:
+      "Expansão",
+
+    trilha:
+      "Reequilíbrio",
+
+    emocao:
+      "Equilibrado",
+  };
 
   /* ======================================================
-     AUTO SCROLL
+     LOGOUT ESTÁVEL
   ====================================================== */
 
-  useEffect(() => {
+  async function sair() {
 
-    finalChatRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-
-  }, [historico]);
-
-  /* ======================================================
-     DASHBOARD ADMIN
-  ====================================================== */
-
-  if (mostrarAdmin && isAdmin) {
+    if (saindo) return;
 
     try {
 
-      if (!AdminComponentValido) {
+      setSaindo(true);
 
-        return (
-          <div
-            style={{
-              height: "100vh",
-              background: "#020617",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "column",
-              gap: 20,
-              fontFamily:
-                "Inter, sans-serif",
-            }}
-          >
-            <h1>
-              Painel administrativo indisponível
-            </h1>
+      localStorage.clear();
 
-            <button
-              onClick={() =>
-                setMostrarAdmin(false)
-              }
-              style={{
-                padding:
-                  "12px 20px",
-                borderRadius: 12,
-                border: "none",
-                cursor: "pointer",
-                background:
-                  "linear-gradient(90deg,#34d399,#22d3ee)",
-                color: "white",
-                fontWeight: "bold",
-              }}
-            >
-              Voltar
-            </button>
-          </div>
-        );
+      sessionStorage.clear();
+
+      if (onLogout) {
+
+        await onLogout();
       }
 
-      return (
-        <AdminDashboard
-          user={usuario || {}}
-          onVoltar={() =>
-            setMostrarAdmin(false)
-          }
-        />
-      );
+      setTimeout(() => {
+
+        window.location.reload();
+
+      }, 500);
 
     } catch (erro) {
 
-      console.error(
-        "ERRO ADMIN:",
+      console.log(
+        "ERRO LOGOUT:",
         erro
       );
 
-      return (
-        <div
-          style={{
-            height: "100vh",
-            background: "#020617",
-            color: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: 20,
-            fontFamily:
-              "Inter, sans-serif",
-          }}
-        >
-          <h1>
-            Erro interno no painel admin
-          </h1>
-
-          <button
-            onClick={() =>
-              setMostrarAdmin(false)
-            }
-            style={{
-              padding:
-                "12px 20px",
-              borderRadius: 12,
-              border: "none",
-              cursor: "pointer",
-              background:
-                "linear-gradient(90deg,#34d399,#22d3ee)",
-              color: "white",
-              fontWeight: "bold",
-            }}
-          >
-            Voltar
-          </button>
-        </div>
-      );
+      setSaindo(false);
     }
   }
 
   /* ======================================================
-     EMOTION STYLES
-  ====================================================== */
-
-  const emotionStyles = {
-
-    Ansioso: {
-      background:
-        "rgba(249,115,22,0.18)",
-      color: "#fdba74",
-      border:
-        "1px solid #fb923c",
-    },
-
-    Cansado: {
-      background:
-        "rgba(107,114,128,0.18)",
-      color: "#d1d5db",
-      border:
-        "1px solid #9ca3af",
-    },
-
-    Confuso: {
-      background:
-        "rgba(99,102,241,0.18)",
-      color: "#a5b4fc",
-      border:
-        "1px solid #818cf8",
-    },
-
-    Deprimido: {
-      background:
-        "rgba(30,58,138,0.25)",
-      color: "#93c5fd",
-      border:
-        "1px solid #3b82f6",
-    },
-
-    Esperançoso: {
-      background:
-        "rgba(6,182,212,0.18)",
-      color: "#67e8f9",
-      border:
-        "1px solid #22d3ee",
-    },
-
-    Feliz: {
-      background:
-        "rgba(234,179,8,0.18)",
-      color: "#fde047",
-      border:
-        "1px solid #facc15",
-    },
-
-    Motivado: {
-      background:
-        "rgba(34,197,94,0.18)",
-      color: "#86efac",
-      border:
-        "1px solid #4ade80",
-    },
-
-    Raiva: {
-      background:
-        "rgba(239,68,68,0.18)",
-      color: "#fca5a5",
-      border:
-        "1px solid #ef4444",
-    },
-
-    "Sem foco": {
-      background:
-        "rgba(71,85,105,0.18)",
-      color: "#cbd5e1",
-      border:
-        "1px solid #64748b",
-    },
-
-    Sobrecarregado: {
-      background:
-        "rgba(168,85,247,0.18)",
-      color: "#d8b4fe",
-      border:
-        "1px solid #a855f7",
-    },
-
-    Triste: {
-      background:
-        "rgba(59,130,246,0.18)",
-      color: "#93c5fd",
-      border:
-        "1px solid #3b82f6",
-    },
-  };
-
-  const emotions = [
-
-    "Ansioso",
-    "Cansado",
-    "Confuso",
-    "Deprimido",
-    "Esperançoso",
-    "Feliz",
-    "Motivado",
-    "Raiva",
-    "Sem foco",
-    "Sobrecarregado",
-    "Triste",
-  ];
-
-  /* ======================================================
-     ESTADO EMOCIONAL
-  ====================================================== */
-
-  const [estadoEmocional] =
-    useState({
-
-      score: 82,
-
-      hawkins: 540,
-
-      consciencia:
-        "Expansão",
-
-      trilha:
-        "Reequilíbrio",
-
-      emocao:
-        "Equilibrado",
-    });
-
-  /* ======================================================
-     IA CHAT
+     CHAT IA
   ====================================================== */
 
   async function enviarMensagem() {
@@ -327,17 +160,12 @@ export default function AppInterno({
     const textoUsuario =
       mensagem;
 
-    const novaMensagem = {
-
-      tipo: "usuario",
-
-      texto:
-        textoUsuario,
-    };
-
     setHistorico((prev) => [
       ...prev,
-      novaMensagem,
+      {
+        tipo: "usuario",
+        texto: textoUsuario,
+      },
     ]);
 
     setMensagem("");
@@ -380,13 +208,6 @@ export default function AppInterno({
           }
         );
 
-      if (!response.ok) {
-
-        throw new Error(
-          "Erro no backend"
-        );
-      }
-
       const data =
         await response.json();
 
@@ -399,7 +220,7 @@ export default function AppInterno({
 
           texto:
 
-            data.resposta ||
+            data?.resposta ||
 
             "Não consegui responder agora.",
         },
@@ -420,7 +241,7 @@ export default function AppInterno({
           tipo: "ia",
 
           texto:
-            "A IA terapêutica está temporariamente indisponível. Tente novamente em alguns instantes.",
+            "IA temporariamente indisponível.",
         },
       ]);
 
@@ -431,89 +252,30 @@ export default function AppInterno({
   }
 
   /* ======================================================
-     DADOS GRÁFICOS
+     DASHBOARD ADMIN
   ====================================================== */
 
-  const dadosGrafico = [
+  if (
+    mostrarAdmin &&
+    isAdmin
+  ) {
 
-    { name: "1", score: 60 },
+    return (
 
-    { name: "2", score: 65 },
-
-    { name: "3", score: 70 },
-
-    { name: "4", score: 82 },
-  ];
-
-  const donutData = [
-
-    {
-      name: "score",
-      value:
-        estadoEmocional.score,
-    },
-
-    {
-      name: "restante",
-      value:
-        100 -
-        estadoEmocional.score,
-    },
-  ];
-
-  /* ======================================================
-     LOGOUT ESTÁVEL
-  ====================================================== */
-
-  async function sair() {
-
-    if (saindo) return;
-
-    try {
-
-      setSaindo(true);
-
-      setMostrarAdmin(false);
-
-      localStorage.clear();
-
-      sessionStorage.clear();
-
-      if (onLogout) {
-
-        await onLogout();
-      }
-
-    } catch (erro) {
-
-      console.log(
-        "ERRO LOGOUT:",
-        erro
-      );
-
-    } finally {
-
-      setTimeout(() => {
-
-        window.location.href = "/";
-
-      }, 500);
-    }
+      <AdminDashboard
+        user={usuario}
+        onVoltar={() =>
+          setMostrarAdmin(false)
+        }
+      />
+    );
   }
-
-  /* ======================================================
-     RENDER
-  ====================================================== */
 
   return (
 
     <div style={styles.container}>
 
       <aside style={styles.sidebar}>
-
-        <div
-          style={styles.logoOrb}
-        />
 
         <h1 style={styles.logo}>
           NeuroMapa360
@@ -523,101 +285,10 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-          }}
-        >
-
-          <div style={styles.planoBadge}>
-
-            Plano:
-            {" "}
-
-            <span
-              style={{
-                color:
-
-                  isAdmin
-                    ? "#facc15"
-
-                    : usuario?.plano ===
-                      "premium"
-
-                      ? "#4ade80"
-
-                      : "#60a5fa",
-
-                fontWeight:
-                  "bold",
-              }}
-            >
-              {plano}
-            </span>
-
-          </div>
-
-          {
-            isAdmin && (
-
-              <>
-                <div
-                  style={{
-                    background:
-                      "linear-gradient(135deg,#facc15,#eab308)",
-
-                    color:
-                      "#111827",
-
-                    padding:
-                      "8px 14px",
-
-                    borderRadius:
-                      999,
-
-                    width:
-                      "fit-content",
-
-                    fontSize:
-                      12,
-
-                    fontWeight:
-                      "bold",
-
-                    letterSpacing:
-                      1,
-
-                    boxShadow:
-                      "0 0 20px rgba(250,204,21,0.45)",
-                  }}
-                >
-                  ADMIN MASTER
-                </div>
-
-                <button
-                  onClick={() =>
-                    setMostrarAdmin(true)
-                  }
-
-                  style={styles.adminBtn}
-                >
-                  Painel Admin
-                </button>
-              </>
-            )
-          }
-
-        </div>
-
         <div style={styles.infoCard}>
 
           <div>
-            👤 {
-              usuario?.email ||
-              usuario?.nome
-            }
+            👤 {usuario?.email}
           </div>
 
           <div>
@@ -632,25 +303,22 @@ export default function AppInterno({
             {estadoEmocional.score}
           </div>
 
-          <div>
-            🔥 Hawkins:
-            {" "}
-            {estadoEmocional.hawkins}
-          </div>
-
-          <div>
-            🌎 Consciência:
-            {" "}
-            {estadoEmocional.consciencia}
-          </div>
-
-          <div>
-            🛤️ Trilha:
-            {" "}
-            {estadoEmocional.trilha}
-          </div>
-
         </div>
+
+        {
+          isAdmin && (
+
+            <button
+              onClick={() =>
+                setMostrarAdmin(true)
+              }
+
+              style={styles.adminBtn}
+            >
+              Painel Admin
+            </button>
+          )
+        }
 
         <button
           onClick={sair}
@@ -667,113 +335,6 @@ export default function AppInterno({
       </aside>
 
       <main style={styles.main}>
-
-        <div style={styles.topGrid}>
-
-          <div style={styles.metricCard}>
-
-            <span style={styles.metricLabel}>
-              Score
-            </span>
-
-            <h2 style={styles.metricValue}>
-              {estadoEmocional.score}
-            </h2>
-
-          </div>
-
-          <div style={styles.metricCard}>
-
-            <span style={styles.metricLabel}>
-              Hawkins
-            </span>
-
-            <h2 style={styles.metricValue}>
-              {estadoEmocional.hawkins}
-            </h2>
-
-          </div>
-
-          <div style={styles.metricCard}>
-
-            <span style={styles.metricLabel}>
-              Estado
-            </span>
-
-            <h2 style={styles.metricValue}>
-              {estadoEmocional.emocao}
-            </h2>
-
-          </div>
-
-        </div>
-
-        <div style={styles.chartGrid}>
-
-          <div style={styles.chartCard}>
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-
-              <LineChart
-                data={dadosGrafico}
-              >
-
-                <CartesianGrid
-                  stroke="#1e293b"
-                />
-
-                <XAxis
-                  dataKey="name"
-                  stroke="#64748b"
-                />
-
-                <Tooltip />
-
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#22d3ee"
-                  strokeWidth={3}
-                />
-
-              </LineChart>
-
-            </ResponsiveContainer>
-
-          </div>
-
-          <div style={styles.chartCard}>
-
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
-
-              <PieChart>
-
-                <Pie
-                  data={donutData}
-                  innerRadius={45}
-                  outerRadius={65}
-                  dataKey="value"
-                >
-
-                  <Cell fill="#5eead4" />
-
-                  <Cell fill="#1e293b" />
-
-                </Pie>
-
-              </PieChart>
-
-            </ResponsiveContainer>
-
-          </div>
-
-        </div>
 
         <div style={styles.chatContainer}>
 
@@ -834,34 +395,6 @@ export default function AppInterno({
 
           </div>
 
-          <div style={styles.emocoes}>
-
-            {emotions.map(
-              (emotion) => (
-
-              <button
-                key={emotion}
-
-                onClick={() =>
-                  setMensagem(
-                    `Estou me sentindo ${emotion}`
-                  )
-                }
-
-                style={{
-                  ...styles.emocaoBtn,
-
-                  ...emotionStyles[
-                    emotion
-                  ],
-                }}
-              >
-                {emotion}
-              </button>
-            ))}
-
-          </div>
-
           <div style={styles.inputArea}>
 
             <input
@@ -901,341 +434,121 @@ export default function AppInterno({
 const styles = {
 
   container: {
-
     display: "flex",
-
     height: "100vh",
-
-    background:
-      "#020617",
-
+    background: "#020617",
     color: "white",
-
-    overflow: "hidden",
-
-    fontFamily:
-      "Inter, sans-serif",
+    fontFamily: "Inter, sans-serif",
   },
 
   sidebar: {
-
     width: 260,
-
-    background:
-      "#0f172a",
-
-    borderRight:
-      "1px solid #1e293b",
-
+    background: "#0f172a",
     padding: 24,
-
     display: "flex",
-
     flexDirection: "column",
-
     gap: 20,
   },
 
-  logoOrb: {
-
-    width: 70,
-
-    height: 70,
-
-    borderRadius: "50%",
-
-    background:
-      "linear-gradient(135deg,#22d3ee,#67e8f9)",
-
-    boxShadow:
-      "0 0 40px rgba(34,211,238,0.4)",
-  },
-
   logo: {
-
-    fontSize: 34,
-
-    margin: 0,
+    fontSize: 32,
   },
 
   sub: {
-
     color: "#4ade80",
-
-    fontSize: 14,
-  },
-
-  planoBadge: {
-
-    background: "#111827",
-
-    border:
-      "1px solid #1e293b",
-
-    borderRadius: 14,
-
-    padding: "10px 14px",
-
-    fontSize: 13,
-
-    width: "fit-content",
-  },
-
-  adminBtn: {
-
-    border: "none",
-
-    background:
-      "linear-gradient(90deg,#facc15,#f59e0b)",
-
-    color: "#111827",
-
-    fontWeight: "bold",
-
-    padding: "12px 16px",
-
-    borderRadius: 14,
-
-    cursor: "pointer",
-
-    boxShadow:
-      "0 0 20px rgba(250,204,21,0.3)",
   },
 
   infoCard: {
-
-    background:
-      "#111827",
-
-    border:
-      "1px solid #1e293b",
-
-    borderRadius: 20,
-
+    background: "#111827",
     padding: 18,
-
+    borderRadius: 20,
     lineHeight: 2,
   },
 
-  logout: {
-
-    marginTop: "auto",
-
-    height: 50,
-
+  adminBtn: {
     border: "none",
-
+    background:
+      "linear-gradient(90deg,#facc15,#f59e0b)",
+    color: "#111827",
+    fontWeight: "bold",
+    padding: "12px 16px",
     borderRadius: 14,
+    cursor: "pointer",
+  },
 
+  logout: {
+    marginTop: "auto",
+    height: 50,
+    border: "none",
+    borderRadius: 14,
     background:
       "linear-gradient(90deg,#fb7185,#f9a8d4)",
-
     color: "white",
-
     fontWeight: "bold",
-
     cursor: "pointer",
   },
 
   main: {
-
     flex: 1,
-
     padding: 24,
-
     display: "flex",
-
     flexDirection: "column",
-
-    gap: 20,
-
-    overflow: "hidden",
-  },
-
-  topGrid: {
-
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(3,1fr)",
-
-    gap: 18,
-  },
-
-  metricCard: {
-
-    background:
-      "#111827",
-
-    border:
-      "1px solid #1e293b",
-
-    borderRadius: 20,
-
-    padding: 20,
-  },
-
-  metricLabel: {
-
-    color: "#94a3b8",
-
-    fontSize: 14,
-  },
-
-  metricValue: {
-
-    fontSize: 38,
-
-    marginTop: 10,
-  },
-
-  chartGrid: {
-
-    display: "grid",
-
-    gridTemplateColumns:
-      "2fr 1fr",
-
-    gap: 18,
-
-    height: 220,
-  },
-
-  chartCard: {
-
-    background:
-      "#111827",
-
-    border:
-      "1px solid #1e293b",
-
-    borderRadius: 20,
-
-    padding: 18,
   },
 
   chatContainer: {
-
     flex: 1,
-
     display: "flex",
-
     flexDirection: "column",
-
-    background:
-      "#0f172a",
-
+    background: "#0f172a",
     borderRadius: 20,
-
-    border:
-      "1px solid #1e293b",
-
     overflow: "hidden",
   },
 
   chatArea: {
-
     flex: 1,
-
     overflowY: "auto",
-
     padding: 20,
-
     display: "flex",
-
     flexDirection: "column",
-
     gap: 14,
   },
 
   msg: {
-
     maxWidth: "70%",
-
     padding: 14,
-
     borderRadius: 18,
-
     lineHeight: 1.6,
   },
 
-  emocoes: {
-
-    display: "flex",
-
-    flexWrap: "wrap",
-
-    gap: 10,
-
-    padding: "16px 20px 0px",
-  },
-
-  emocaoBtn: {
-
-    borderRadius: 999,
-
-    padding: "10px 16px",
-
-    cursor: "pointer",
-
-    fontSize: 13,
-
-    fontWeight: "600",
-
-    transition: "0.2s",
-
-    backdropFilter:
-      "blur(10px)",
-  },
-
   inputArea: {
-
     display: "flex",
-
     gap: 12,
-
     padding: 20,
-
     borderTop:
       "1px solid #1e293b",
   },
 
   input: {
-
     flex: 1,
-
     height: 50,
-
     borderRadius: 14,
-
     border:
       "1px solid #1e293b",
-
     background:
       "#020617",
-
     color: "white",
-
     paddingLeft: 16,
-
     outline: "none",
   },
 
   send: {
-
     width: 120,
-
     border: "none",
-
     borderRadius: 14,
-
     background:
       "linear-gradient(90deg,#34d399,#22d3ee)",
-
     color: "white",
-
     fontWeight: "bold",
-
     cursor: "pointer",
   },
 };

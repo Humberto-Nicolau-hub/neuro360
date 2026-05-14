@@ -8,6 +8,13 @@ import AppInterno from "./AppInterno";
 import { supabase } from "./supabaseClient";
 
 /* ======================================================
+   ADMIN FIXO
+====================================================== */
+
+const ADMIN_EMAIL =
+  "contatobetaoofertas@gmail.com";
+
+/* ======================================================
    APP
 ====================================================== */
 
@@ -35,6 +42,34 @@ export default function App() {
     useState(false);
 
   /* ======================================================
+     MONTAR USUÁRIO
+  ====================================================== */
+
+  function montarUsuario(user) {
+
+    const isAdmin =
+      user.email === ADMIN_EMAIL;
+
+    return {
+
+      id: user.id,
+
+      email: user.email,
+
+      plano:
+        isAdmin
+          ? "premium"
+          : "free",
+
+      premium:
+        isAdmin,
+
+      admin:
+        isAdmin,
+    };
+  }
+
+  /* ======================================================
      VERIFICAR SESSÃO
   ====================================================== */
 
@@ -51,19 +86,10 @@ export default function App() {
 
         if (session?.user) {
 
-          const usuario = {
-
-            id:
-              session.user.id,
-
-            email:
-              session.user.email,
-
-            plano:
-              "premium",
-
-            premium: true,
-          };
+          const usuario =
+            montarUsuario(
+              session.user
+            );
 
           setUsuarioAtual(
             usuario
@@ -101,19 +127,10 @@ export default function App() {
             session?.user
           ) {
 
-            const usuario = {
-
-              id:
-                session.user.id,
-
-              email:
-                session.user.email,
-
-              plano:
-                "premium",
-
-              premium: true,
-            };
+            const usuario =
+              montarUsuario(
+                session.user
+              );
 
             setUsuarioAtual(
               usuario

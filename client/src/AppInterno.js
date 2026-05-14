@@ -1,4 +1,3 @@
-
 import React, {
   useState,
   useEffect,
@@ -61,8 +60,9 @@ export default function AppInterno({
   ====================================================== */
 
   const AdminComponentValido =
-    typeof AdminDashboard === "function" ||
-    typeof AdminDashboard === "object";
+    AdminDashboard &&
+    typeof AdminDashboard ===
+      "function";
 
   /* ======================================================
      AUTO SCROLL
@@ -82,7 +82,66 @@ export default function AppInterno({
 
   if (mostrarAdmin && isAdmin) {
 
-    if (!AdminComponentValido) {
+    try {
+
+      if (!AdminComponentValido) {
+
+        return (
+          <div
+            style={{
+              height: "100vh",
+              background: "#020617",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "column",
+              gap: 20,
+              fontFamily:
+                "Inter, sans-serif",
+            }}
+          >
+            <h1>
+              Painel administrativo indisponível
+            </h1>
+
+            <button
+              onClick={() =>
+                setMostrarAdmin(false)
+              }
+              style={{
+                padding:
+                  "12px 20px",
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                background:
+                  "linear-gradient(90deg,#34d399,#22d3ee)",
+                color: "white",
+                fontWeight: "bold",
+              }}
+            >
+              Voltar
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <AdminDashboard
+          user={usuario || {}}
+          onVoltar={() =>
+            setMostrarAdmin(false)
+          }
+        />
+      );
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO ADMIN:",
+        erro
+      );
 
       return (
         <div
@@ -95,11 +154,12 @@ export default function AppInterno({
             justifyContent: "center",
             flexDirection: "column",
             gap: 20,
-            fontFamily: "Inter, sans-serif",
+            fontFamily:
+              "Inter, sans-serif",
           }}
         >
           <h1>
-            Erro ao carregar painel administrativo
+            Erro interno no painel admin
           </h1>
 
           <button
@@ -107,7 +167,8 @@ export default function AppInterno({
               setMostrarAdmin(false)
             }
             style={{
-              padding: "12px 20px",
+              padding:
+                "12px 20px",
               borderRadius: 12,
               border: "none",
               cursor: "pointer",
@@ -122,15 +183,6 @@ export default function AppInterno({
         </div>
       );
     }
-
-    return (
-      <AdminDashboard
-        user={usuario}
-        onVoltar={() =>
-          setMostrarAdmin(false)
-        }
-      />
-    );
   }
 
   /* ======================================================

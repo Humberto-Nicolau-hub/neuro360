@@ -50,7 +50,8 @@ export default function App() {
     try {
 
       const isAdmin =
-        user.email === ADMIN_EMAIL;
+        user.email?.toLowerCase().trim() ===
+        ADMIN_EMAIL.toLowerCase().trim();
 
       /* =========================================
          BUSCAR PROFILE
@@ -131,17 +132,24 @@ export default function App() {
          ADMIN FIXO
       ========================================= */
 
-      if (
-        isAdmin &&
-        !profileExistente.admin
-      ) {
+      if (isAdmin) {
+
+        const profileAdmin = {
+
+          ...profileExistente,
+
+          plano: "premium",
+
+          premium: true,
+
+          admin: true,
+        };
 
         await supabase
           .from("profiles")
           .update({
 
-            plano:
-              "premium",
+            plano: "premium",
 
             premium: true,
 
@@ -153,18 +161,46 @@ export default function App() {
             user.id
           );
 
-        profileExistente.plano =
-          "premium";
+        setUsuarioAtual(
+          profileAdmin
+        );
 
-        profileExistente.premium =
-          true;
-
-        profileExistente.admin =
-          true;
+        return;
       }
 
+      /* =========================================
+         USUÁRIO FREE
+      ========================================= */
+
+      const profileFree = {
+
+        ...profileExistente,
+
+        plano: "free",
+
+        premium: false,
+
+        admin: false,
+      };
+
+      await supabase
+        .from("profiles")
+        .update({
+
+          plano: "free",
+
+          premium: false,
+
+          admin: false,
+        })
+
+        .eq(
+          "id",
+          user.id
+        );
+
       setUsuarioAtual(
-        profileExistente
+        profileFree
       );
 
     } catch (erro) {

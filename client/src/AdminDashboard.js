@@ -1,21 +1,21 @@
 import React from "react";
 
-export default function AdminDashboard(props) {
-  const user = props?.user || {};
-  const onVoltar =
-    typeof props?.onVoltar === "function"
-      ? props.onVoltar
-      : () => console.log("Voltar");
+function AdminDashboard({ user = {}, onVoltar }) {
+  const handleVoltar =
+    typeof onVoltar === "function"
+      ? onVoltar
+      : () => window.history.back();
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#050816",
+        backgroundColor: "#050816",
         color: "#ffffff",
         padding: "30px",
         fontFamily: "Arial, sans-serif",
         overflowX: "hidden",
+        boxSizing: "border-box",
       }}
     >
       {/* HEADER */}
@@ -34,6 +34,7 @@ export default function AdminDashboard(props) {
             style={{
               fontSize: "36px",
               fontWeight: "bold",
+              margin: 0,
               marginBottom: "10px",
             }}
           >
@@ -44,6 +45,7 @@ export default function AdminDashboard(props) {
             style={{
               color: "#00ffd5",
               fontSize: "16px",
+              margin: 0,
             }}
           >
             NeuroMapa360 • ADMIN MASTER
@@ -51,7 +53,8 @@ export default function AdminDashboard(props) {
         </div>
 
         <button
-          onClick={onVoltar}
+          onClick={handleVoltar}
+          type="button"
           style={{
             background: "#00ffd5",
             color: "#000",
@@ -80,6 +83,7 @@ export default function AdminDashboard(props) {
       >
         <h2
           style={{
+            marginTop: 0,
             marginBottom: "15px",
             color: "#00ffd5",
           }}
@@ -89,7 +93,7 @@ export default function AdminDashboard(props) {
 
         <p>
           <strong>Email:</strong>{" "}
-          {user?.email || "admin@neuromapa360.com"}
+          {user?.email ? user.email : "admin@neuromapa360.com"}
         </p>
 
         <p>
@@ -105,106 +109,70 @@ export default function AdminDashboard(props) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
           gap: "20px",
           marginBottom: "30px",
         }}
       >
-        {/* CARD */}
-        <div
-          style={{
-            background: "#11182b",
-            padding: "25px",
-            borderRadius: "20px",
-          }}
-        >
-          <h3
+        {[
+          {
+            titulo: "Usuários",
+            valor: "0",
+            texto: "Total cadastrados",
+          },
+          {
+            titulo: "Premium",
+            valor: "0",
+            texto: "Usuários premium",
+          },
+          {
+            titulo: "Admins",
+            valor: "1",
+            texto: "Administradores",
+          },
+          {
+            titulo: "IA Ativa",
+            valor: "100%",
+            texto: "Sistema operacional",
+          },
+        ].map((card, index) => (
+          <div
+            key={index}
             style={{
-              color: "#00ffd5",
-              marginBottom: "10px",
+              background: "#11182b",
+              padding: "25px",
+              borderRadius: "20px",
             }}
           >
-            Usuários
-          </h3>
+            <h3
+              style={{
+                color: "#00ffd5",
+                marginTop: 0,
+                marginBottom: "10px",
+              }}
+            >
+              {card.titulo}
+            </h3>
 
-          <h1 style={{ fontSize: "42px" }}>0</h1>
+            <h1
+              style={{
+                fontSize: "42px",
+                margin: 0,
+              }}
+            >
+              {card.valor}
+            </h1>
 
-          <p style={{ opacity: 0.7 }}>
-            Total cadastrados
-          </p>
-        </div>
-
-        {/* CARD */}
-        <div
-          style={{
-            background: "#11182b",
-            padding: "25px",
-            borderRadius: "20px",
-          }}
-        >
-          <h3
-            style={{
-              color: "#00ffd5",
-              marginBottom: "10px",
-            }}
-          >
-            Premium
-          </h3>
-
-          <h1 style={{ fontSize: "42px" }}>0</h1>
-
-          <p style={{ opacity: 0.7 }}>
-            Usuários premium
-          </p>
-        </div>
-
-        {/* CARD */}
-        <div
-          style={{
-            background: "#11182b",
-            padding: "25px",
-            borderRadius: "20px",
-          }}
-        >
-          <h3
-            style={{
-              color: "#00ffd5",
-              marginBottom: "10px",
-            }}
-          >
-            Admins
-          </h3>
-
-          <h1 style={{ fontSize: "42px" }}>1</h1>
-
-          <p style={{ opacity: 0.7 }}>
-            Administradores
-          </p>
-        </div>
-
-        {/* CARD */}
-        <div
-          style={{
-            background: "#11182b",
-            padding: "25px",
-            borderRadius: "20px",
-          }}
-        >
-          <h3
-            style={{
-              color: "#00ffd5",
-              marginBottom: "10px",
-            }}
-          >
-            IA Ativa
-          </h3>
-
-          <h1 style={{ fontSize: "42px" }}>100%</h1>
-
-          <p style={{ opacity: 0.7 }}>
-            Sistema operacional
-          </p>
-        </div>
+            <p
+              style={{
+                opacity: 0.7,
+                marginTop: "10px",
+              }}
+            >
+              {card.texto}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* ÁREA FUTURA */}
@@ -218,6 +186,7 @@ export default function AdminDashboard(props) {
       >
         <h2
           style={{
+            marginTop: 0,
             marginBottom: "20px",
             color: "#00ffd5",
           }}
@@ -235,10 +204,9 @@ export default function AdminDashboard(props) {
           da plataforma NeuroMapa360.
         </p>
 
-        <br />
-
         <p
           style={{
+            marginTop: "20px",
             lineHeight: "1.8",
             opacity: 0.85,
           }}
@@ -251,6 +219,7 @@ export default function AdminDashboard(props) {
             marginTop: "20px",
             lineHeight: "2",
             opacity: 0.9,
+            paddingLeft: "20px",
           }}
         >
           <li>✔ Gestão de usuários</li>
@@ -266,3 +235,5 @@ export default function AdminDashboard(props) {
     </div>
   );
 }
+
+export default AdminDashboard;

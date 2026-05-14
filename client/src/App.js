@@ -42,31 +42,116 @@ export default function App() {
     useState(false);
 
   /* ======================================================
-     MONTAR USUÁRIO
+     CRIAR / BUSCAR PROFILE
   ====================================================== */
 
-  function montarUsuario(user) {
+  async function carregarProfile(user) {
 
-    const isAdmin =
-      user.email === ADMIN_EMAIL;
+    try {
 
-    return {
+      const isAdmin =
+        user.email === ADMIN_EMAIL;
 
-      id: user.id,
+      /* =========================================
+         BUSCAR PROFILE
+      ========================================= */
 
-      email: user.email,
+      const {
+        data: profileExistente,
+      } =
+        await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
 
-      plano:
-        isAdmin
-          ? "premium"
-          : "free",
+      /* =========================================
+         SE NÃO EXISTIR -> CRIAR
+      ========================================= */
 
-      premium:
-        isAdmin,
+      if (!profileExistente) {
 
-      admin:
-        isAdmin,
-    };
+        const novoProfile = {
+
+          id: user.id,
+
+          email: user.email,
+
+          nome:
+            user.email,
+
+          plano:
+            isAdmin
+              ? "premium"
+              : "free",
+
+          premium:
+            isAdmin,
+
+          admin:
+            isAdmin,
+        };
+
+        await supabase
+          .from("profiles")
+          .insert(
+            novoProfile
+          );
+
+        setUsuarioAtual(
+          novoProfile
+        );
+
+        return;
+      }
+
+      /* =========================================
+         ADMIN FIXO
+      ========================================= */
+
+      if (
+        isAdmin &&
+        !profileExistente.admin
+      ) {
+
+        await supabase
+          .from("profiles")
+          .update({
+
+            plano:
+              "premium",
+
+            premium: true,
+
+            admin: true,
+          })
+
+          .eq(
+            "id",
+            user.id
+          );
+
+        profileExistente.plano =
+          "premium";
+
+        profileExistente.premium =
+          true;
+
+        profileExistente.admin =
+          true;
+      }
+
+      setUsuarioAtual(
+        profileExistente
+      );
+
+    } catch (erro) {
+
+      console.log(
+        "ERRO PROFILE:",
+        erro
+      );
+    }
   }
 
   /* ======================================================
@@ -86,13 +171,8 @@ export default function App() {
 
         if (session?.user) {
 
-          const usuario =
-            montarUsuario(
-              session.user
-            );
-
-          setUsuarioAtual(
-            usuario
+          await carregarProfile(
+            session.user
           );
 
           setLogado(true);
@@ -127,13 +207,8 @@ export default function App() {
             session?.user
           ) {
 
-            const usuario =
-              montarUsuario(
-                session.user
-              );
-
-            setUsuarioAtual(
-              usuario
+            await carregarProfile(
+              session.user
             );
 
             setLogado(true);
@@ -183,8 +258,10 @@ export default function App() {
         error,
       } =
         await supabase.auth.signInWithPassword({
+
           email:
             email.trim(),
+
           password:
             senha.trim(),
         });
@@ -203,6 +280,7 @@ export default function App() {
       ) {
 
         setEmail("");
+
         setSenha("");
       }
 
@@ -250,8 +328,10 @@ export default function App() {
         error,
       } =
         await supabase.auth.signUp({
+
           email:
             email.trim(),
+
           password:
             senha.trim(),
         });
@@ -274,6 +354,7 @@ export default function App() {
         );
 
         setEmail("");
+
         setSenha("");
       }
 
@@ -418,7 +499,9 @@ export default function App() {
 
           <button
             style={styles.button}
+
             onClick={entrar}
+
             disabled={loadingAuth}
           >
             {

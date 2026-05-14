@@ -5,6 +5,12 @@ import React, {
 
 import AppInterno from "./AppInterno";
 
+import { supabase } from "./supabase";
+
+/* ======================================================
+   APP
+====================================================== */
+
 export default function App() {
 
   const [logado, setLogado] =
@@ -24,98 +30,112 @@ export default function App() {
     setCarregandoSessao] =
     useState(true);
 
-  /* ======================================================
-     USUÁRIOS TESTE
-  ====================================================== */
-
-  const usuarios = [
-
-    {
-      email:
-        "contatobetaoofertas@gmail.com",
-
-      senha: "123456",
-
-      admin: true,
-
-      premium: true,
-
-      plano: "premium",
-    },
-
-    {
-      email:
-        "ebony66@gmail.com",
-
-      senha: "123456",
-
-      admin: false,
-
-      premium: false,
-
-      plano: "free",
-    },
-  ];
+  const [loadingAuth,
+    setLoadingAuth] =
+    useState(false);
 
   /* ======================================================
-     VERIFICA LOGIN
+     VERIFICAR SESSÃO
   ====================================================== */
 
   useEffect(() => {
 
-    try {
+    async function verificarSessao() {
 
-      const usuarioSalvo =
-        localStorage.getItem(
-          "usuario"
+      try {
+
+        const {
+          data: { session },
+        } =
+          await supabase.auth.getSession();
+
+        if (session?.user) {
+
+          const usuario = {
+
+            id:
+              session.user.id,
+
+            email:
+              session.user.email,
+
+            plano:
+              "premium",
+
+            premium: true,
+          };
+
+          setUsuarioAtual(
+            usuario
+          );
+
+          setLogado(true);
+        }
+
+      } catch (erro) {
+
+        console.log(
+          "ERRO SESSÃO:",
+          erro
         );
 
-      if (!usuarioSalvo) {
+      } finally {
 
         setCarregandoSessao(false);
-
-        return;
       }
-
-      const usuarioParseado =
-        JSON.parse(usuarioSalvo);
-
-      const usuarioValido =
-        usuarios.find(
-          (u) =>
-            u.email ===
-            usuarioParseado.email
-        );
-
-      if (!usuarioValido) {
-
-        localStorage.removeItem(
-          "usuario"
-        );
-
-        setCarregandoSessao(false);
-
-        return;
-      }
-
-      setUsuarioAtual(
-        usuarioParseado
-      );
-
-      setLogado(true);
-
-    } catch (erro) {
-
-      console.log(erro);
-
-      localStorage.removeItem(
-        "usuario"
-      );
-
-    } finally {
-
-      setCarregandoSessao(false);
     }
+
+    verificarSessao();
+
+    const {
+      data:
+        listener,
+    } =
+      supabase.auth.onAuthStateChange(
+        async (
+          event,
+          session
+        ) => {
+
+          if (
+            session?.user
+          ) {
+
+            const usuario = {
+
+              id:
+                session.user.id,
+
+              email:
+                session.user.email,
+
+              plano:
+                "premium",
+
+              premium: true,
+            };
+
+            setUsuarioAtual(
+              usuario
+            );
+
+            setLogado(true);
+
+          } else {
+
+            setUsuarioAtual(
+              null
+            );
+
+            setLogado(false);
+          }
+        }
+      );
+
+    return () => {
+
+      listener?.subscription.unsubscribe();
+    };
 
   }, []);
 
@@ -123,76 +143,163 @@ export default function App() {
      LOGIN
   ====================================================== */
 
-  function entrar() {
+  async function entrar() {
 
-    const usuarioEncontrado =
-      usuarios.find(
-        (usuario) =>
-
-          usuario.email ===
-            email
-              .trim()
-              .toLowerCase() &&
-
-          usuario.senha ===
-            senha.trim()
-      );
-
-    if (!usuarioEncontrado) {
+    if (
+      !email ||
+      !senha
+    ) {
 
       alert(
-        "Email ou senha inválidos."
+        "Preencha email e senha."
       );
 
       return;
     }
 
-    const novaSessao = {
+    try {
 
-      email:
-        usuarioEncontrado.email,
+      setLoadingAuth(true);
 
-      admin:
-        usuarioEncontrado.admin,
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signInWithPassword({
+          email:
+            email.trim(),
+          password:
+            senha.trim(),
+        });
 
-      premium:
-        usuarioEncontrado.premium,
+      if (error) {
 
-      plano:
-        usuarioEncontrado.plano,
-    };
+        alert(
+          error.message
+        );
 
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify(
-        novaSessao
-      )
-    );
+        return;
+      }
 
-    setUsuarioAtual(
-      novaSessao
-    );
+      if (
+        data?.user
+      ) {
 
-    setLogado(true);
+        setEmail("");
+        setSenha("");
+      }
 
-    setEmail("");
+    } catch (erro) {
 
-    setSenha("");
+      console.log(
+        "ERRO LOGIN:",
+        erro
+      );
+
+      alert(
+        "Erro ao realizar login."
+      );
+
+    } finally {
+
+      setLoadingAuth(false);
+    }
+  }
+
+  /* ======================================================
+     CRIAR CONTA
+  ====================================================== */
+
+  async function criarConta() {
+
+    if (
+      !email ||
+      !senha
+    ) {
+
+      alert(
+        "Preencha email e senha."
+      );
+
+      return;
+    }
+
+    try {
+
+      setLoadingAuth(true);
+
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth.signUp({
+          email:
+            email.trim(),
+          password:
+            senha.trim(),
+        });
+
+      if (error) {
+
+        alert(
+          error.message
+        );
+
+        return;
+      }
+
+      if (
+        data?.user
+      ) {
+
+        alert(
+          "Conta criada com sucesso!"
+        );
+
+        setEmail("");
+        setSenha("");
+      }
+
+    } catch (erro) {
+
+      console.log(
+        "ERRO CADASTRO:",
+        erro
+      );
+
+      alert(
+        "Erro ao criar conta."
+      );
+
+    } finally {
+
+      setLoadingAuth(false);
+    }
   }
 
   /* ======================================================
      LOGOUT
   ====================================================== */
 
-  function sairSistema() {
+  async function sairSistema() {
 
-    localStorage.removeItem(
-      "usuario"
-    );
+    try {
 
-    setUsuarioAtual(null);
+      await supabase.auth.signOut();
 
-    setLogado(false);
+      setUsuarioAtual(
+        null
+      );
+
+      setLogado(false);
+
+    } catch (erro) {
+
+      console.log(
+        "ERRO LOGOUT:",
+        erro
+      );
+    }
   }
 
   /* ======================================================
@@ -295,16 +402,31 @@ export default function App() {
           <button
             style={styles.button}
             onClick={entrar}
+            disabled={loadingAuth}
           >
-            Entrar
+            {
+              loadingAuth
+                ? "Entrando..."
+                : "Entrar"
+            }
           </button>
 
           <button
             style={
               styles.secondaryButton
             }
+
+            onClick={
+              criarConta
+            }
+
+            disabled={loadingAuth}
           >
-            Criar Conta
+            {
+              loadingAuth
+                ? "Processando..."
+                : "Criar Conta"
+            }
           </button>
 
         </div>

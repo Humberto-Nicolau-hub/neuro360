@@ -35,6 +35,9 @@ export default function AppInterno({
   const [mostrarAdmin, setMostrarAdmin] =
     useState(false);
 
+  const [saindo, setSaindo] =
+    useState(false);
+
   const finalChatRef =
     useRef(null);
 
@@ -53,6 +56,18 @@ export default function AppInterno({
         ).toUpperCase();
 
   /* ======================================================
+     AUTO SCROLL
+  ====================================================== */
+
+  useEffect(() => {
+
+    finalChatRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+
+  }, [historico]);
+
+  /* ======================================================
      DASHBOARD ADMIN
   ====================================================== */
 
@@ -60,12 +75,17 @@ export default function AppInterno({
 
     return (
       <AdminDashboard
-        voltar={() =>
+        user={usuario}
+        onVoltar={() =>
           setMostrarAdmin(false)
         }
       />
     );
   }
+
+  /* ======================================================
+     EMOTION STYLES
+  ====================================================== */
 
   const emotionStyles = {
 
@@ -173,6 +193,10 @@ export default function AppInterno({
     "Triste",
   ];
 
+  /* ======================================================
+     ESTADO EMOCIONAL
+  ====================================================== */
+
   const [estadoEmocional] =
     useState({
 
@@ -190,13 +214,9 @@ export default function AppInterno({
         "Equilibrado",
     });
 
-  useEffect(() => {
-
-    finalChatRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-
-  }, [historico]);
+  /* ======================================================
+     IA CHAT
+  ====================================================== */
 
   async function enviarMensagem() {
 
@@ -308,6 +328,10 @@ export default function AppInterno({
     }
   }
 
+  /* ======================================================
+     DADOS GRÁFICOS
+  ====================================================== */
+
   const dadosGrafico = [
 
     { name: "1", score: 60 },
@@ -335,11 +359,49 @@ export default function AppInterno({
     },
   ];
 
-  function sair() {
+  /* ======================================================
+     LOGOUT ESTÁVEL
+  ====================================================== */
 
-    if (onLogout)
-      onLogout();
+  async function sair() {
+
+    if (saindo) return;
+
+    try {
+
+      setSaindo(true);
+
+      setMostrarAdmin(false);
+
+      localStorage.clear();
+
+      sessionStorage.clear();
+
+      if (onLogout) {
+
+        await onLogout();
+      }
+
+    } catch (erro) {
+
+      console.log(
+        "ERRO LOGOUT:",
+        erro
+      );
+
+    } finally {
+
+      setTimeout(() => {
+
+        window.location.href = "/";
+
+      }, 500);
+    }
   }
+
+  /* ======================================================
+     RENDER
+  ====================================================== */
 
   return (
 
@@ -490,9 +552,14 @@ export default function AppInterno({
 
         <button
           onClick={sair}
+          disabled={saindo}
           style={styles.logout}
         >
-          Sair
+          {
+            saindo
+              ? "Saindo..."
+              : "Sair"
+          }
         </button>
 
       </aside>

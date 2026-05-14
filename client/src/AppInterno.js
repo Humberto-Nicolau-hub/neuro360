@@ -33,8 +33,19 @@ export default function AppInterno({
   const finalChatRef =
     useRef(null);
 
+  /* ======================================================
+     ADMIN DETECTION
+  ====================================================== */
+
+  const isAdmin =
+    usuario?.admin === true;
+
   const plano =
-    usuario?.plano || "free";
+    isAdmin
+      ? "ADMIN PREMIUM"
+      : (
+          usuario?.plano || "free"
+        ).toUpperCase();
 
   const emotionStyles = {
 
@@ -213,8 +224,8 @@ export default function AppInterno({
                 plano,
 
               premium:
-                plano === "premium" ||
-                plano === "admin_premium",
+                isAdmin ||
+                usuario?.premium,
 
               user_id:
                 usuario?.id ||
@@ -328,40 +339,93 @@ export default function AppInterno({
           IA Terapêutica Ativa
         </p>
 
-        <div style={styles.planoBadge}>
+        {/* ======================================================
+            BADGE ADMIN PREMIUM
+        ====================================================== */}
 
-          Plano:
-          {" "}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
 
-          <span
-            style={{
-              color:
+          <div style={styles.planoBadge}>
 
-                plano ===
-                "admin_premium"
+            Plano:
+            {" "}
 
-                  ? "#f472b6"
+            <span
+              style={{
+                color:
 
-                  : plano ===
-                    "premium"
+                  isAdmin
+                    ? "#facc15"
 
-                    ? "#4ade80"
+                    : usuario?.plano ===
+                      "premium"
 
-                    : "#60a5fa",
+                      ? "#4ade80"
 
-              fontWeight:
-                "bold",
-            }}
-          >
-            {plano.toUpperCase()}
-          </span>
+                      : "#60a5fa",
+
+                fontWeight:
+                  "bold",
+              }}
+            >
+              {plano}
+            </span>
+
+          </div>
+
+          {
+            isAdmin && (
+
+              <div
+                style={{
+                  background:
+                    "linear-gradient(135deg,#facc15,#eab308)",
+
+                  color:
+                    "#111827",
+
+                  padding:
+                    "8px 14px",
+
+                  borderRadius:
+                    999,
+
+                  width:
+                    "fit-content",
+
+                  fontSize:
+                    12,
+
+                  fontWeight:
+                    "bold",
+
+                  letterSpacing:
+                    1,
+
+                  boxShadow:
+                    "0 0 20px rgba(250,204,21,0.45)",
+                }}
+              >
+                ADMIN MASTER
+              </div>
+            )
+          }
 
         </div>
 
         <div style={styles.infoCard}>
 
           <div>
-            👤 {usuario?.nome}
+            👤 {
+              usuario?.email ||
+              usuario?.nome
+            }
           </div>
 
           <div>

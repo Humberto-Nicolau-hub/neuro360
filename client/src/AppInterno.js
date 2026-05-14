@@ -1,3 +1,4 @@
+
 import React, {
   useState,
   useEffect,
@@ -56,6 +57,14 @@ export default function AppInterno({
         ).toUpperCase();
 
   /* ======================================================
+     ADMIN COMPONENT VALIDATION
+  ====================================================== */
+
+  const AdminComponentValido =
+    typeof AdminDashboard === "function" ||
+    typeof AdminDashboard === "object";
+
+  /* ======================================================
      AUTO SCROLL
   ====================================================== */
 
@@ -72,6 +81,47 @@ export default function AppInterno({
   ====================================================== */
 
   if (mostrarAdmin && isAdmin) {
+
+    if (!AdminComponentValido) {
+
+      return (
+        <div
+          style={{
+            height: "100vh",
+            background: "#020617",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            gap: 20,
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <h1>
+            Erro ao carregar painel administrativo
+          </h1>
+
+          <button
+            onClick={() =>
+              setMostrarAdmin(false)
+            }
+            style={{
+              padding: "12px 20px",
+              borderRadius: 12,
+              border: "none",
+              cursor: "pointer",
+              background:
+                "linear-gradient(90deg,#34d399,#22d3ee)",
+              color: "white",
+              fontWeight: "bold",
+            }}
+          >
+            Voltar
+          </button>
+        </div>
+      );
+    }
 
     return (
       <AdminDashboard

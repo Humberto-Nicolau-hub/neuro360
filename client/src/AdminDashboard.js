@@ -1,292 +1,253 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React from "react";
 
-/* ======================================================
-   API
-====================================================== */
-
-const API_URL =
-  process.env.REACT_APP_API_URL ||
-  "https://backend-neuro360.onrender.com";
-
-/* ======================================================
-   DASHBOARD
-====================================================== */
-
-export default function AdminDashboard({
-  voltar,
-}) {
-
-  const [dados, setDados] =
-    useState(null);
-
-  const [erro, setErro] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  /* ======================================================
-     CARREGAR
-  ====================================================== */
-
-  async function carregar() {
-
-    try {
-
-      const response =
-        await fetch(
-          `${API_URL}/admin/dashboard`
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          "Erro dashboard"
-        );
-      }
-
-      const data =
-        await response.json();
-
-      setDados(data);
-
-      setErro("");
-
-    } catch (err) {
-
-      console.error(err);
-
-      setErro(
-        "Backend indisponível"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  }
-
-  /* ======================================================
-     EFFECT
-  ====================================================== */
-
-  useEffect(() => {
-
-    carregar();
-
-    const interval =
-      setInterval(
-        carregar,
-        10000
-      );
-
-    return () =>
-      clearInterval(interval);
-
-  }, []);
-
-  /* ======================================================
-     LOADING
-  ====================================================== */
-
-  if (loading) {
-
-    return (
-      <div style={styles.loading}>
-        Carregando dashboard...
-      </div>
-    );
-  }
-
-  /* ======================================================
-     ERRO
-  ====================================================== */
-
-  if (erro) {
-
-    return (
-      <div style={styles.loading}>
-        {erro}
-      </div>
-    );
-  }
-
-  /* ======================================================
-     RENDER
-  ====================================================== */
-
+export default function AdminDashboard({ user, onVoltar }) {
   return (
-
-    <div style={styles.container}>
-
-      <button
-        style={styles.back}
-        onClick={voltar}
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#050816",
+        color: "white",
+        padding: "30px",
+        fontFamily: "Arial",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "30px",
+        }}
       >
-        ← Voltar
-      </button>
+        <div>
+          <h1
+            style={{
+              fontSize: "36px",
+              fontWeight: "bold",
+              marginBottom: "10px",
+            }}
+          >
+            Painel Administrativo
+          </h1>
 
-      <h1 style={styles.title}>
-        📊 Dashboard Inteligente
-      </h1>
+          <p
+            style={{
+              color: "#00ffd5",
+              fontSize: "16px",
+            }}
+          >
+            NeuroMapa360 • ADMIN MASTER
+          </p>
+        </div>
 
-      <div style={styles.grid}>
-
-        <Card
-          titulo="Usuários"
-          valor={
-            dados?.totalUsuarios || 0
-          }
-        />
-
-        <Card
-          titulo="Premium"
-          valor={
-            dados?.premium || 0
-          }
-        />
-
-        <Card
-          titulo="Registros"
-          valor={
-            dados?.totalRegistros || 0
-          }
-        />
-
-        <Card
-          titulo="Memórias"
-          valor={
-            dados?.totalMemorias || 0
-          }
-        />
-
-        <Card
-          titulo="Score Emocional"
-          valor={
-            dados?.scoreEmocional || 0
-          }
-        />
-
-        <Card
-          titulo="Conversão"
-          valor={`${dados?.conversao || 0}%`}
-        />
-
-        <Card
-          titulo="Receita"
-          valor={`R$ ${dados?.receita || 0}`}
-        />
-
-        <Card
-          titulo="Emoção Dominante"
-          valor={
-            dados?.emocaoDominante ||
-            "-"
-          }
-        />
-
-        <Card
-          titulo="Período Crítico"
-          valor={
-            dados?.periodoCritico ||
-            "-"
-          }
-        />
-
-        <Card
-          titulo="IA Terapêutica"
-          valor="ONLINE"
-        />
-
+        <button
+          onClick={onVoltar}
+          style={{
+            background: "#00ffd5",
+            color: "#000",
+            border: "none",
+            padding: "12px 24px",
+            borderRadius: "12px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            fontSize: "15px",
+          }}
+        >
+          Voltar ao App
+        </button>
       </div>
 
+      {/* INFO ADMIN */}
+      <div
+        style={{
+          background: "#11182b",
+          padding: "20px",
+          borderRadius: "20px",
+          marginBottom: "30px",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: "15px",
+            color: "#00ffd5",
+          }}
+        >
+          Administrador Logado
+        </h2>
+
+        <p>
+          <strong>Email:</strong> {user?.email}
+        </p>
+
+        <p>
+          <strong>Nível:</strong> ADMIN PREMIUM
+        </p>
+
+        <p>
+          <strong>Status:</strong> MASTER ACCESS
+        </p>
+      </div>
+
+      {/* CARDS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+          gap: "20px",
+          marginBottom: "30px",
+        }}
+      >
+        <div
+          style={{
+            background: "#11182b",
+            padding: "25px",
+            borderRadius: "20px",
+          }}
+        >
+          <h3
+            style={{
+              color: "#00ffd5",
+              marginBottom: "10px",
+            }}
+          >
+            Usuários
+          </h3>
+
+          <h1 style={{ fontSize: "42px" }}>0</h1>
+
+          <p style={{ opacity: 0.7 }}>
+            Total cadastrados
+          </p>
+        </div>
+
+        <div
+          style={{
+            background: "#11182b",
+            padding: "25px",
+            borderRadius: "20px",
+          }}
+        >
+          <h3
+            style={{
+              color: "#00ffd5",
+              marginBottom: "10px",
+            }}
+          >
+            Premium
+          </h3>
+
+          <h1 style={{ fontSize: "42px" }}>0</h1>
+
+          <p style={{ opacity: 0.7 }}>
+            Usuários premium
+          </p>
+        </div>
+
+        <div
+          style={{
+            background: "#11182b",
+            padding: "25px",
+            borderRadius: "20px",
+          }}
+        >
+          <h3
+            style={{
+              color: "#00ffd5",
+              marginBottom: "10px",
+            }}
+          >
+            Admins
+          </h3>
+
+          <h1 style={{ fontSize: "42px" }}>1</h1>
+
+          <p style={{ opacity: 0.7 }}>
+            Administradores
+          </p>
+        </div>
+
+        <div
+          style={{
+            background: "#11182b",
+            padding: "25px",
+            borderRadius: "20px",
+          }}
+        >
+          <h3
+            style={{
+              color: "#00ffd5",
+              marginBottom: "10px",
+            }}
+          >
+            IA Ativa
+          </h3>
+
+          <h1 style={{ fontSize: "42px" }}>100%</h1>
+
+          <p style={{ opacity: 0.7 }}>
+            Sistema operacional
+          </p>
+        </div>
+      </div>
+
+      {/* ÁREA FUTURA */}
+      <div
+        style={{
+          background: "#11182b",
+          borderRadius: "20px",
+          padding: "30px",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: "20px",
+            color: "#00ffd5",
+          }}
+        >
+          Gestão Inteligente NeuroMapa360
+        </h2>
+
+        <p
+          style={{
+            lineHeight: "1.8",
+            opacity: 0.85,
+          }}
+        >
+          Este painel será responsável por toda a inteligência administrativa
+          da plataforma NeuroMapa360.
+        </p>
+
+        <br />
+
+        <p
+          style={{
+            lineHeight: "1.8",
+            opacity: 0.85,
+          }}
+        >
+          Próximos módulos:
+        </p>
+
+        <ul
+          style={{
+            marginTop: "20px",
+            lineHeight: "2",
+            opacity: 0.9,
+          }}
+        >
+          <li>✔ Gestão de usuários</li>
+          <li>✔ Controle FREE / PREMIUM</li>
+          <li>✔ Promoção para ADMIN</li>
+          <li>✔ Estatísticas emocionais</li>
+          <li>✔ Logs de IA</li>
+          <li>✔ Monitoramento comportamental</li>
+          <li>✔ Dashboard financeiro</li>
+          <li>✔ Analytics terapêutico</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-/* ======================================================
-   CARD
-====================================================== */
-
-function Card({
-  titulo,
-  valor,
-}) {
-
-  return (
-
-    <div style={styles.card}>
-
-      <h2>{titulo}</h2>
-
-      <p style={styles.valor}>
-        {valor}
-      </p>
-
-    </div>
-  );
-}
-
-/* ======================================================
-   STYLES
-====================================================== */
-
-const styles = {
-
-  container: {
-    minHeight: "100vh",
-    background: "#020617",
-    color: "#fff",
-    padding: 40,
-    fontFamily: "Arial",
-  },
-
-  loading: {
-    minHeight: "100vh",
-    background: "#020617",
-    color: "#fff",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontFamily: "Arial",
-    fontSize: 22,
-  },
-
-  title: {
-    marginBottom: 30,
-  },
-
-  back: {
-    marginBottom: 30,
-    padding: 12,
-    border: "none",
-    borderRadius: 10,
-    background: "#334155",
-    color: "#fff",
-    cursor: "pointer",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-    gap: 20,
-  },
-
-  card: {
-    background: "#0f172a",
-    padding: 30,
-    borderRadius: 20,
-    border:
-      "1px solid #1e293b",
-  },
-
-  valor: {
-    fontSize: 34,
-    color: "#4ade80",
-    marginTop: 20,
-    fontWeight: "bold",
-  },
-};

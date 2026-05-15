@@ -15,6 +15,9 @@ import {
 
 import AdminDashboard from "./AdminDashboard";
 
+import { supabase }
+  from "./supabaseClient";
+
 export default function AppInterno({
   usuario,
   onLogout,
@@ -39,6 +42,10 @@ export default function AppInterno({
     setEmocaoSelecionada] =
       useState("");
 
+  const [graficoData,
+    setGraficoData] =
+      useState([]);
+
   const chatAreaRef =
     useRef(null);
 
@@ -62,6 +69,10 @@ export default function AppInterno({
     );
   }
 
+  /* =========================================
+     AUTO SCROLL
+  ========================================= */
+
   useEffect(() => {
 
     if (chatAreaRef.current) {
@@ -76,6 +87,73 @@ export default function AppInterno({
 
   }, [historico, loading]);
 
+  /* =========================================
+     CARREGAR HISTÓRICO
+  ========================================= */
+
+  useEffect(() => {
+
+    carregarHistoricoEmocional();
+
+  }, []);
+
+  async function carregarHistoricoEmocional() {
+
+    try {
+
+      const { data, error } =
+        await supabase
+          .from("emocoes_historico")
+          .select("*")
+          .eq(
+            "user_id",
+            usuario?.id
+          )
+          .order(
+            "created_at",
+            { ascending: true }
+          )
+          .limit(10);
+
+      if (error) {
+
+        console.log(error);
+        return;
+      }
+
+      if (!data?.length) {
+
+        setGraficoData([
+          { dia: 1, valor: 72 },
+          { dia: 2, valor: 76 },
+          { dia: 3, valor: 81 },
+          { dia: 4, valor: 82 },
+        ]);
+
+        return;
+      }
+
+      const formatado =
+        data.map(
+          (item, index) => ({
+            dia: index + 1,
+            valor:
+              item.score || 50,
+          })
+        );
+
+      setGraficoData(formatado);
+
+    } catch (erro) {
+
+      console.log(erro);
+    }
+  }
+
+  /* =========================================
+     ADMIN
+  ========================================= */
+
   const isAdmin =
     usuario?.admin === true;
 
@@ -86,6 +164,10 @@ export default function AppInterno({
           usuario?.plano || "FREE"
         ).toUpperCase();
 
+  /* =========================================
+     ESTADO
+  ========================================= */
+
   const estado = {
     score: 82,
     hawkins: 540,
@@ -95,12 +177,9 @@ export default function AppInterno({
       emocaoSelecionada || "Equilibrado",
   };
 
-  const graficoData = [
-    { dia: 1, valor: 72 },
-    { dia: 2, valor: 76 },
-    { dia: 3, valor: 81 },
-    { dia: 4, valor: 82 },
-  ];
+  /* =========================================
+     LOGOUT
+  ========================================= */
 
   async function sair() {
 
@@ -128,6 +207,47 @@ export default function AppInterno({
       window.location.href = "/";
     }
   }
+
+  /* =========================================
+     SALVAR EMOÇÃO
+  ========================================= */
+
+  async function salvarEmocao(
+    emocao
+  ) {
+
+    try {
+
+      await supabase
+        .from(
+          "emocoes_historico"
+        )
+        .insert([
+          {
+            user_id:
+              usuario?.id,
+
+            emocao,
+
+            score:
+              estado.score,
+
+            hawkins:
+              estado.hawkins,
+          },
+        ]);
+
+      carregarHistoricoEmocional();
+
+    } catch (erro) {
+
+      console.log(erro);
+    }
+  }
+
+  /* =========================================
+     CHAT IA
+  ========================================= */
 
   async function enviarMensagem() {
 
@@ -202,6 +322,10 @@ export default function AppInterno({
     }
   }
 
+  /* =========================================
+     ADMIN DASHBOARD
+  ========================================= */
+
   if (
     mostrarAdmin &&
     isAdmin
@@ -216,6 +340,10 @@ export default function AppInterno({
       />
     );
   }
+
+  /* =========================================
+     EMOÇÕES
+  ========================================= */
 
   const emocoes = [
     {
@@ -370,12 +498,12 @@ export default function AppInterno({
 
           <div style={styles.card}>
             <h3>Score</h3>
-            <h1>82</h1>
+            <h1>{estado.score}</h1>
           </div>
 
           <div style={styles.card}>
             <h3>Hawkins</h3>
-            <h1>540</h1>
+            <h1>{estado.hawkins}</h1>
           </div>
 
           <div style={styles.card}>
@@ -392,7 +520,9 @@ export default function AppInterno({
             height={110}
           >
 
-            <LineChart data={graficoData}>
+            <LineChart
+              data={graficoData}
+            >
 
               <CartesianGrid
                 stroke="#1e293b"
@@ -435,7 +565,7 @@ export default function AppInterno({
               <button
                 key={emocao.nome}
 
-                onClick={() => {
+                onClick={async () => {
 
                   setEmocaoSelecionada(
                     emocao.nome
@@ -443,6 +573,10 @@ export default function AppInterno({
 
                   setMensagem(
                     `Estou me sentindo ${emocao.nome}`
+                  );
+
+                  await salvarEmocao(
+                    emocao.nome
                   );
                 }}
 

@@ -39,29 +39,12 @@ export default function AppInterno({
     setEmocaoSelecionada] =
       useState("");
 
-  const finalChatRef =
+  const chatAreaRef =
     useRef(null);
 
   /* =========================================
      PROTEÇÃO ANTI LOOP
   ========================================= */
-
-  useEffect(() => {
-
-    if (!usuario) {
-
-      const timer =
-        setTimeout(() => {
-
-          window.location.reload();
-
-        }, 3000);
-
-      return () =>
-        clearTimeout(timer);
-    }
-
-  }, [usuario]);
 
   if (!usuario) {
 
@@ -84,16 +67,18 @@ export default function AppInterno({
   }
 
   /* =========================================
-     AUTO SCROLL
+     AUTO SCROLL CONTROLADO
   ========================================= */
 
   useEffect(() => {
 
-    finalChatRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
+    if (chatAreaRef.current) {
 
-  }, [historico]);
+      chatAreaRef.current.scrollTop =
+        chatAreaRef.current.scrollHeight;
+    }
+
+  }, [historico, loading]);
 
   /* =========================================
      ADMIN
@@ -150,13 +135,13 @@ export default function AppInterno({
         await onLogout();
       }
 
-      window.location.reload();
-
     } catch (erro) {
 
       console.log(erro);
 
-      setSaindo(false);
+    } finally {
+
+      window.location.href = "/";
     }
   }
 
@@ -255,6 +240,25 @@ export default function AppInterno({
       />
     );
   }
+
+  /* =========================================
+     LISTA EMOÇÕES ORDENADA
+  ========================================= */
+
+  const emocoes = [
+    "Ansioso",
+    "Cansado",
+    "Confuso",
+    "Deprimido",
+    "Desmotivado",
+    "Esperançoso",
+    "Feliz",
+    "Motivado",
+    "Procrastinador",
+    "Raiva",
+    "Sem foco",
+    "Triste",
+  ];
 
   /* =========================================
      RENDER
@@ -381,7 +385,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={140}
+            height={120}
           >
 
             <LineChart data={graficoData}>
@@ -409,20 +413,7 @@ export default function AppInterno({
 
         <div style={styles.emocoes}>
 
-          {[
-            "Ansioso",
-            "Cansado",
-            "Confuso",
-            "Deprimido",
-            "Esperançoso",
-            "Feliz",
-            "Motivado",
-            "Desmotivado",
-            "Procrastinador",
-            "Triste",
-            "Raiva",
-            "Sem foco",
-          ].map((emocao) => (
+          {emocoes.map((emocao) => (
 
             <button
               key={emocao}
@@ -442,12 +433,8 @@ export default function AppInterno({
                 ...styles.emocaoBtn,
 
                 background:
-
-                  emocaoSelecionada ===
-                  emocao
-
+                  emocaoSelecionada === emocao
                     ? "linear-gradient(90deg,#facc15,#f59e0b)"
-
                     : "linear-gradient(90deg,#38bdf8,#22d3ee)",
               }}
             >
@@ -460,7 +447,10 @@ export default function AppInterno({
 
         <div style={styles.chatContainer}>
 
-          <div style={styles.chatArea}>
+          <div
+            ref={chatAreaRef}
+            style={styles.chatArea}
+          >
 
             {historico.map(
               (msg, index) => (
@@ -505,8 +495,6 @@ export default function AppInterno({
               </div>
             )}
 
-            <div ref={finalChatRef} />
-
           </div>
 
           <div style={styles.inputArea}>
@@ -549,6 +537,7 @@ const styles = {
     background: "#020617",
     color: "white",
     fontFamily: "Inter, sans-serif",
+    overflow: "hidden",
   },
 
   sidebar: {
@@ -628,7 +617,7 @@ const styles = {
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 14,
     overflow: "hidden",
   },
 
@@ -648,6 +637,8 @@ const styles = {
     background: "#111827",
     borderRadius: 20,
     padding: 10,
+    minHeight: 140,
+    maxHeight: 140,
   },
 
   emocoes: {
@@ -667,7 +658,8 @@ const styles = {
   },
 
   chatContainer: {
-    flex: 2,
+    flex: 1,
+    minHeight: 0,
     background: "#0f172a",
     borderRadius: 20,
     display: "flex",

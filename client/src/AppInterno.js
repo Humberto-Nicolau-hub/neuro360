@@ -389,7 +389,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={140}
+            height={110}
           >
 
             <LineChart data={graficoData}>
@@ -654,7 +654,7 @@ const styles = {
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 14,
     overflow: "hidden",
     minHeight: 0,
   },
@@ -662,13 +662,14 @@ const styles = {
   topCards: {
     display: "flex",
     gap: 20,
+    flexShrink: 0,
   },
 
   card: {
     flex: 1,
     background:
       "linear-gradient(180deg,#0b1120,#111827)",
-    padding: 24,
+    padding: 20,
     borderRadius: 24,
     border:
       "1px solid #1e293b",
@@ -680,12 +681,14 @@ const styles = {
     background:
       "linear-gradient(180deg,#0b1120,#111827)",
     borderRadius: 24,
-    padding: 12,
-    minHeight: 180,
-    maxHeight: 180,
+    padding: 8,
+    height: 140,
+    minHeight: 140,
+    maxHeight: 140,
     border:
       "1px solid #1e293b",
     flexShrink: 0,
+    overflow: "hidden",
   },
 
   emocoes: {
@@ -707,6 +710,7 @@ const styles = {
   chatContainer: {
     flex: 1,
     minHeight: 0,
+    height: 0,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -719,6 +723,7 @@ const styles = {
 
   chatArea: {
     flex: 1,
+    height: 0,
     minHeight: 0,
     overflowY: "auto",
     overflowX: "hidden",

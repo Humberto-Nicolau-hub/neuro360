@@ -42,10 +42,6 @@ export default function AppInterno({
   const chatAreaRef =
     useRef(null);
 
-  /* =========================================
-     PROTEÇÃO ANTI LOOP
-  ========================================= */
-
   if (!usuario) {
 
     return (
@@ -66,23 +62,19 @@ export default function AppInterno({
     );
   }
 
-  /* =========================================
-     AUTO SCROLL CONTROLADO
-  ========================================= */
-
   useEffect(() => {
 
     if (chatAreaRef.current) {
 
-      chatAreaRef.current.scrollTop =
-        chatAreaRef.current.scrollHeight;
+      setTimeout(() => {
+
+        chatAreaRef.current.scrollTop =
+          chatAreaRef.current.scrollHeight;
+
+      }, 100);
     }
 
   }, [historico, loading]);
-
-  /* =========================================
-     ADMIN
-  ========================================= */
 
   const isAdmin =
     usuario?.admin === true;
@@ -93,10 +85,6 @@ export default function AppInterno({
       : (
           usuario?.plano || "FREE"
         ).toUpperCase();
-
-  /* =========================================
-     ESTADO EMOCIONAL
-  ========================================= */
 
   const estado = {
     score: 82,
@@ -113,10 +101,6 @@ export default function AppInterno({
     { dia: 3, valor: 81 },
     { dia: 4, valor: 82 },
   ];
-
-  /* =========================================
-     LOGOUT
-  ========================================= */
 
   async function sair() {
 
@@ -144,10 +128,6 @@ export default function AppInterno({
       window.location.href = "/";
     }
   }
-
-  /* =========================================
-     CHAT IA
-  ========================================= */
 
   async function enviarMensagem() {
 
@@ -222,10 +202,6 @@ export default function AppInterno({
     }
   }
 
-  /* =========================================
-     ADMIN DASHBOARD
-  ========================================= */
-
   if (
     mostrarAdmin &&
     isAdmin
@@ -241,28 +217,56 @@ export default function AppInterno({
     );
   }
 
-  /* =========================================
-     LISTA EMOÇÕES ORDENADA
-  ========================================= */
-
   const emocoes = [
-    "Ansioso",
-    "Cansado",
-    "Confuso",
-    "Deprimido",
-    "Desmotivado",
-    "Esperançoso",
-    "Feliz",
-    "Motivado",
-    "Procrastinador",
-    "Raiva",
-    "Sem foco",
-    "Triste",
+    {
+      nome: "Ansioso",
+      cor: "#f59e0b",
+    },
+    {
+      nome: "Cansado",
+      cor: "#38bdf8",
+    },
+    {
+      nome: "Confuso",
+      cor: "#06b6d4",
+    },
+    {
+      nome: "Deprimido",
+      cor: "#3b82f6",
+    },
+    {
+      nome: "Desmotivado",
+      cor: "#0ea5e9",
+    },
+    {
+      nome: "Esperançoso",
+      cor: "#14b8a6",
+    },
+    {
+      nome: "Feliz",
+      cor: "#facc15",
+    },
+    {
+      nome: "Motivado",
+      cor: "#22c55e",
+    },
+    {
+      nome: "Procrastinador",
+      cor: "#06b6d4",
+    },
+    {
+      nome: "Raiva",
+      cor: "#ec4899",
+    },
+    {
+      nome: "Sem foco",
+      cor: "#22d3ee",
+    },
+    {
+      nome: "Triste",
+      cor: "#3b82f6",
+    },
   ];
-
-  /* =========================================
-     RENDER
-  ========================================= */
 
   return (
 
@@ -385,7 +389,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={120}
+            height={140}
           >
 
             <LineChart data={graficoData}>
@@ -394,7 +398,10 @@ export default function AppInterno({
                 stroke="#1e293b"
               />
 
-              <XAxis dataKey="dia" />
+              <XAxis
+                dataKey="dia"
+                stroke="#64748b"
+              />
 
               <Tooltip />
 
@@ -403,6 +410,10 @@ export default function AppInterno({
                 dataKey="valor"
                 stroke="#22d3ee"
                 strokeWidth={4}
+                dot={{
+                  r: 6,
+                  fill: "#22d3ee",
+                }}
               />
 
             </LineChart>
@@ -413,35 +424,49 @@ export default function AppInterno({
 
         <div style={styles.emocoes}>
 
-          {emocoes.map((emocao) => (
+          {emocoes.map((emocao) => {
 
-            <button
-              key={emocao}
+            const ativo =
+              emocaoSelecionada ===
+              emocao.nome;
 
-              onClick={() => {
+            return (
 
-                setEmocaoSelecionada(
-                  emocao
-                );
+              <button
+                key={emocao.nome}
 
-                setMensagem(
-                  `Estou me sentindo ${emocao}`
-                );
-              }}
+                onClick={() => {
 
-              style={{
-                ...styles.emocaoBtn,
+                  setEmocaoSelecionada(
+                    emocao.nome
+                  );
 
-                background:
-                  emocaoSelecionada === emocao
-                    ? "linear-gradient(90deg,#facc15,#f59e0b)"
-                    : "linear-gradient(90deg,#38bdf8,#22d3ee)",
-              }}
-            >
-              {emocao}
-            </button>
+                  setMensagem(
+                    `Estou me sentindo ${emocao.nome}`
+                  );
+                }}
 
-          ))}
+                style={{
+                  ...styles.emocaoBtn,
+
+                  border:
+                    `2px solid ${emocao.cor}`,
+
+                  color: "#fff",
+
+                  background: ativo
+                    ? emocao.cor
+                    : "transparent",
+
+                  boxShadow: ativo
+                    ? `0 0 20px ${emocao.cor}`
+                    : `0 0 10px ${emocao.cor}55`,
+                }}
+              >
+                {emocao.nome}
+              </button>
+            );
+          })}
 
         </div>
 
@@ -542,11 +567,14 @@ const styles = {
 
   sidebar: {
     width: 300,
-    background: "#0f172a",
+    background:
+      "linear-gradient(180deg,#071226,#0f172a)",
     padding: 24,
     display: "flex",
     flexDirection: "column",
     gap: 18,
+    borderRight:
+      "1px solid #1e293b",
   },
 
   avatar: {
@@ -555,6 +583,8 @@ const styles = {
     borderRadius: "50%",
     background:
       "linear-gradient(90deg,#22d3ee,#67e8f9)",
+    boxShadow:
+      "0 0 25px #22d3ee",
   },
 
   logo: {
@@ -580,6 +610,8 @@ const styles = {
     borderRadius: 30,
     fontWeight: "bold",
     textAlign: "center",
+    boxShadow:
+      "0 0 20px rgba(250,204,21,0.4)",
   },
 
   adminBtn: {
@@ -591,13 +623,18 @@ const styles = {
     padding: "14px",
     borderRadius: 14,
     cursor: "pointer",
+    boxShadow:
+      "0 0 20px rgba(250,204,21,0.35)",
   },
 
   infoCard: {
-    background: "#111827",
+    background:
+      "rgba(17,24,39,0.85)",
     padding: 18,
     borderRadius: 20,
     lineHeight: 2,
+    border:
+      "1px solid #1e293b",
   },
 
   logout: {
@@ -606,7 +643,7 @@ const styles = {
     border: "none",
     borderRadius: 14,
     background:
-      "linear-gradient(90deg,#fb7185,#f9a8d4)",
+      "linear-gradient(90deg,#fb7185,#f472b6)",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
@@ -617,8 +654,9 @@ const styles = {
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    gap: 14,
+    gap: 16,
     overflow: "hidden",
+    minHeight: 0,
   },
 
   topCards: {
@@ -628,48 +666,62 @@ const styles = {
 
   card: {
     flex: 1,
-    background: "#111827",
-    padding: 20,
-    borderRadius: 20,
+    background:
+      "linear-gradient(180deg,#0b1120,#111827)",
+    padding: 24,
+    borderRadius: 24,
+    border:
+      "1px solid #1e293b",
+    boxShadow:
+      "0 0 30px rgba(34,211,238,0.08)",
   },
 
   graphCard: {
-    background: "#111827",
-    borderRadius: 20,
-    padding: 10,
-    minHeight: 140,
-    maxHeight: 140,
+    background:
+      "linear-gradient(180deg,#0b1120,#111827)",
+    borderRadius: 24,
+    padding: 12,
+    minHeight: 180,
+    maxHeight: 180,
+    border:
+      "1px solid #1e293b",
+    flexShrink: 0,
   },
 
   emocoes: {
     display: "flex",
     gap: 12,
     flexWrap: "wrap",
+    flexShrink: 0,
   },
 
   emocaoBtn: {
-    border: "none",
     borderRadius: 30,
     padding: "12px 18px",
-    color: "white",
     cursor: "pointer",
     fontWeight: "bold",
     transition: "0.3s",
+    background: "transparent",
   },
 
   chatContainer: {
     flex: 1,
     minHeight: 0,
-    background: "#0f172a",
-    borderRadius: 20,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    background:
+      "linear-gradient(180deg,#0b1120,#111827)",
+    borderRadius: 24,
+    border:
+      "1px solid #1e293b",
   },
 
   chatArea: {
     flex: 1,
+    minHeight: 0,
     overflowY: "auto",
+    overflowX: "hidden",
     padding: 20,
     display: "flex",
     flexDirection: "column",
@@ -680,7 +732,7 @@ const styles = {
     maxWidth: "70%",
     padding: 14,
     borderRadius: 18,
-    lineHeight: 1.6,
+    lineHeight: 1.7,
   },
 
   inputArea: {
@@ -689,12 +741,13 @@ const styles = {
     padding: 20,
     borderTop:
       "1px solid #1e293b",
+    flexShrink: 0,
   },
 
   input: {
     flex: 1,
-    height: 50,
-    borderRadius: 14,
+    height: 56,
+    borderRadius: 16,
     border:
       "1px solid #1e293b",
     background:
@@ -702,16 +755,20 @@ const styles = {
     color: "white",
     paddingLeft: 16,
     outline: "none",
+    fontSize: 16,
   },
 
   send: {
-    width: 120,
+    width: 140,
     border: "none",
-    borderRadius: 14,
+    borderRadius: 16,
     background:
-      "linear-gradient(90deg,#34d399,#22d3ee)",
+      "linear-gradient(90deg,#14b8a6,#22d3ee)",
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
+    fontSize: 16,
+    boxShadow:
+      "0 0 20px rgba(34,211,238,0.35)",
   },
 };

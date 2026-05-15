@@ -46,8 +46,109 @@ export default function AppInterno({
     setGraficoData] =
       useState([]);
 
+  const [estadoAtual,
+    setEstadoAtual] =
+      useState({
+        score: 82,
+        hawkins: 540,
+        consciencia: "Expansão",
+        trilha: "Reequilíbrio",
+        emocao: "Equilibrado",
+      });
+
   const chatAreaRef =
     useRef(null);
+
+  /* =========================================
+     MAPA EMOCIONAL
+  ========================================= */
+
+  const mapaEmocional = {
+
+    Ansioso: {
+      score: 45,
+      hawkins: 100,
+      consciencia: "Sobrevivência",
+      trilha: "Acalmar a mente",
+    },
+
+    Cansado: {
+      score: 55,
+      hawkins: 150,
+      consciencia: "Recuperação",
+      trilha: "Energia vital",
+    },
+
+    Confuso: {
+      score: 50,
+      hawkins: 180,
+      consciencia: "Desorganização",
+      trilha: "Clareza mental",
+    },
+
+    Deprimido: {
+      score: 25,
+      hawkins: 50,
+      consciencia: "Contração",
+      trilha: "Reconstrução emocional",
+    },
+
+    Desmotivado: {
+      score: 40,
+      hawkins: 125,
+      consciencia: "Estagnação",
+      trilha: "Ação progressiva",
+    },
+
+    Esperançoso: {
+      score: 75,
+      hawkins: 310,
+      consciencia: "Expansão",
+      trilha: "Fortalecimento emocional",
+    },
+
+    Feliz: {
+      score: 90,
+      hawkins: 540,
+      consciencia: "Alegria",
+      trilha: "Potencialização",
+    },
+
+    Motivado: {
+      score: 95,
+      hawkins: 600,
+      consciencia: "Alta performance",
+      trilha: "Execução estratégica",
+    },
+
+    Procrastinador: {
+      score: 35,
+      hawkins: 140,
+      consciencia: "Bloqueio",
+      trilha: "Produtividade emocional",
+    },
+
+    Raiva: {
+      score: 30,
+      hawkins: 150,
+      consciencia: "Reatividade",
+      trilha: "Controle emocional",
+    },
+
+    "Sem foco": {
+      score: 48,
+      hawkins: 170,
+      consciencia: "Dispersão",
+      trilha: "Foco consciente",
+    },
+
+    Triste: {
+      score: 38,
+      hawkins: 75,
+      consciencia: "Introspecção",
+      trilha: "Elevação emocional",
+    },
+  };
 
   if (!usuario) {
 
@@ -144,6 +245,39 @@ export default function AppInterno({
 
       setGraficoData(formatado);
 
+      const ultimo =
+        data[data.length - 1];
+
+      if (
+        ultimo?.emocao &&
+        mapaEmocional[
+          ultimo.emocao
+        ]
+      ) {
+
+        const dados =
+          mapaEmocional[
+            ultimo.emocao
+          ];
+
+        setEstadoAtual({
+          emocao:
+            ultimo.emocao,
+          score:
+            dados.score,
+          hawkins:
+            dados.hawkins,
+          consciencia:
+            dados.consciencia,
+          trilha:
+            dados.trilha,
+        });
+
+        setEmocaoSelecionada(
+          ultimo.emocao
+        );
+      }
+
     } catch (erro) {
 
       console.log(erro);
@@ -163,19 +297,6 @@ export default function AppInterno({
       : (
           usuario?.plano || "FREE"
         ).toUpperCase();
-
-  /* =========================================
-     ESTADO
-  ========================================= */
-
-  const estado = {
-    score: 82,
-    hawkins: 540,
-    consciencia: "Expansão",
-    trilha: "Reequilíbrio",
-    emocao:
-      emocaoSelecionada || "Equilibrado",
-  };
 
   /* =========================================
      LOGOUT
@@ -218,6 +339,11 @@ export default function AppInterno({
 
     try {
 
+      const dados =
+        mapaEmocional[
+          emocao
+        ];
+
       await supabase
         .from(
           "emocoes_historico"
@@ -230,12 +356,24 @@ export default function AppInterno({
             emocao,
 
             score:
-              estado.score,
+              dados.score,
 
             hawkins:
-              estado.hawkins,
+              dados.hawkins,
           },
         ]);
+
+      setEstadoAtual({
+        emocao,
+        score:
+          dados.score,
+        hawkins:
+          dados.hawkins,
+        consciencia:
+          dados.consciencia,
+        trilha:
+          dados.trilha,
+      });
 
       carregarHistoricoEmocional();
 
@@ -288,6 +426,10 @@ export default function AppInterno({
                 usuario?.premium,
               email:
                 usuario?.email,
+              emocao:
+                estadoAtual.emocao,
+              hawkins:
+                estadoAtual.hawkins,
             }),
           }
         );
@@ -450,31 +592,31 @@ export default function AppInterno({
           <div>
             🧠 Emoção:
             {" "}
-            {estado.emocao}
+            {estadoAtual.emocao}
           </div>
 
           <div>
             📊 Score:
             {" "}
-            {estado.score}
+            {estadoAtual.score}
           </div>
 
           <div>
             🔥 Hawkins:
             {" "}
-            {estado.hawkins}
+            {estadoAtual.hawkins}
           </div>
 
           <div>
             🌐 Consciência:
             {" "}
-            {estado.consciencia}
+            {estadoAtual.consciencia}
           </div>
 
           <div>
             🛤️ Trilha:
             {" "}
-            {estado.trilha}
+            {estadoAtual.trilha}
           </div>
 
         </div>
@@ -498,17 +640,23 @@ export default function AppInterno({
 
           <div style={styles.card}>
             <h3>Score</h3>
-            <h1>{estado.score}</h1>
+            <h1>
+              {estadoAtual.score}
+            </h1>
           </div>
 
           <div style={styles.card}>
             <h3>Hawkins</h3>
-            <h1>{estado.hawkins}</h1>
+            <h1>
+              {estadoAtual.hawkins}
+            </h1>
           </div>
 
           <div style={styles.card}>
             <h3>Estado</h3>
-            <h1>{estado.emocao}</h1>
+            <h1>
+              {estadoAtual.emocao}
+            </h1>
           </div>
 
         </div>

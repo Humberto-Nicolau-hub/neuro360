@@ -46,6 +46,10 @@ export default function AppInterno({
     setGraficoData] =
       useState([]);
 
+  const [historicoCompleto,
+    setHistoricoCompleto] =
+      useState([]);
+
   const [estadoAtual,
     setEstadoAtual] =
       useState({
@@ -150,6 +154,80 @@ export default function AppInterno({
     },
   };
 
+  /* =========================================
+     INSIGHTS INTELIGENTES
+  ========================================= */
+
+  const emocaoPredominante =
+    historicoCompleto.length
+      ? historicoCompleto.reduce((acc, atual) => {
+
+          acc[atual.emocao] =
+            (acc[atual.emocao] || 0) + 1;
+
+          return acc;
+
+        }, {})
+      : {};
+
+  const emocaoMaisFrequente =
+    Object.keys(
+      emocaoPredominante
+    ).reduce(
+      (a, b) =>
+        emocaoPredominante[a] >
+        emocaoPredominante[b]
+          ? a
+          : b,
+      "Equilibrado"
+    );
+
+  const mediaHawkins =
+    historicoCompleto.length
+      ? Math.round(
+          historicoCompleto.reduce(
+            (acc, item) =>
+              acc + (item.hawkins || 0),
+            0
+          ) /
+          historicoCompleto.length
+        )
+      : estadoAtual.hawkins;
+
+  const mediaScore =
+    historicoCompleto.length
+      ? Math.round(
+          historicoCompleto.reduce(
+            (acc, item) =>
+              acc + (item.score || 0),
+            0
+          ) /
+          historicoCompleto.length
+        )
+      : estadoAtual.score;
+
+  const tendenciaEmocional =
+    mediaScore >= 70
+      ? "Evolução positiva"
+      : mediaScore >= 50
+      ? "Oscilação moderada"
+      : "Momento de fortalecimento emocional";
+
+  const estabilidadeEmocional =
+    mediaHawkins >= 300
+      ? "Estabilidade crescente"
+      : "Processo de reorganização emocional";
+
+  const microVitoria =
+    mediaScore >= 70
+      ? "Você demonstra sinais positivos de evolução emocional."
+      : "Pequenos avanços emocionais constroem grandes transformações.";
+
+  const recomendacaoIA =
+    mediaHawkins >= 300
+      ? "Continue fortalecendo hábitos emocionais positivos."
+      : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
+
   if (!usuario) {
 
     return (
@@ -214,13 +292,17 @@ export default function AppInterno({
             "created_at",
             { ascending: true }
           )
-          .limit(10);
+          .limit(20);
 
       if (error) {
 
         console.log(error);
         return;
       }
+
+      setHistoricoCompleto(
+        data || []
+      );
 
       if (!data?.length) {
 
@@ -384,6 +466,47 @@ export default function AppInterno({
   }
 
   /* =========================================
+     REENQUADRAMENTO PNL
+  ========================================= */
+
+  function gerarMensagemEvolutiva(
+    emocao
+  ) {
+
+    const mensagens = {
+
+      Ansioso:
+        "Respire. Toda emoção pode ser reorganizada quando você ganha consciência dela.",
+
+      Desmotivado:
+        "Nem todo momento exige velocidade. Às vezes o processo pede reorganização interna.",
+
+      Triste:
+        "Reconhecer suas emoções já demonstra força emocional e consciência.",
+
+      Confuso:
+        "Clareza emocional nasce quando você começa a observar seus pensamentos sem julgamento.",
+
+      Raiva:
+        "Sua energia emocional pode ser transformada em direção e fortalecimento interno.",
+
+      Feliz:
+        "Valorize este estado positivo. Pequenos momentos fortalecem grandes transformações.",
+
+      Motivado:
+        "Seu estado emocional atual demonstra potencial de crescimento e realização.",
+
+      Esperançoso:
+        "A esperança é um sinal importante de reorganização emocional e expansão interna.",
+    };
+
+    return (
+      mensagens[emocao] ||
+      "Toda evolução emocional começa com autoconsciência."
+    );
+  }
+
+  /* =========================================
      CHAT IA
   ========================================= */
 
@@ -442,8 +565,12 @@ export default function AppInterno({
         {
           tipo: "ia",
           texto:
-            data?.resposta ||
-            "Não consegui responder agora.",
+            `${gerarMensagemEvolutiva(
+              estadoAtual.emocao
+            )}\n\n${
+              data?.resposta ||
+              "Continue avançando no seu processo emocional."
+            }`,
         },
       ]);
 
@@ -454,7 +581,7 @@ export default function AppInterno({
         {
           tipo: "ia",
           texto:
-            "IA temporariamente indisponível.",
+            "Sua evolução emocional continua mesmo nos dias mais desafiadores.",
         },
       ]);
 
@@ -661,6 +788,64 @@ export default function AppInterno({
 
         </div>
 
+        <div style={styles.insightsGrid}>
+
+          <div style={styles.insightCard}>
+            <h4>
+              Emoção predominante
+            </h4>
+            <p>
+              {emocaoMaisFrequente}
+            </p>
+          </div>
+
+          <div style={styles.insightCard}>
+            <h4>
+              Tendência emocional
+            </h4>
+            <p>
+              {tendenciaEmocional}
+            </p>
+          </div>
+
+          <div style={styles.insightCard}>
+            <h4>
+              Estabilidade emocional
+            </h4>
+            <p>
+              {estabilidadeEmocional}
+            </p>
+          </div>
+
+          <div style={styles.insightCard}>
+            <h4>
+              Microvitória
+            </h4>
+            <p>
+              {microVitoria}
+            </p>
+          </div>
+
+        </div>
+
+        <div style={styles.recomendacaoCard}>
+
+          <h3>
+            Insight evolutivo IA
+          </h3>
+
+          <p>
+            {recomendacaoIA}
+          </p>
+
+          <div style={styles.hawkinsInfo}>
+            Média Hawkins:
+            {" "}
+            {mediaHawkins}
+          </div>
+
+        </div>
+
         <div style={styles.graphCard}>
 
           <ResponsiveContainer
@@ -798,7 +983,7 @@ export default function AppInterno({
                   fontWeight: "bold",
                 }}
               >
-                IA analisando emoções...
+                IA analisando evolução emocional...
               </div>
             )}
 
@@ -813,7 +998,7 @@ export default function AppInterno({
                   e.target.value
                 )
               }
-              placeholder="Como você está se sentindo?"
+              placeholder="Compartilhe como você está se sentindo..."
               style={styles.input}
             />
 
@@ -959,6 +1144,39 @@ const styles = {
       "0 0 30px rgba(34,211,238,0.08)",
   },
 
+  insightsGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+    gap: 14,
+    flexShrink: 0,
+  },
+
+  insightCard: {
+    background:
+      "linear-gradient(180deg,#111827,#0f172a)",
+    padding: 18,
+    borderRadius: 20,
+    border:
+      "1px solid #1e293b",
+  },
+
+  recomendacaoCard: {
+    background:
+      "linear-gradient(90deg,#0f172a,#111827)",
+    padding: 20,
+    borderRadius: 24,
+    border:
+      "1px solid #1e293b",
+    lineHeight: 1.8,
+  },
+
+  hawkinsInfo: {
+    marginTop: 10,
+    color: "#22d3ee",
+    fontWeight: "bold",
+  },
+
   graphCard: {
     background:
       "linear-gradient(180deg,#0b1120,#111827)",
@@ -1020,6 +1238,7 @@ const styles = {
     padding: 14,
     borderRadius: 18,
     lineHeight: 1.7,
+    whiteSpace: "pre-wrap",
   },
 
   inputArea: {

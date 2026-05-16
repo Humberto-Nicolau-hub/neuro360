@@ -767,23 +767,23 @@ export default function AppInterno({
 
           <div style={styles.card}>
             <h3>Score</h3>
-            <h1>
-              {estadoAtual.score}
-            </h1>
+            <h1 style={{ fontSize: 42 }}>
+  {estadoAtual.score}
+</h1>
           </div>
 
           <div style={styles.card}>
             <h3>Hawkins</h3>
-            <h1>
-              {estadoAtual.hawkins}
-            </h1>
+            <h1 style={{ fontSize: 42 }}>
+  {estadoAtual.hawkins}
+</h1>
           </div>
 
           <div style={styles.card}>
             <h3>Estado</h3>
-            <h1>
-              {estadoAtual.emocao}
-            </h1>
+            <h1 style={{ fontSize: 42 }}>
+  {estadoAtual.emocao}
+</h1>
           </div>
 
         </div>
@@ -1128,7 +1128,7 @@ const styles = {
 
   topCards: {
     display: "flex",
-    gap: 20,
+    gap: 12,
     flexShrink: 0,
   },
 
@@ -1136,7 +1136,7 @@ const styles = {
     flex: 1,
     background:
       "linear-gradient(180deg,#0b1120,#111827)",
-    padding: 20,
+    padding: 14,
     borderRadius: 24,
     border:
       "1px solid #1e293b",
@@ -1159,7 +1159,7 @@ const styles = {
   borderRadius: 16,
   border:
     "1px solid #1e293b",
-  minHeight: 72,
+  minHeight: 56,
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
@@ -1168,11 +1168,11 @@ const styles = {
   recomendacaoCard: {
   background:
     "linear-gradient(90deg,#0f172a,#111827)",
-  padding: 14,
+  padding: 10,
   borderRadius: 18,
   border:
     "1px solid #1e293b",
-  lineHeight: 1.5,
+  lineHeight: 1.3,
   flexShrink: 0,
 },
 
@@ -1187,9 +1187,9 @@ const styles = {
     "linear-gradient(180deg,#0b1120,#111827)",
   borderRadius: 20,
   padding: 6,
-  height: 110,
-  minHeight: 110,
-  maxHeight: 110,
+  height: 82,
+minHeight: 82,
+maxHeight: 82,
     border:
       "1px solid #1e293b",
     flexShrink: 0,
@@ -1214,7 +1214,7 @@ const styles = {
 
   chatContainer: {
   flex: 1,
-  minHeight: 260,
+  minHeight: 240,
   height: "100%",
     display: "flex",
     flexDirection: "column",

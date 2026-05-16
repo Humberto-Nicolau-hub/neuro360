@@ -850,7 +850,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={110}
+            height={80}
           >
 
             <LineChart
@@ -1186,10 +1186,10 @@ const styles = {
   background:
     "linear-gradient(180deg,#0b1120,#111827)",
   borderRadius: 20,
-  padding: 6,
-  height: 82,
-minHeight: 82,
-maxHeight: 82,
+  padding: 4,
+height: 70,
+minHeight: 70,
+maxHeight: 70,
     border:
       "1px solid #1e293b",
     flexShrink: 0,
@@ -1205,7 +1205,7 @@ maxHeight: 82,
 
   emocaoBtn: {
     borderRadius: 30,
-    padding: "12px 18px",
+    padding:"8px 14px",
     cursor: "pointer",
     fontWeight: "bold",
     transition: "0.3s",
@@ -1214,8 +1214,7 @@ maxHeight: 82,
 
   chatContainer: {
   flex: 1,
-  minHeight: 240,
-  height: "100%",
+  minHeight:0,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",

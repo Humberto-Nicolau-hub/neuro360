@@ -1136,8 +1136,8 @@ const styles = {
    flex:1,
    background:
    "linear-gradient(180deg,#0b1120,#111827)",
-   padding:14,
-   minHeight:85,
+   padding:10,
+   minHeight:65,
    borderRadius:24,
    border:
    "1px solid #1e293b",
@@ -1166,16 +1166,17 @@ const styles = {
   justifyContent: "center",
 },
 
-  recomendacaoCard: {
+  recomendacaoCard:{
    background:
-      "linear-gradient(90deg,#0f172a,#111827)",
-   padding: 6,
-   minHeight: 60,
-   borderRadius: 18,
-   border:
-      "1px solid #1e293b",
-   lineHeight:1.3,
-   flexShrink:0,
+   "linear-gradient(90deg,#0f172a,#111827)",
+   padding:6,
+   borderRadius:18,
+   border:"1px solid #1e293b",
+   lineHeight:1.1,
+   minHeight:70,
+   maxHeight:90,
+   overflow:"hidden",
+   flexShrink:1,
 },
 
   hawkinsInfo: {
@@ -1189,9 +1190,9 @@ const styles = {
     "linear-gradient(180deg,#0b1120,#111827)",
   borderRadius: 20,
   padding: 4,
-height: 70,
-minHeight: 70,
-maxHeight: 70,
+height:50,
+minHeight:50,
+maxHeight:50,
     border:
       "1px solid #1e293b",
     flexShrink: 0,
@@ -1199,11 +1200,13 @@ maxHeight: 70,
   },
 
   emocoes: {
-    display: "flex",
-    gap: 12,
-    flexWrap: "wrap",
-    flexShrink: 0,
-  },
+    display:"flex",
+    gap:8,
+    flexWrap:"wrap",
+    flexShrink:0,
+    maxHeight:65,
+    overflowY:"auto",
+},
 
   emocaoBtn: {
     borderRadius: 30,
@@ -1215,9 +1218,8 @@ maxHeight: 70,
   },
 
   chatContainer: {
-  flex:1,
-  minHeight:180,
-maxHeight:220,
+   flex:1,
+   minHeight:260,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -1228,17 +1230,15 @@ maxHeight:220,
       "1px solid #1e293b",
   },
 
-  chatArea: {
-    flex: 1,
-    height: 0,
-    minHeight: 0,
-    overflowY: "auto",
-    overflowX: "hidden",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-  },
+  chatArea:{
+   flex:1,
+   minHeight:120,
+   overflowY:"auto",
+   padding:10,
+   display:"flex",
+   flexDirection:"column",
+   gap:14,
+},
 
   msg: {
     maxWidth: "70%",
@@ -1249,9 +1249,9 @@ maxHeight:220,
   },
 
   inputArea: {
-    display: "flex",
-    gap: 12,
-    padding: 20,
+    display:"flex",
+    gap:8,
+    padding:10,
     borderTop:
       "1px solid #1e293b",
     flexShrink: 0,
@@ -1259,7 +1259,7 @@ maxHeight:220,
 
   input: {
     flex: 1,
-    height: 56,
+    height:42,
     borderRadius: 16,
     border:
       "1px solid #1e293b",
@@ -1271,8 +1271,9 @@ maxHeight:220,
     fontSize: 16,
   },
 
-  send: {
-    width: 140,
+  send:{
+width:100,
+height:42,
     border: "none",
     borderRadius: 16,
     background:

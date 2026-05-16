@@ -1132,17 +1132,18 @@ const styles = {
     flexShrink: 0,
   },
 
-  card: {
-    flex: 1,
-    background:
-      "linear-gradient(180deg,#0b1120,#111827)",
-    padding: 14,
-    borderRadius: 24,
-    border:
-      "1px solid #1e293b",
-    boxShadow:
-      "0 0 30px rgba(34,211,238,0.08)",
-  },
+  card:{
+   flex:1,
+   background:
+   "linear-gradient(180deg,#0b1120,#111827)",
+   padding:14,
+   minHeight:85,
+   borderRadius:24,
+   border:
+   "1px solid #1e293b",
+   boxShadow:
+   "0 0 30px rgba(34,211,238,0.08)",
+},
 
   insightsGrid: {
   display: "grid",
@@ -1166,14 +1167,15 @@ const styles = {
 },
 
   recomendacaoCard: {
-  background:
-    "linear-gradient(90deg,#0f172a,#111827)",
-  padding: 8,
-  borderRadius: 18,
-  border:
-    "1px solid #1e293b",
-  lineHeight: 1.3,
-  flexShrink: 0,
+   background:
+      "linear-gradient(90deg,#0f172a,#111827)",
+   padding: 6,
+   minHeight: 60,
+   borderRadius: 18,
+   border:
+      "1px solid #1e293b",
+   lineHeight:1.3,
+   flexShrink:0,
 },
 
   hawkinsInfo: {
@@ -1213,8 +1215,9 @@ maxHeight: 70,
   },
 
   chatContainer: {
-  flex:2,
-  minHeight:300,
+  flex:1,
+  minHeight:180,
+maxHeight:220,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",

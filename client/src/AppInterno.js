@@ -1155,11 +1155,11 @@ const styles = {
   insightCard: {
   background:
     "linear-gradient(180deg,#111827,#0f172a)",
-  padding: 12,
-  borderRadius: 16,
+  padding: 8,
+  borderRadius: 14,
   border:
     "1px solid #1e293b",
-  minHeight: 56,
+  minHeight: 40,
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
@@ -1168,7 +1168,7 @@ const styles = {
   recomendacaoCard: {
   background:
     "linear-gradient(90deg,#0f172a,#111827)",
-  padding: 10,
+  padding: 8,
   borderRadius: 18,
   border:
     "1px solid #1e293b",
@@ -1213,8 +1213,8 @@ maxHeight: 70,
   },
 
   chatContainer: {
-  flex: 1,
-  minHeight:0,
+  flex:2,
+  minHeight:300,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",

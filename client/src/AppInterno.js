@@ -1117,11 +1117,11 @@ const styles = {
   },
 
   main: {
-    flex: 1,
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
+  flex: 1,
+  padding: 16,
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
     overflow: "hidden",
     minHeight: 0,
   },

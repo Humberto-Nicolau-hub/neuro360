@@ -1173,8 +1173,8 @@ const styles = {
    borderRadius:18,
    border:"1px solid #1e293b",
    lineHeight:1.1,
-   minHeight:70,
-   maxHeight:90,
+   minHeight:55,
+    maxHeight:65,
    overflow:"hidden",
    flexShrink:1,
 },
@@ -1199,13 +1199,13 @@ maxHeight:50,
     overflow: "hidden",
   },
 
-  emocoes: {
-    display:"flex",
-    gap:8,
-    flexWrap:"wrap",
-    flexShrink:0,
-    maxHeight:65,
-    overflowY:"auto",
+  emocoes:{
+   display:"flex",
+   gap:8,
+   flexWrap:"wrap",
+   flexShrink:0,
+   maxHeight:48,
+   overflow:"hidden",
 },
 
   emocaoBtn: {
@@ -1217,9 +1217,9 @@ maxHeight:50,
     background: "transparent",
   },
 
-  chatContainer: {
-   flex:1,
-   minHeight:260,
+  chatContainer:{
+   flex:2,
+   minHeight:340,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -1232,9 +1232,9 @@ maxHeight:50,
 
   chatArea:{
    flex:1,
-   minHeight:120,
+   minHeight:180,
    overflowY:"auto",
-   padding:10,
+   padding:12,
    display:"flex",
    flexDirection:"column",
    gap:14,

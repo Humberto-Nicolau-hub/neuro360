@@ -1119,38 +1119,39 @@ const styles = {
   main: {
   flex: 1,
   padding: 16,
-  display: "flex",
-  flexDirection: "column",
+   display:"flex",
+   flexDirection:"column",
+   height:"100vh",
+   overflow:"hidden",
+   minHeight:0,
   gap: 10,
     overflow: "hidden",
     minHeight: 0,
   },
 
-  topCards: {
-    display: "flex",
-    gap: 12,
-    flexShrink: 0,
+  topCards:{
+   display:"grid",
+   gridTemplateColumns:"repeat(3,1fr)",
+   gap:10,
+   flexShrink:0,
   },
 
   card:{
    flex:1,
    background:
    "linear-gradient(180deg,#0b1120,#111827)",
-   padding:10,
-   minHeight:65,
+   padding:14,
+   minHeight:95,
    borderRadius:24,
-   border:
-   "1px solid #1e293b",
-   boxShadow:
-   "0 0 30px rgba(34,211,238,0.08)",
+   border:"1px solid #1e293b",
+   boxShadow:"0 0 30px rgba(34,211,238,0.08)"
 },
 
   insightsGrid: {
-  display: "grid",
-  gridTemplateColumns:
-    "repeat(auto-fit,minmax(180px,1fr))",
-  gap: 10,
-  flexShrink: 0,
+  display:"grid",
+  gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",
+  gap:10,
+  flexShrink:0,
 },
 
   insightCard: {
@@ -1169,14 +1170,12 @@ const styles = {
   recomendacaoCard:{
    background:
    "linear-gradient(90deg,#0f172a,#111827)",
-   padding:6,
+   padding:12,
    borderRadius:18,
    border:"1px solid #1e293b",
-   lineHeight:1.1,
-   minHeight:55,
-    maxHeight:65,
-   overflow:"hidden",
-   flexShrink:1,
+   lineHeight:1.4,
+   minHeight:90,
+   flexShrink:0,
 },
 
   hawkinsInfo: {
@@ -1204,8 +1203,8 @@ maxHeight:50,
    gap:8,
    flexWrap:"wrap",
    flexShrink:0,
-   maxHeight:48,
-   overflow:"hidden",
+   maxHeight:80,
+   overflowY:"auto",
 },
 
   emocaoBtn: {
@@ -1218,8 +1217,8 @@ maxHeight:50,
   },
 
   chatContainer:{
-   flex:2,
-   minHeight:340,
+   flex:1,
+   minHeight:0,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -1232,7 +1231,7 @@ maxHeight:50,
 
   chatArea:{
    flex:1,
-   minHeight:180,
+   minHeight:0,
    overflowY:"auto",
    padding:12,
    display:"flex",

@@ -766,25 +766,34 @@ export default function AppInterno({
         <div style={styles.topCards}>
 
           <div style={styles.card}>
-            <h3>Score</h3>
-            <h1 style={{ fontSize: 42 }}>
-  {estadoAtual.score}
-</h1>
-          </div>
+   <h3>Score</h3>
+   <h1 style={{
+      fontSize:36,
+      marginTop:5
+   }}>
+      {estadoAtual.score}
+   </h1>
+</div>
 
           <div style={styles.card}>
-            <h3>Hawkins</h3>
-            <h1 style={{ fontSize: 42 }}>
-  {estadoAtual.hawkins}
-</h1>
-          </div>
+   <h3>Hawkins</h3>
+   <h1 style={{
+      fontSize:36,
+      marginTop:5
+   }}>
+      {estadoAtual.hawkins}
+   </h1>
+</div>
 
           <div style={styles.card}>
-            <h3>Estado</h3>
-            <h1 style={{ fontSize: 42 }}>
-  {estadoAtual.emocao}
-</h1>
-          </div>
+   <h3>Estado</h3>
+   <h1 style={{
+      fontSize:36,
+      marginTop:5
+   }}>
+      {estadoAtual.emocao}
+   </h1>
+</div>
 
         </div>
 
@@ -1170,11 +1179,15 @@ const styles = {
   recomendacaoCard:{
    background:
    "linear-gradient(90deg,#0f172a,#111827)",
-   padding:12,
+   padding:10,
    borderRadius:18,
    border:"1px solid #1e293b",
-   lineHeight:1.4,
-   minHeight:90,
+   lineHeight:1.3,
+
+   minHeight:70,
+   maxHeight:80,
+
+   overflow:"hidden",
    flexShrink:0,
 },
 
@@ -1184,27 +1197,30 @@ const styles = {
     fontWeight: "bold",
   },
 
-  graphCard: {
-  background:
-    "linear-gradient(180deg,#0b1120,#111827)",
-  borderRadius: 20,
-  padding: 4,
-height:50,
-minHeight:50,
-maxHeight:50,
-    border:
-      "1px solid #1e293b",
-    flexShrink: 0,
-    overflow: "hidden",
-  },
+  graphCard:{
+background:
+"linear-gradient(180deg,#0b1120,#111827)",
+borderRadius:20,
+padding:2,
+
+height:40,
+minHeight:40,
+maxHeight:40,
+
+border:"1px solid #1e293b",
+flexShrink:0,
+overflow:"hidden",
+},
 
   emocoes:{
-   display:"flex",
-   gap:8,
-   flexWrap:"wrap",
-   flexShrink:0,
-   maxHeight:80,
-   overflowY:"auto",
+display:"flex",
+gap:8,
+flexWrap:"wrap",
+flexShrink:0,
+
+maxHeight:58,
+
+overflowY:"hidden",
 },
 
   emocaoBtn: {

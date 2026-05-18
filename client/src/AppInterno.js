@@ -470,42 +470,42 @@ export default function AppInterno({
   ========================================= */
 
   function gerarMensagemEvolutiva(
-    emocao
-  ) {
+  emocao
+) {
 
-    const mensagens = {
+  const mensagens = {
 
-      Ansioso:
-        "Respire. Toda emoção pode ser reorganizada quando você ganha consciência dela.",
+    Ansioso:
+      "Percebo sinais de sobrecarga emocional neste momento. Ansiedade costuma surgir quando a mente tenta antecipar muitos cenários ao mesmo tempo. Vamos reduzir o ritmo e trazer foco ao presente.",
 
-      Desmotivado:
-        "Nem todo momento exige velocidade. Às vezes o processo pede reorganização interna.",
+    Desmotivado:
+      "Nem todo período pede aceleração. Algumas fases representam reorganização interna antes do próximo movimento.",
 
-      Triste:
-        "Reconhecer suas emoções já demonstra força emocional e consciência.",
+    Triste:
+      "Reconhecer tristeza não significa fraqueza. Identificar o que sente já é um passo importante de consciência emocional.",
 
-      Confuso:
-        "Clareza emocional nasce quando você começa a observar seus pensamentos sem julgamento.",
+    Confuso:
+      "Quando pensamentos competem entre si, a clareza diminui. Organizar o que realmente importa pode gerar direção.",
 
-      Raiva:
-        "Sua energia emocional pode ser transformada em direção e fortalecimento interno.",
+    Raiva:
+      "Existe energia dentro dessa emoção. Direcionada corretamente, ela pode se transformar em decisão e mudança.",
 
-      Feliz:
-        "Valorize este estado positivo. Pequenos momentos fortalecem grandes transformações.",
+    Feliz:
+      "Momentos positivos fortalecem equilíbrio emocional e merecem ser valorizados.",
 
-      Motivado:
-        "Seu estado emocional atual demonstra potencial de crescimento e realização.",
+    Motivado:
+      "Seu estado atual demonstra impulso emocional positivo e maior potencial de realização.",
 
-      Esperançoso:
-        "A esperança é um sinal importante de reorganização emocional e expansão interna.",
-    };
+    Esperançoso:
+      "A esperança normalmente aparece quando algo começa a se reorganizar internamente."
+  };
 
-    return (
-      mensagens[emocao] ||
-      "Toda evolução emocional começa com autoconsciência."
-    );
-  }
+  return (
+    mensagens[emocao] ||
+    "Toda evolução emocional começa quando você observa o que sente."
+  );
 
+}
   /* =========================================
      CHAT IA
   ========================================= */
@@ -859,7 +859,7 @@ export default function AppInterno({
 
           <ResponsiveContainer
             width="100%"
-            height={80}
+            height={40}
           >
 
             <LineChart
@@ -893,6 +893,15 @@ export default function AppInterno({
           </ResponsiveContainer>
 
         </div>
+                <h3
+style={{
+marginBottom:10,
+marginTop:6
+}}
+>
+Selecione seu estado emocional
+</h3>
+        
 
         <div style={styles.emocoes}>
 
@@ -992,7 +1001,7 @@ export default function AppInterno({
                   fontWeight: "bold",
                 }}
               >
-                IA analisando evolução emocional...
+                IA analisando seu contexto emocional...
               </div>
             )}
 
@@ -1255,13 +1264,28 @@ overflowY:"hidden",
    gap:14,
 },
 
-  msg: {
-    maxWidth: "70%",
-    padding: 14,
-    borderRadius: 18,
-    lineHeight: 1.7,
-    whiteSpace: "pre-wrap",
-  },
+  msg:{
+
+maxWidth:"75%",
+padding:"14px 18px",
+
+borderRadius:20,
+
+lineHeight:1.7,
+
+whiteSpace:"pre-wrap",
+
+fontSize:15,
+
+boxShadow:
+"0 0 20px rgba(0,0,0,0.25)",
+
+transition:
+"all .3s ease",
+
+wordBreak:"break-word"
+
+},
 
   inputArea: {
     display:"flex",
@@ -1287,17 +1311,30 @@ overflowY:"hidden",
   },
 
   send:{
-width:100,
-height:42,
-    border: "none",
-    borderRadius: 16,
-    background:
-      "linear-gradient(90deg,#14b8a6,#22d3ee)",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontSize: 16,
-    boxShadow:
-      "0 0 20px rgba(34,211,238,0.35)",
-  },
+
+width:120,
+
+height:46,
+
+border:"none",
+
+borderRadius:16,
+
+background:
+"linear-gradient(90deg,#14b8a6,#22d3ee)",
+
+color:"white",
+
+fontWeight:700,
+
+fontSize:15,
+
+cursor:"pointer",
+
+transition:"0.3s",
+
+boxShadow:
+"0 0 25px rgba(34,211,238,0.4)"
+
+},
 };

@@ -1232,14 +1232,29 @@ maxHeight:58,
 overflowY:"hidden",
 },
 
-  emocaoBtn: {
-    borderRadius: 30,
-    padding:"8px 14px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "0.3s",
-    background: "transparent",
-  },
+  emocaoBtn:{
+
+borderRadius:30,
+
+padding:"6px 10px",
+
+cursor:"pointer",
+
+fontWeight:"bold",
+
+fontSize:13,
+
+minWidth:70,
+
+whiteSpace:"nowrap",
+
+transition:"0.3s",
+
+background:"transparent",
+
+flexShrink:1,
+
+},
 
   chatContainer:{
    flex:1,

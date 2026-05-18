@@ -794,19 +794,21 @@ export default function AppInterno({
       {estadoAtual.emocao}
    </h1>
 </div>
+     </div>
 
-        </div>
+      <div style={styles.insightsGrid}>
+<div style={styles.insightCard}>
+     
 
-        <div style={styles.insightsGrid}>
+<h4>
+Emoção predominante
+</h4>
 
-          <div style={styles.insightCard}>
-            <h4>
-              Emoção predominante
-            </h4>
-            <p>
-              {emocaoMaisFrequente}
-            </p>
-          </div>
+<p>
+{emocaoMaisFrequente}
+</p>
+
+</div>
 
           <div style={styles.insightCard}>
             <h4>
@@ -962,37 +964,68 @@ Selecione seu estado emocional
             style={styles.chatArea}
           >
 
-            {historico.map(
-              (msg, index) => (
+            {
+historico.length===0 ? (
 
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    msg.tipo ===
-                    "usuario"
-                      ? "flex-end"
-                      : "flex-start",
-                }}
-              >
+<div style={styles.estadoVazio}>
 
-                <div
-                  style={{
-                    ...styles.msg,
+<h3
+style={{
+color:"#22d3ee",
+marginBottom:12
+}}
+>
+IA Terapêutica pronta
+</h3>
 
-                    background:
-                      msg.tipo ===
-                      "usuario"
-                        ? "#10b981"
-                        : "#111827",
-                  }}
-                >
-                  {msg.texto}
-                </div>
+<p
+style={{
+opacity:.8,
+lineHeight:1.7
+}}
+>
+Escolha um estado emocional acima ou escreva como está se sentindo para iniciar sua jornada emocional.
+</p>
 
-              </div>
-            ))}
+</div>
+
+) : (
+
+historico.map(
+(msg,index)=>(
+
+<div
+key={index}
+style={{
+display:"flex",
+justifyContent:
+msg.tipo==="usuario"
+? "flex-end"
+: "flex-start",
+}}
+>
+
+<div
+style={{
+...styles.msg,
+
+background:
+msg.tipo==="usuario"
+? "#10b981"
+: "#111827",
+}}
+>
+
+{msg.texto}
+
+</div>
+
+</div>
+
+))
+)
+}
+              
 
             {loading && (
               <div
@@ -1278,15 +1311,38 @@ flexShrink:1,
    flexDirection:"column",
    gap:14,
 },
+estadoVazio:{
 
+display:"flex",
+
+flexDirection:"column",
+
+justifyContent:"center",
+
+alignItems:"center",
+
+height:"100%",
+
+minHeight:180,
+
+padding:25,
+
+textAlign:"center",
+
+borderRadius:18,
+
+background:"rgba(255,255,255,.03)"
+
+},
   msg:{
 
 maxWidth:"75%",
-padding:"14px 18px",
+
+padding:"16px 20px",
 
 borderRadius:20,
 
-lineHeight:1.7,
+lineHeight:1.8,
 
 whiteSpace:"pre-wrap",
 

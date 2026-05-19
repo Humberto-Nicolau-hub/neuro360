@@ -896,6 +896,25 @@ Emoção predominante
           </ResponsiveContainer>
 
         </div>
+                <div
+style={{
+display:"flex",
+justifyContent:"space-between",
+fontSize:11,
+opacity:.7,
+padding:"0 10px",
+marginTop:-4,
+marginBottom:10
+}}
+>
+
+<span>Contração</span>
+
+<span>Transição</span>
+
+<span>Expansão</span>
+
+</div>
                 <h3
 style={{
 marginBottom:10,
@@ -940,8 +959,6 @@ Selecione seu estado emocional
                   border:
                     `2px solid ${emocao.cor}`,
 
-                  color: "#fff",
-
                   background: ativo
 ? `linear-gradient(
 90deg,
@@ -949,6 +966,10 @@ ${emocao.cor},
 ${emocao.cor}dd
 )`
 : "transparent",
+
+color: ativo
+? "#081018"
+: "#ffffff",
 
 boxShadow: ativo
 ? `0 0 25px ${emocao.cor}`
@@ -960,8 +981,8 @@ transform: ativo
 
 fontWeight:
 ativo
-? "bold"
-: "normal",
+? 700
+: 500,
                 }}
               >
                 {emocao.nome}
@@ -1350,15 +1371,15 @@ background:"rgba(255,255,255,.03)"
 
 maxWidth:"75%",
 
-padding:"18px 22px",
+padding:"14px 18px",
 
-borderRadius:20,
+borderRadius:18,
 
-lineHeight:1.9,
+lineHeight:1.6,
 
 whiteSpace:"pre-wrap",
 
-fontSize:15,
+fontSize:14,
 
 letterSpacing:"0.3px",
 

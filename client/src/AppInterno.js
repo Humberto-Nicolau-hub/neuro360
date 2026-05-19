@@ -171,16 +171,17 @@ export default function AppInterno({
       : {};
 
   const emocaoMaisFrequente =
-    Object.keys(
-      emocaoPredominante
-    ).reduce(
-      (a, b) =>
-        emocaoPredominante[a] >
-        emocaoPredominante[b]
-          ? a
-          : b,
-      "Equilibrado"
-    );
+historicoCompleto.length > 0
+? Object.keys(
+emocaoPredominante
+).reduce(
+(a,b)=>
+emocaoPredominante[a] >
+emocaoPredominante[b]
+? a
+: b
+)
+: estadoAtual.emocao;
 
   const mediaHawkins =
     historicoCompleto.length
@@ -942,12 +943,25 @@ Selecione seu estado emocional
                   color: "#fff",
 
                   background: ativo
-                    ? emocao.cor
-                    : "transparent",
+? `linear-gradient(
+90deg,
+${emocao.cor},
+${emocao.cor}dd
+)`
+: "transparent",
 
-                  boxShadow: ativo
-                    ? `0 0 20px ${emocao.cor}`
-                    : `0 0 10px ${emocao.cor}55`,
+boxShadow: ativo
+? `0 0 25px ${emocao.cor}`
+: `0 0 10px ${emocao.cor}55`,
+
+transform: ativo
+? "scale(1.05)"
+: "scale(1)",
+
+fontWeight:
+ativo
+? "bold"
+: "normal",
                 }}
               >
                 {emocao.nome}
@@ -1176,8 +1190,6 @@ const styles = {
    overflow:"hidden",
    minHeight:0,
   gap: 10,
-    overflow: "hidden",
-    minHeight: 0,
   },
 
   topCards:{
@@ -1338,34 +1350,41 @@ background:"rgba(255,255,255,.03)"
 
 maxWidth:"75%",
 
-padding:"16px 20px",
+padding:"18px 22px",
 
 borderRadius:20,
 
-lineHeight:1.8,
+lineHeight:1.9,
 
 whiteSpace:"pre-wrap",
 
 fontSize:15,
+
+letterSpacing:"0.3px",
+
+wordBreak:"break-word",
+
+overflowWrap:"break-word",
 
 boxShadow:
 "0 0 20px rgba(0,0,0,0.25)",
 
 transition:
 "all .3s ease",
-
-wordBreak:"break-word"
-
 },
+    inputArea:{
 
-  inputArea: {
-    display:"flex",
-    gap:8,
-    padding:10,
-    borderTop:
-      "1px solid #1e293b",
-    flexShrink: 0,
-  },
+display:"flex",
+
+gap:8,
+
+padding:10,
+
+borderTop:
+"1px solid #1e293b",
+
+flexShrink:0,
+},
 
   input: {
     flex: 1,

@@ -1172,26 +1172,32 @@ msg.tipo==="usuario"
 
 const styles = {
 
-  container: {
-    display: "flex",
-    height: "100vh",
-    background: "#020617",
-    color: "white",
-    fontFamily: "Inter, sans-serif",
-    overflow: "hidden",
-  },
+  container:{
+   display:"flex",
+   minHeight:"100vh",
+   maxWidth:"1650px",
+   width:"98%",
+   margin:"0 auto",
+   height:"auto",
+   background:"#020617",
+   color:"white",
+   fontFamily:"Inter, sans-serif",
+   overflowY:"auto",
+},
 
-  sidebar: {
-    width: 300,
-    background:
-      "linear-gradient(180deg,#071226,#0f172a)",
-    padding: 24,
-    display: "flex",
-    flexDirection: "column",
-    gap: 18,
-    borderRight:
-      "1px solid #1e293b",
-  },
+  sidebar:{
+   width:"14%",
+   minWidth:180,
+   maxWidth:210,
+   background:"linear-gradient(180deg,#071226,#0f172a)",
+   padding:24,
+   display:"flex",
+   flexDirection:"column",
+   gap:18,
+   borderRight:"1px solid #1e293b",
+   height:"auto",
+   overflowY:"visible",
+},
 
   avatar: {
     width: 80,
@@ -1246,9 +1252,9 @@ const styles = {
   infoCard: {
     background:
       "rgba(17,24,39,0.85)",
-    padding: 18,
+     padding:12,
     borderRadius: 20,
-    lineHeight: 2,
+     lineHeight:1.6,
     border:
       "1px solid #1e293b",
   },
@@ -1265,30 +1271,33 @@ const styles = {
     cursor: "pointer",
   },
 
-  main: {
-  flex: 1,
-  padding: 16,
+  main:{
+   flex:1,
+   padding:"10px 18px",
+
    display:"flex",
    flexDirection:"column",
-   height:"100vh",
-   overflow:"hidden",
-   minHeight:0,
-  gap: 10,
-  },
+
+   minHeight:"100vh",
+   height:"auto",
+
+   overflowY:"visible",
+
+   gap:10,
+},
 
   topCards:{
    display:"grid",
-   gridTemplateColumns:"repeat(3,1fr)",
-   gap:10,
-   flexShrink:0,
-  },
+   gridTemplateColumns:"repeat(3,minmax(150px,1fr))",
+   gap:14,
+},
 
   card:{
    flex:1,
    background:
    "linear-gradient(180deg,#0b1120,#111827)",
-   padding:14,
-   minHeight:95,
+    padding:12,
+   minHeight:85,
    borderRadius:24,
    border:"1px solid #1e293b",
    boxShadow:"0 0 30px rgba(34,211,238,0.08)"
@@ -1296,7 +1305,7 @@ const styles = {
 
   insightsGrid: {
   display:"grid",
-  gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",
+  gridTemplateColumns:"repeat(4,minmax(150px,1fr))",
   gap:10,
   flexShrink:0,
 },
@@ -1356,9 +1365,7 @@ gap:8,
 flexWrap:"wrap",
 flexShrink:0,
 
-maxHeight:58,
-
-overflowY:"hidden",
+overflow:"visible",
 },
 
   emocaoBtn:{
@@ -1387,25 +1394,35 @@ flexShrink:1,
 
   chatContainer:{
    flex:1,
-   minHeight:0,
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    background:
-      "linear-gradient(180deg,#0b1120,#111827)",
-    borderRadius: 24,
-    border:
-      "1px solid #1e293b",
-  },
+   display:"flex",
+   flexDirection:"column",
+
+   minHeight:280,
+   height:"auto",
+
+   overflow:"hidden",
+
+   background:
+   "linear-gradient(180deg,#0b1120,#111827)",
+
+   borderRadius:24,
+
+   border:"1px solid #1e293b",
+},
 
   chatArea:{
    flex:1,
-   minHeight:0,
-   overflowY:"auto",
+
    padding:12,
+
    display:"flex",
    flexDirection:"column",
+
    gap:14,
+
+   minHeight:180,
+
+   overflowY:"auto",
 },
 estadoVazio:{
 

@@ -951,20 +951,37 @@ marginBottom:10
 >
 
 <span>Contração</span>
-
 <span>Transição</span>
-
 <span>Expansão</span>
 
 </div>
-                <GraficoEvolucao
-   historico={historicoCompleto}
+
+<div
+style={{
+marginTop:8,
+marginBottom:8,
+flexShrink:0
+}}
+>
+
+<GraficoEvolucao
+historico={[
+{hawkins:100},
+{hawkins:150},
+{hawkins:200},
+{hawkins:250},
+{hawkins:300},
+{hawkins:420},
+{hawkins:540}
+]}
 />
+
+</div>
 
 <h3
 style={{
-   marginBottom:10,
-   marginTop:6
+marginBottom:10,
+marginTop:6
 }}
 >
 Selecione seu estado emocional

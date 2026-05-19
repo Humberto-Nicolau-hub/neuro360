@@ -4,72 +4,66 @@ import {
   Line,
   XAxis,
   YAxis,
-  Tooltip
+  Tooltip,
+  CartesianGrid
 } from "recharts";
 
-export default function GraficoEvolucao({
-  historico
-}) {
+export default function GraficoEvolucao() {
 
-  const dados = (historico || [])
-.slice(-7)
-.map((item,index)=>({
-
-dia:`${index+1}`,
-
-hawkins:
-item.hawkins ??
-item.score ??
-0
-
-}));
-
+  // Dados fixos somente para teste
+  const dados = [
+    { dia: "1", hawkins: 100 },
+    { dia: "2", hawkins: 180 },
+    { dia: "3", hawkins: 250 },
+    { dia: "4", hawkins: 320 },
+    { dia: "5", hawkins: 400 },
+    { dia: "6", hawkins: 480 },
+    { dia: "7", hawkins: 540 }
+  ];
 
   return (
-
     <div
       style={{
         background:"#10172f",
-        borderRadius:20,
-        padding:20,
-        marginTop:20
+        borderRadius:16,
+        padding:"10px",
+        marginTop:10,
+        height:"180px"
       }}
     >
-
-      <h3
-        style={{
-          marginBottom:20
-        }}
-      >
+      <h3 style={{
+        marginBottom:"10px",
+        fontSize:"16px"
+      }}>
         Evolução emocional
       </h3>
 
-      <ResponsiveContainer
-        width="100%"
-        height={250}
-      >
-
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={dados}>
+          
+          <CartesianGrid stroke="#1c2749" />
 
-          <XAxis dataKey="dia"/>
+          <XAxis
+            dataKey="dia"
+            stroke="#ffffff"
+          />
 
-          <YAxis/>
+          <YAxis
+            stroke="#ffffff"
+          />
 
-          <Tooltip/>
+          <Tooltip />
 
           <Line
-type="monotone"
-dataKey="hawkins"
-stroke="#43f0ff"
-strokeWidth={3}
-/>
+            type="monotone"
+            dataKey="hawkins"
+            stroke="#43f0ff"
+            strokeWidth={3}
+            dot={{ r:5 }}
+          />
 
         </LineChart>
-
       </ResponsiveContainer>
-
     </div>
-
   );
-
 }

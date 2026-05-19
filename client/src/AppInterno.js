@@ -219,10 +219,50 @@ emocaoPredominante[b]
       ? "Estabilidade crescente"
       : "Processo de reorganização emocional";
 
-  const microVitoria =
-    mediaScore >= 70
-      ? "Você demonstra sinais positivos de evolução emocional."
-      : "Pequenos avanços emocionais constroem grandes transformações.";
+  const mensagensMicroVitoria = {
+
+  Ansioso:
+    "Você observou o que sente em vez de ignorar. Essa percepção já representa avanço.",
+
+  Cansado:
+    "Seu corpo e sua mente estão enviando sinais importantes. Reconhecê-los é um passo valioso.",
+
+  Confuso:
+    "Mesmo em meio à confusão, você decidiu buscar clareza. Isso é movimento.",
+
+  Deprimido:
+    "Permitir-se continuar presente, mesmo em dias difíceis, já demonstra força.",
+
+  Desmotivado:
+    "Você identificou seu estado emocional. Isso já representa movimento.",
+
+  Esperançoso:
+    "Sua percepção emocional mostra sinais positivos de fortalecimento.",
+
+  Feliz:
+    "Valorizar momentos positivos fortalece seu equilíbrio emocional.",
+
+  Motivado:
+    "Seu padrão atual demonstra energia positiva e potencial de realização.",
+
+  Procrastinador:
+    "Reconhecer bloqueios internos é o primeiro passo para superá-los.",
+
+  Raiva:
+    "Você está percebendo sua energia emocional em vez de reagir automaticamente.",
+
+  "Sem foco":
+    "Você reconheceu sua dispersão e isso já inicia um processo de reorganização.",
+
+  Triste:
+    "Você acolheu sua emoção em vez de ignorá-la. Isso já é evolução."
+};
+
+const microVitoria =
+mensagensMicroVitoria[
+estadoAtual.emocao
+] ||
+"Pequenos avanços emocionais constroem grandes transformações.";
 
   const recomendacaoIA =
     mediaHawkins >= 300

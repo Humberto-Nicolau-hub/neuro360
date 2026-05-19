@@ -11,14 +11,18 @@ export default function GraficoEvolucao({
   historico
 }) {
 
-  const dados = historico
-    .slice(-7)
-    .map((item,index)=>({
+  const dados = (historico || [])
+.slice(-7)
+.map((item,index)=>({
 
-      dia:`${index+1}`,
-      hawkins:item.hawkins || 0
+dia:`${index+1}`,
 
-    }));
+hawkins:
+item.hawkins ??
+item.score ??
+0
+
+}));
 
 
   return (
@@ -54,11 +58,11 @@ export default function GraficoEvolucao({
           <Tooltip/>
 
           <Line
-            type="monotone"
-            dataKey="hawkins"
-            stroke="#43f0ff"
-            strokeWidth={3}
-          />
+type="monotone"
+dataKey="hawkins"
+stroke="#43f0ff"
+strokeWidth={3}
+/>
 
         </LineChart>
 

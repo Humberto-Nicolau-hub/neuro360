@@ -24,12 +24,13 @@ export default function GraficoEvolucao() {
   return (
     <div
       style={{
-        background:"#10172f",
-        borderRadius:16,
-        padding:"10px",
-        marginTop:10,
-        height:"180px"
-      }}
+background:"#10172f",
+borderRadius:16,
+padding:"8px 12px",
+marginTop:8,
+height:"120px",
+overflow:"hidden"
+}}
     >
       <h3 style={{
         marginBottom:"10px",
@@ -38,7 +39,7 @@ export default function GraficoEvolucao() {
         Evolução emocional
       </h3>
 
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={70}>
         <LineChart data={dados}>
           
           <CartesianGrid stroke="#1c2749" />

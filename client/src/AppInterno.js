@@ -18,6 +18,8 @@ import AdminDashboard from "./AdminDashboard";
 import { supabase }
   from "./supabaseClient";
 
+import GraficoEvolucao from "./components/GraficoEvolucao";
+
 export default function AppInterno({
   usuario,
   onLogout,
@@ -955,10 +957,14 @@ marginBottom:10
 <span>Expansão</span>
 
 </div>
-                <h3
+                <GraficoEvolucao
+   historico={historicoCompleto}
+/>
+
+<h3
 style={{
-marginBottom:10,
-marginTop:6
+   marginBottom:10,
+   marginTop:6
 }}
 >
 Selecione seu estado emocional

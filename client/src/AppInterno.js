@@ -271,25 +271,46 @@ estadoAtual.emocao
       ? "Continue fortalecendo hábitos emocionais positivos."
       : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
 
-  if (!usuario) {
+  useEffect(()=>{
 
-    return (
-      <div
-        style={{
-          height: "100vh",
-          background: "#020617",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          color: "white",
-          fontSize: 22,
-          fontFamily: "Inter, sans-serif",
-        }}
-      >
-        Carregando NeuroMapa360...
-      </div>
-    );
-  }
+if(!usuario){
+
+const timer=setTimeout(()=>{
+
+window.location="/";
+
+},3000);
+
+return ()=>clearTimeout(timer);
+
+}
+
+},[usuario?.id]);
+
+if(usuario === undefined){
+
+return(
+
+<div
+style={{
+height:"100vh",
+display:"flex",
+justifyContent:"center",
+alignItems:"center",
+background:"#020617",
+color:"#fff",
+fontSize:22
+}}
+>
+
+Carregando NeuroMapa360...
+
+</div>
+
+);
+
+}
+
 
   /* =========================================
      AUTO SCROLL
@@ -313,11 +334,15 @@ estadoAtual.emocao
      CARREGAR HISTÓRICO
   ========================================= */
 
-  useEffect(() => {
+  useEffect(()=>{
 
-    carregarHistoricoEmocional();
+if(usuario?.id){
 
-  }, []);
+carregarHistoricoEmocional();
+
+}
+
+},[usuario?.id]);
 
   async function carregarHistoricoEmocional() {
 
@@ -755,9 +780,15 @@ estadoAtual.emocao
 
         <div style={styles.infoCard}>
 
-          <div>
-            👤 {usuario?.email}
-          </div>
+          <div
+style={{
+overflow:"hidden",
+textOverflow:"ellipsis",
+whiteSpace:"nowrap"
+}}
+>
+👤 {usuario?.email}
+</div>
 
           <div>
             🧠 Emoção:
@@ -965,15 +996,7 @@ flexShrink:0
 >
 
 <GraficoEvolucao
-historico={[
-{hawkins:100},
-{hawkins:150},
-{hawkins:200},
-{hawkins:250},
-{hawkins:300},
-{hawkins:420},
-{hawkins:540}
-]}
+historico={historicoCompleto}
 />
 
 </div>
@@ -1186,9 +1209,9 @@ const styles = {
 },
 
   sidebar:{
-   width:"14%",
-   minWidth:180,
-   maxWidth:210,
+width:"16%",
+minWidth:220,
+maxWidth:240,
    background:"linear-gradient(180deg,#071226,#0f172a)",
    padding:24,
    display:"flex",
@@ -1249,15 +1272,16 @@ const styles = {
       "0 0 20px rgba(250,204,21,0.35)",
   },
 
-  infoCard: {
-    background:
-      "rgba(17,24,39,0.85)",
-     padding:12,
-    borderRadius: 20,
-     lineHeight:1.6,
-    border:
-      "1px solid #1e293b",
-  },
+  infoCard:{
+   background:"rgba(17,24,39,0.85)",
+   padding:12,
+   borderRadius:20,
+   lineHeight:1.6,
+   border:"1px solid #1e293b",
+
+   overflow:"hidden",
+   wordBreak:"break-word",
+},
 
   logout: {
     marginTop: "auto",
@@ -1396,8 +1420,8 @@ flexShrink:1,
    display:"flex",
    flexDirection:"column",
 
-   minHeight:280,
-   maxHeight:420,
+    minHeight:250,
+    maxHeight:350,
 
    overflow:"hidden",
 
@@ -1451,7 +1475,7 @@ background:"rgba(255,255,255,.03)"
 },
   msg:{
 
-maxWidth:"75%",
+maxHeight:"220px",
 
 padding:"14px 18px",
 
@@ -1467,7 +1491,7 @@ letterSpacing:"0.3px",
 
 wordBreak:"break-word",
 
-overflowWrap:"break-word",
+overflowY:"auto",
 
 boxShadow:
 "0 0 20px rgba(0,0,0,0.25)",

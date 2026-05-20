@@ -636,23 +636,17 @@ carregarHistoricoEmocional();
       setHistorico((prev) => [
   ...prev,
   {
-    tipo: "ia",
+    tipo:"ia",
     texto:
-      data?.resposta ||
-      gerarMensagemEvolutiva(
-        estadoAtual.emocao
-      ),
-  },
+      (
+        data?.resposta ||
+        gerarMensagemEvolutiva(
+          estadoAtual.emocao
+        )
+      ) +
+      "\n\nSua evolução emocional continua mesmo nos dias mais desafiadores."
+  }
 ]);
-
-      setHistorico((prev) => [
-        ...prev,
-        {
-          tipo: "ia",
-          texto:
-            "Sua evolução emocional continua mesmo nos dias mais desafiadores.",
-        },
-      ]);
 
     } finally {
 
@@ -1435,7 +1429,7 @@ flexShrink:1,
 
    minHeight:0,
 
-   maxHeight:"100%",
+   height:0,
 
    overflow:"hidden",
 
@@ -1450,9 +1444,12 @@ flexShrink:1,
   chatArea:{
    flex:1,
 
+   height:0,
+
    padding:12,
 
    display:"flex",
+
    flexDirection:"column",
 
    gap:14,
@@ -1460,6 +1457,7 @@ flexShrink:1,
    minHeight:0,
 
    overflowY:"auto",
+
    overflowX:"hidden",
 
    scrollbarWidth:"thin",

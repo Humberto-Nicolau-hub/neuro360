@@ -1471,13 +1471,12 @@ background:"rgba(255,255,255,.03)"
   msg:{
 
 maxWidth:"75%",
-maxHeight:"220px",
 
 padding:"14px 18px",
 
 borderRadius:18,
 
-lineHeight:1.6,
+lineHeight:1.7,
 
 whiteSpace:"pre-wrap",
 
@@ -1485,7 +1484,7 @@ fontSize:14,
 
 wordBreak:"break-word",
 
-overflowY:"auto",
+overflow:"visible",
 
 boxShadow:
 "0 0 20px rgba(0,0,0,0.25)",

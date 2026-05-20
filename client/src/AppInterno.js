@@ -985,7 +985,7 @@ marginBottom:10
 
 <div
 style={{
-height:110,
+height:85,
 overflow:"hidden",
 flexShrink:0
 }}
@@ -1320,7 +1320,7 @@ overflow:"hidden",
 
    overflow:"hidden",
 
-   gap:10,
+   gap:6,
 },
 
   topCards:{
@@ -1333,9 +1333,9 @@ overflow:"hidden",
    flex:1,
    background:
    "linear-gradient(180deg,#0b1120,#111827)",
-    padding:12,
-   minHeight:85,
-   borderRadius:24,
+   padding:8,
+   minHeight:65,
+   borderRadius:18,
    border:"1px solid #1e293b",
    boxShadow:"0 0 30px rgba(34,211,238,0.08)"
 },
@@ -1350,11 +1350,9 @@ overflow:"hidden",
   insightCard: {
   background:
     "linear-gradient(180deg,#111827,#0f172a)",
-  padding: 8,
-  borderRadius: 14,
-  border:
-    "1px solid #1e293b",
-  minHeight: 40,
+  padding:6,
+  borderRadius:12,
+  minHeight:30,
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
@@ -1363,13 +1361,11 @@ overflow:"hidden",
   recomendacaoCard:{
    background:
    "linear-gradient(90deg,#0f172a,#111827)",
-   padding:10,
+   padding:8,
    borderRadius:18,
-   border:"1px solid #1e293b",
-   lineHeight:1.3,
 
-   minHeight:70,
-   maxHeight:80,
+   minHeight:55,
+   maxHeight:60,
 
    overflow:"hidden",
    flexShrink:0,
@@ -1483,7 +1479,7 @@ alignItems:"center",
 
 height:"100%",
 
-minHeight:180,
+minHeight:100,
 
 padding:25,
 

@@ -63,7 +63,11 @@ export default function AppInterno({
       });
 
   const chatAreaRef =
-    useRef(null);
+useRef(null);
+
+const carregouHistorico =
+useRef(false);
+
 
   /* =========================================
      MAPA EMOCIONAL
@@ -316,19 +320,15 @@ Carregando NeuroMapa360...
      AUTO SCROLL
   ========================================= */
 
-  useEffect(() => {
+  useEffect(()=>{
 
-    if (chatAreaRef.current) {
+chatAreaRef.current?.scrollTo({
+top:
+chatAreaRef.current.scrollHeight,
+behavior:"smooth"
+});
 
-      setTimeout(() => {
-
-        chatAreaRef.current.scrollTop =
-          chatAreaRef.current.scrollHeight;
-
-      }, 100);
-    }
-
-  }, [historico, loading]);
+},[historico.length]);
 
   /* =========================================
      CARREGAR HISTÓRICO
@@ -336,13 +336,18 @@ Carregando NeuroMapa360...
 
   useEffect(()=>{
 
-if(usuario?.id){
+if(
+usuario?.id &&
+!carregouHistorico.current
+){
+
+carregouHistorico.current = true;
 
 carregarHistoricoEmocional();
 
 }
 
-},[usuario?.id]);
+},[usuario]);
 
   async function carregarHistoricoEmocional() {
 
@@ -1194,13 +1199,20 @@ const styles = {
 
   container:{
    display:"flex",
-   minHeight:"100vh",
+
+   height:"100vh",
+
    maxWidth:"1650px",
+
    width:"98%",
+
    margin:"0 auto",
+
    background:"#020617",
+
    color:"white",
-   fontFamily:"Inter, sans-serif",
+
+   fontFamily:"Inter,sans-serif",
 
    overflow:"hidden",
 },
@@ -1299,7 +1311,9 @@ maxWidth:240,
    display:"flex",
    flexDirection:"column",
 
-   minHeight:"100vh",
+   height:"100vh",
+
+   minHeight:0,
 
    overflow:"hidden",
 
@@ -1414,10 +1428,14 @@ flexShrink:1,
 
   chatContainer:{
    flex:1,
+
    display:"flex",
+
    flexDirection:"column",
 
    minHeight:0,
+
+   maxHeight:"100%",
 
    overflow:"hidden",
 
@@ -1425,6 +1443,7 @@ flexShrink:1,
    "linear-gradient(180deg,#0b1120,#111827)",
 
    borderRadius:24,
+
    border:"1px solid #1e293b",
 },
 

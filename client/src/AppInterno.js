@@ -1178,11 +1178,11 @@ const styles = {
    maxWidth:"1650px",
    width:"98%",
    margin:"0 auto",
-   height:"auto",
    background:"#020617",
    color:"white",
    fontFamily:"Inter, sans-serif",
-   overflowY:"auto",
+
+   overflow:"hidden",
 },
 
   sidebar:{
@@ -1195,8 +1195,8 @@ const styles = {
    flexDirection:"column",
    gap:18,
    borderRight:"1px solid #1e293b",
-   height:"auto",
-   overflowY:"visible",
+   height:"100vh",
+   overflowY:"auto",
 },
 
   avatar: {
@@ -1279,9 +1279,8 @@ const styles = {
    flexDirection:"column",
 
    minHeight:"100vh",
-   height:"auto",
 
-   overflowY:"visible",
+   overflow:"hidden",
 
    gap:10,
 },
@@ -1398,7 +1397,7 @@ flexShrink:1,
    flexDirection:"column",
 
    minHeight:280,
-   height:"auto",
+   maxHeight:420,
 
    overflow:"hidden",
 
@@ -1423,6 +1422,9 @@ flexShrink:1,
    minHeight:180,
 
    overflowY:"auto",
+   overflowX:"hidden",
+
+   scrollbarWidth:"thin",
 },
 estadoVazio:{
 

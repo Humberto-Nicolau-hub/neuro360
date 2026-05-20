@@ -1194,13 +1194,9 @@ const styles = {
   container:{
    display:"flex",
 
+   width:"100vw",
+
    height:"100vh",
-
-   maxWidth:"1650px",
-
-   width:"98%",
-
-   margin:"0 auto",
 
    background:"#020617",
 
@@ -1212,17 +1208,17 @@ const styles = {
 },
 
   sidebar:{
-width:"16%",
-minWidth:220,
-maxWidth:240,
+width:"260px",
+flexShrink:0,
    background:"linear-gradient(180deg,#071226,#0f172a)",
    padding:24,
    display:"flex",
    flexDirection:"column",
    gap:18,
    borderRight:"1px solid #1e293b",
-   height:"100vh",
-   overflowY:"auto",
+   height:"100%",
+
+overflow:"hidden",
 },
 
   avatar: {
@@ -1286,30 +1282,45 @@ maxWidth:240,
    wordBreak:"break-word",
 },
 
-  logout: {
-    marginTop: "auto",
-    height: 50,
-    border: "none",
-    borderRadius: 14,
-    background:
-      "linear-gradient(90deg,#fb7185,#f472b6)",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
+  logout:{
+   marginTop:"auto",
+
+   width:"100%",
+
+   minHeight:50,
+
+   flexShrink:0,
+
+   border:"none",
+
+   borderRadius:14,
+
+   background:
+   "linear-gradient(90deg,#fb7185,#f472b6)",
+
+   color:"white",
+
+   fontWeight:"bold",
+
+   cursor:"pointer",
+},
 
   main:{
    flex:1,
+
    padding:"10px 18px",
 
    display:"flex",
+
    flexDirection:"column",
 
    height:"100vh",
 
    minHeight:0,
 
-   overflow:"hidden",
+   overflowY:"auto",
+
+   overflowX:"hidden",
 
    gap:10,
 },
@@ -1421,15 +1432,15 @@ flexShrink:1,
 },
 
   chatContainer:{
-   flex:1,
+   flex:0.75,
 
    display:"flex",
 
    flexDirection:"column",
 
-   minHeight:0,
+   minHeight:300,
 
-   height:0,
+   maxHeight:420,
 
    overflow:"hidden",
 
@@ -1510,32 +1521,40 @@ transition:
 "all .3s ease",
 },
     inputArea:{
-
 display:"flex",
 
-gap:8,
+alignItems:"center",
+
+gap:10,
 
 padding:10,
 
-borderTop:
-"1px solid #1e293b",
+borderTop:"1px solid #1e293b",
 
 flexShrink:0,
 },
 
-  input: {
-    flex: 1,
-    height:42,
-    borderRadius: 16,
-    border:
-      "1px solid #1e293b",
-    background:
-      "#020617",
-    color: "white",
-    paddingLeft: 16,
-    outline: "none",
-    fontSize: 16,
-  },
+  input:{
+flex:1,
+
+minWidth:0,
+
+height:42,
+
+borderRadius:16,
+
+border:"1px solid #1e293b",
+
+background:"#020617",
+
+color:"white",
+
+paddingLeft:16,
+
+outline:"none",
+
+fontSize:16,
+},
 
   send:{
 

@@ -271,21 +271,21 @@ estadoAtual.emocao
       ? "Continue fortalecendo hábitos emocionais positivos."
       : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
 
-  useEffect(()=>{
+  useEffect(() => {
 
-if(!usuario){
+if (usuario === undefined) return;
 
-const timer=setTimeout(()=>{
+if (!usuario) {
 
+const timer = setTimeout(() => {
 window.location="/";
-
 },3000);
 
-return ()=>clearTimeout(timer);
+return () => clearTimeout(timer);
 
 }
 
-},[usuario?.id]);
+}, [usuario]);
 
 if(usuario === undefined){
 
@@ -389,7 +389,7 @@ carregarHistoricoEmocional();
           (item, index) => ({
             dia: index + 1,
             valor:
-              item.score || 50,
+              item.hawkins || 50
           })
         );
 
@@ -629,20 +629,16 @@ carregarHistoricoEmocional();
         await response.json();
 
       setHistorico((prev) => [
-        ...prev,
-        {
-          tipo: "ia",
-          texto:
-            `${gerarMensagemEvolutiva(
-              estadoAtual.emocao
-            )}\n\n${
-              data?.resposta ||
-              "Continue avançando no seu processo emocional."
-            }`,
-        },
-      ]);
-
-    } catch (erro) {
+  ...prev,
+  {
+    tipo: "ia",
+    texto:
+      data?.resposta ||
+      gerarMensagemEvolutiva(
+        estadoAtual.emocao
+      ),
+  },
+]);
 
       setHistorico((prev) => [
         ...prev,
@@ -784,7 +780,8 @@ carregarHistoricoEmocional();
 style={{
 overflow:"hidden",
 textOverflow:"ellipsis",
-whiteSpace:"nowrap"
+whiteSpace:"normal",
+wordBreak:"break-word"
 }}
 >
 👤 {usuario?.email}
@@ -1420,8 +1417,7 @@ flexShrink:1,
    display:"flex",
    flexDirection:"column",
 
-    minHeight:250,
-    maxHeight:350,
+   minHeight:0,
 
    overflow:"hidden",
 
@@ -1429,7 +1425,6 @@ flexShrink:1,
    "linear-gradient(180deg,#0b1120,#111827)",
 
    borderRadius:24,
-
    border:"1px solid #1e293b",
 },
 
@@ -1443,7 +1438,7 @@ flexShrink:1,
 
    gap:14,
 
-   minHeight:180,
+   minHeight:0,
 
    overflowY:"auto",
    overflowX:"hidden",
@@ -1475,6 +1470,7 @@ background:"rgba(255,255,255,.03)"
 },
   msg:{
 
+maxWidth:"75%",
 maxHeight:"220px",
 
 padding:"14px 18px",
@@ -1486,8 +1482,6 @@ lineHeight:1.6,
 whiteSpace:"pre-wrap",
 
 fontSize:14,
-
-letterSpacing:"0.3px",
 
 wordBreak:"break-word",
 

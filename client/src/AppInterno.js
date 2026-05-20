@@ -985,16 +985,14 @@ marginBottom:10
 
 <div
 style={{
-marginTop:8,
-marginBottom:8,
+height:110,
+overflow:"hidden",
 flexShrink:0
 }}
 >
-
 <GraficoEvolucao
 historico={historicoCompleto}
 />
-
 </div>
 
 <h3
@@ -1194,7 +1192,7 @@ const styles = {
   container:{
    display:"flex",
 
-   width:"100vw",
+   width:"100%",
 
    height:"100vh",
 
@@ -1216,7 +1214,7 @@ flexShrink:0,
    flexDirection:"column",
    gap:18,
    borderRight:"1px solid #1e293b",
-   height:"100%",
+   height:"100vh",
 
 overflow:"hidden",
 },
@@ -1318,9 +1316,9 @@ overflow:"hidden",
 
    minHeight:0,
 
-   overflowY:"auto",
+   maxHeight:"100vh",
 
-   overflowX:"hidden",
+   overflow:"hidden",
 
    gap:10,
 },
@@ -1432,15 +1430,15 @@ flexShrink:1,
 },
 
   chatContainer:{
-   flex:0.75,
+   flex:1,
 
    display:"flex",
 
    flexDirection:"column",
 
-   minHeight:300,
+   minHeight:0,
 
-   maxHeight:420,
+   maxHeight:"100%",
 
    overflow:"hidden",
 

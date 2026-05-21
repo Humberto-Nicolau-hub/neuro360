@@ -911,21 +911,44 @@ Emoção predominante
 
         <div style={styles.recomendacaoCard}>
 
-          <h3>
-            Insight evolutivo IA
-          </h3>
+<h3
+style={{
+margin:"0",
+fontSize:18
+}}
+>
+Insight evolutivo IA
+</h3>
 
-          <p>
-            {recomendacaoIA}
-          </p>
+<p
+style={{
+margin:"2px 0",
 
-          <div style={styles.hawkinsInfo}>
-            Média Hawkins:
-            {" "}
-            {mediaHawkins}
-          </div>
+fontSize:13,
 
-        </div>
+lineHeight:"16px",
+
+whiteSpace:"nowrap",
+
+overflow:"hidden",
+
+textOverflow:"ellipsis"
+}}
+>
+{recomendacaoIA}
+</p>
+
+<div
+style={{
+fontSize:12,
+color:"#22d3ee",
+fontWeight:"bold"
+}}
+>
+Média Hawkins: {mediaHawkins}
+</div>
+
+</div>
 
         <div style={styles.graphCard}>
 
@@ -1281,32 +1304,34 @@ overflow:"hidden",
 },
 
   logout:{
-   marginTop:"auto",
+marginTop:"auto",
 
-   width:"100%",
+marginBottom:50,
 
-   minHeight:50,
+width:"100%",
 
-   flexShrink:0,
+height:44,
 
-   border:"none",
+border:"none",
 
-   borderRadius:14,
+borderRadius:14,
 
-   background:
-   "linear-gradient(90deg,#fb7185,#f472b6)",
+background:
+"linear-gradient(90deg,#fb7185,#f472b6)",
 
-   color:"white",
+color:"white",
 
-   fontWeight:"bold",
+fontWeight:"bold",
 
-   cursor:"pointer",
+cursor:"pointer",
+
+flexShrink:0,
 },
 
   main:{
    flex:1,
 
-   padding:"10px 18px",
+   padding:"8px 14px",
 
    display:"flex",
 
@@ -1333,8 +1358,8 @@ overflow:"hidden",
    flex:1,
    background:
    "linear-gradient(180deg,#0b1120,#111827)",
-   padding:8,
-   minHeight:65,
+   padding:6,
+minHeight:60,
    borderRadius:18,
    border:"1px solid #1e293b",
    boxShadow:"0 0 30px rgba(34,211,238,0.08)"
@@ -1361,13 +1386,17 @@ overflow:"hidden",
   recomendacaoCard:{
    background:
    "linear-gradient(90deg,#0f172a,#111827)",
-   padding:8,
+
+   padding:"8px 12px",
+
    borderRadius:18,
 
-   minHeight:55,
-   maxHeight:60,
+   minHeight:72,
+
+   maxHeight:72,
 
    overflow:"hidden",
+
    flexShrink:0,
 },
 

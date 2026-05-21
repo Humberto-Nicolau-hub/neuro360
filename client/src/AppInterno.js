@@ -926,13 +926,11 @@ margin:"2px 0",
 
 fontSize:13,
 
-lineHeight:"16px",
+lineHeight:"20px",
 
-whiteSpace:"nowrap",
+whiteSpace:"normal",
 
-overflow:"hidden",
-
-textOverflow:"ellipsis"
+overflow:"visible"
 }}
 >
 {recomendacaoIA}
@@ -1306,7 +1304,7 @@ overflow:"hidden",
   logout:{
 marginTop:"auto",
 
-marginBottom:50,
+marginBottom:25,
 
 width:"100%",
 
@@ -1331,7 +1329,7 @@ flexShrink:0,
   main:{
    flex:1,
 
-   padding:"8px 14px",
+   padding:"14px 18px",
 
    display:"flex",
 
@@ -1345,7 +1343,7 @@ flexShrink:0,
 
    overflow:"hidden",
 
-   gap:6,
+   gap:10,
 },
 
   topCards:{
@@ -1463,7 +1461,7 @@ flexShrink:1,
 
    flexDirection:"column",
 
-   minHeight:180,
+   minHeight:220,
 
    maxHeight:"100%",
 
@@ -1475,6 +1473,8 @@ flexShrink:1,
    borderRadius:24,
 
    border:"1px solid #1e293b",
+
+   marginTop:8,
 },
 
   chatArea:{

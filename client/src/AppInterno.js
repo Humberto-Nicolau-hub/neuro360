@@ -159,7 +159,79 @@ useRef(false);
       trilha: "Elevação emocional",
     },
   };
+  /* =========================================
+   TRILHAS AUTOMÁTICAS
+========================================= */
 
+const trilhasAutomaticas = {
+
+Ansioso:{
+respiracao:"Respiração 4-4-6",
+pnl:"Observe qual pensamento ocupa mais espaço na sua mente neste momento.",
+microacao:"Liste 3 coisas que estão sob seu controle agora."
+},
+
+Cansado:{
+respiracao:"Respiração profunda lenta",
+pnl:"O que seu corpo está tentando comunicar?",
+microacao:"Faça uma pausa consciente de 3 minutos."
+},
+
+Confuso:{
+respiracao:"Respiração de estabilização",
+pnl:"Qual é a única prioridade realmente importante agora?",
+microacao:"Escreva uma única ação simples."
+},
+
+Desmotivado:{
+respiracao:"Respiração energizante",
+pnl:"O que faria diferença se fosse concluído hoje?",
+microacao:"Realize uma tarefa pequena em menos de 5 minutos."
+},
+
+Esperançoso:{
+respiracao:"Respiração consciente",
+pnl:"Qual recurso interno está ajudando você?",
+microacao:"Anote algo positivo que percebeu hoje."
+},
+
+Feliz:{
+respiracao:"Respiração de gratidão",
+pnl:"O que fortaleceu esse estado emocional?",
+microacao:"Compartilhe algo positivo."
+},
+
+Motivado:{
+respiracao:"Respiração energizante",
+pnl:"Qual ação gera maior impacto agora?",
+microacao:"Comece imediatamente."
+},
+
+Procrastinador:{
+respiracao:"Respiração curta guiada",
+pnl:"O que está gerando resistência?",
+microacao:"Faça a primeira etapa da tarefa."
+},
+
+Raiva:{
+respiracao:"Respiração lenta 4-6",
+pnl:"O que precisa ser protegido ou comunicado?",
+microacao:"Espere 2 minutos antes de agir."
+},
+
+"Sem foco":{
+respiracao:"Respiração de atenção",
+pnl:"Qual pensamento está dispersando sua energia?",
+microacao:"Desligue uma distração."
+},
+
+Triste:{
+respiracao:"Respiração lenta acolhedora",
+pnl:"Qual necessidade emocional precisa de atenção?",
+microacao:"Escreva algo pelo qual sente gratidão."
+}
+
+};
   /* =========================================
      INSIGHTS INTELIGENTES
   ========================================= */
@@ -274,6 +346,11 @@ estadoAtual.emocao
     mediaHawkins >= 300
       ? "Continue fortalecendo hábitos emocionais positivos."
       : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
+      
+      const trilhaAtual =
+trilhasAutomaticas[
+estadoAtual.emocao
+];
 
   useEffect(() => {
 
@@ -958,6 +1035,31 @@ Emoção predominante
 
         <div style={styles.recomendacaoCard}>
 
+{trilhaAtual && (
+
+<div
+style={{
+fontSize:11,
+marginBottom:8,
+color:"#67e8f9",
+lineHeight:1.6
+}}
+>
+
+🫁 {trilhaAtual.respiracao}
+
+<br/>
+
+🧠 {trilhaAtual.pnl}
+
+<br/>
+
+⚡ {trilhaAtual.microacao}
+
+</div>
+
+)}
+
 <h3
 style={{
 margin:"0",
@@ -970,13 +1072,9 @@ Insight evolutivo IA
 <p
 style={{
 margin:"2px 0",
-
 fontSize:13,
-
 lineHeight:"20px",
-
 whiteSpace:"normal",
-
 overflow:"visible"
 }}
 >
@@ -1440,9 +1538,9 @@ padding:"6px 10px",
 
 borderRadius:18,
 
-minHeight:72,
+minHeight:120,
 
-maxHeight:72,
+maxHeight:120,
 
    overflow:"visible",
 

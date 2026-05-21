@@ -1006,7 +1006,9 @@ marginBottom:10
 
 <div
 style={{
-height:65,
+minHeight:85,
+maxHeight:85,
+marginBottom:8,
 overflow:"hidden",
 flexShrink:0
 }}
@@ -1229,15 +1231,17 @@ const styles = {
   sidebar:{
 width:"260px",
 flexShrink:0,
-   background:"linear-gradient(180deg,#071226,#0f172a)",
-   padding:24,
-   display:"flex",
-   flexDirection:"column",
-   gap:18,
-   borderRight:"1px solid #1e293b",
-   height:"100vh",
-
-overflow:"hidden",
+background:"linear-gradient(180deg,#071226,#0f172a)",
+padding:24,
+display:"flex",
+flexDirection:"column",
+gap:18,
+borderRight:"1px solid #1e293b",
+height:"100vh",
+boxSizing:"border-box",
+overflowY:"auto",
+overflowX:"hidden",
+paddingBottom:25,
 },
 
   avatar: {
@@ -1304,7 +1308,7 @@ overflow:"hidden",
   logout:{
 marginTop:"auto",
 
-marginBottom:10,
+ marginBottom:18,
 
 width:"100%",
 
@@ -1389,11 +1393,11 @@ padding:"6px 10px",
 
 borderRadius:18,
 
-minHeight:48,
+minHeight:72,
 
-maxHeight:48,
+maxHeight:72,
 
-   overflow:"hidden",
+   overflow:"visible",
 
    flexShrink:0,
 },

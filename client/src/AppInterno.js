@@ -22,6 +22,8 @@ import GraficoEvolucao from "./components/GraficoEvolucao";
 
 import Sidebar from "./components/Sidebar";
 
+import DashboardCards from "./components/DashboardCards";
+
 import {
 
 calcularMediaHawkins,
@@ -881,38 +883,9 @@ setMostrarAdmin={setMostrarAdmin}
 
       <main style={styles.main}>
 
-        <div style={styles.topCards}>
-
-          <div style={styles.card}>
-   <h3>Score</h3>
-   <h1 style={{
-      fontSize:36,
-      marginTop:5
-   }}>
-      {estadoAtual.score}
-   </h1>
-</div>
-
-          <div style={styles.card}>
-   <h3>Hawkins</h3>
-   <h1 style={{
-      fontSize:36,
-      marginTop:5
-   }}>
-      {estadoAtual.hawkins}
-   </h1>
-</div>
-
-          <div style={styles.card}>
-   <h3>Estado</h3>
-   <h1 style={{
-      fontSize:36,
-      marginTop:5
-   }}>
-      {estadoAtual.emocao}
-   </h1>
-</div>
-     </div>
+     <DashboardCards
+estadoAtual={estadoAtual}
+/>
 
       <div style={styles.insightsGrid}>
 <div style={styles.insightCard}>

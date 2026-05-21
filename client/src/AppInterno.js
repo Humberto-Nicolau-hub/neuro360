@@ -1387,9 +1387,9 @@ minHeight:60,
 
    borderRadius:18,
 
-   minHeight:72,
+   minHeight:60,
 
-   maxHeight:72,
+   maxHeight:60,
 
    overflow:"hidden",
 
@@ -1423,7 +1423,7 @@ gap:6,
 flexWrap:"wrap",
 flexShrink:0,
 
-marginBottom:4,
+marginBottom:1,
 
 overflow:"visible",
 },
@@ -1504,7 +1504,7 @@ alignItems:"center",
 
 height:"100%",
 
-padding:35,
+padding:16,
 
 textAlign:"center",
 
@@ -1555,7 +1555,7 @@ flex:1,
 
 minWidth:0,
 
-height:42,
+height:38,
 
 borderRadius:16,
 
@@ -1575,7 +1575,7 @@ fontSize:16,
   send:{
 width:110,
 
-height:40,
+height:38,
 
 border:"none",
 

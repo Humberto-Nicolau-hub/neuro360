@@ -19,6 +19,17 @@ import { supabase }
   from "./supabaseClient";
 
 import GraficoEvolucao from "./components/GraficoEvolucao";
+import {
+
+calcularMediaHawkins,
+calcularMediaScore,
+gerarTendencia,
+gerarEstabilidade,
+gerarAlerta
+
+}
+
+from "./services/motorEmocional";
 
 export default function AppInterno({
   usuario,
@@ -262,81 +273,33 @@ emocaoPredominante[b]
 : estadoAtual.emocao;
 
   const mediaHawkins =
-    historicoCompleto.length
-      ? Math.round(
-          historicoCompleto.reduce(
-            (acc, item) =>
-              acc + (item.hawkins || 0),
-            0
-          ) /
-          historicoCompleto.length
-        )
-      : estadoAtual.hawkins;
+calcularMediaHawkins(
+historicoCompleto,
+estadoAtual
+);
 
   const mediaScore =
-    historicoCompleto.length
-      ? Math.round(
-          historicoCompleto.reduce(
-            (acc, item) =>
-              acc + (item.score || 0),
-            0
-          ) /
-          historicoCompleto.length
-        )
-      : estadoAtual.score;
+calcularMediaScore(
+historicoCompleto,
+estadoAtual
+);
 
   const tendenciaEmocional =
-    mediaScore >= 70
-      ? "Evolução positiva"
-      : mediaScore >= 50
-      ? "Oscilação moderada"
-      : "Momento de fortalecimento emocional";
+gerarTendencia(
+mediaScore
+);
 
   const estabilidadeEmocional =
-    mediaHawkins >= 300
-      ? "Estabilidade crescente"
-      : "Processo de reorganização emocional";
-      const alertaEmocional = (()=>{
+gerarEstabilidade(
+mediaHawkins
+);
+      const alertaEmocional =
+gerarAlerta(
+historicoCompleto,
+mediaHawkins
+);
 
-const ultimas =
-historicoCompleto
-.slice(-5)
-.map(item=>item.emocao);
-
-const diferentes =
-new Set(ultimas).size;
-
-if(diferentes>=4){
-
-return{
-tipo:"alerta",
-texto:
-"Oscilação emocional elevada detectada."
-};
-
-}
-
-if(
-mediaHawkins>=300
-){
-
-return{
-tipo:"positivo",
-texto:
-"Estabilidade emocional crescente."
-};
-
-}
-
-return{
-tipo:"atencao",
-texto:
-"Processo gradual de reorganização emocional."
-};
-
-})();
-
-  const mensagensMicroVitoria = {
+const mensagensMicroVitoria = {
 
   Ansioso:
     "Você observou o que sente em vez de ignorar. Essa percepção já representa avanço.",

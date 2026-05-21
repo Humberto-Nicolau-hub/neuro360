@@ -31,6 +31,11 @@ gerarAlerta
 
 from "./services/motorEmocional";
 
+import {
+promptSystemNeuro360
+}
+from "./services/promptSystemNeuro360";
+
 export default function AppInterno({
   usuario,
   onLogout,
@@ -696,6 +701,9 @@ headers:{
 body:JSON.stringify({
 
 mensagem:texto,
+
+systemPrompt:
+promptSystemNeuro360,
 
 perfil:plano,
 

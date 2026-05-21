@@ -1227,7 +1227,7 @@ const styles = {
 },
 
   sidebar:{
-width:"260px",
+width:"240px",
 flexShrink:0,
    background:"linear-gradient(180deg,#071226,#0f172a)",
    padding:24,
@@ -1341,13 +1341,13 @@ flexShrink:0,
 
    overflow:"hidden",
 
-   gap:4,
+   gap:2,
 },
 
   topCards:{
    display:"grid",
    gridTemplateColumns:"repeat(3,minmax(150px,1fr))",
-   gap:14,
+   gap:8,
 },
 
   card:{
@@ -1364,7 +1364,7 @@ minHeight:60,
   insightsGrid: {
   display:"grid",
   gridTemplateColumns:"repeat(4,minmax(150px,1fr))",
-  gap:10,
+  gap:6,
   flexShrink:0,
 },
 
@@ -1380,16 +1380,16 @@ minHeight:60,
 },
 
   recomendacaoCard:{
-   background:
-   "linear-gradient(90deg,#0f172a,#111827)",
+background:
+"linear-gradient(90deg,#0f172a,#111827)",
 
-   padding:"8px 12px",
+padding:"8px 12px",
 
-   borderRadius:18,
+borderRadius:18,
 
-   minHeight:60,
+minHeight:72,
 
-   maxHeight:60,
+maxHeight:72,
 
    overflow:"hidden",
 
@@ -1459,7 +1459,7 @@ flexShrink:1,
 
    flexDirection:"column",
 
-   minHeight:0,
+   minHeight:220,
 
    overflow:"hidden",
 
@@ -1504,13 +1504,15 @@ alignItems:"center",
 
 height:"100%",
 
-padding:16,
+padding:"22px 25px",
 
 textAlign:"center",
 
 borderRadius:18,
 
-background:"rgba(255,255,255,.03)"
+background:"rgba(255,255,255,.03)",
+
+minHeight:120,
 },
   msg:{
 

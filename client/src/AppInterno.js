@@ -19,6 +19,9 @@ import { supabase }
   from "./supabaseClient";
 
 import GraficoEvolucao from "./components/GraficoEvolucao";
+
+import Sidebar from "./components/Sidebar";
+
 import {
 
 calcularMediaHawkins,
@@ -866,104 +869,15 @@ estadoAtual.emocao
 
     <div style={styles.container}>
 
-      <aside style={styles.sidebar}>
-
-        <div
-          style={styles.avatar}
-        />
-
-        <h1 style={styles.logo}>
-          NeuroMapa360
-        </h1>
-
-        <p style={styles.sub}>
-          IA Terapêutica Ativa
-        </p>
-
-        <div style={styles.plano}>
-          Plano:
-          {" "}
-          {plano}
-        </div>
-
-        {
-          isAdmin && (
-            <div style={styles.master}>
-              ADMIN MASTER
-            </div>
-          )
-        }
-
-        {
-          isAdmin && (
-            <button
-              onClick={() =>
-                setMostrarAdmin(true)
-              }
-              style={styles.adminBtn}
-            >
-              Painel Admin
-            </button>
-          )
-        }
-
-        <div style={styles.infoCard}>
-
-          <div
-style={{
-overflow:"hidden",
-textOverflow:"ellipsis",
-whiteSpace:"normal",
-wordBreak:"break-word"
-}}
->
-👤 {usuario?.email}
-</div>
-
-          <div>
-            🧠 Emoção:
-            {" "}
-            {estadoAtual.emocao}
-          </div>
-
-          <div>
-            📊 Score:
-            {" "}
-            {estadoAtual.score}
-          </div>
-
-          <div>
-            🔥 Hawkins:
-            {" "}
-            {estadoAtual.hawkins}
-          </div>
-
-          <div>
-            🌐 Consciência:
-            {" "}
-            {estadoAtual.consciencia}
-          </div>
-
-          <div>
-            🛤️ Trilha:
-            {" "}
-            {estadoAtual.trilha}
-          </div>
-
-        </div>
-
-        <button
-          onClick={sair}
-          style={styles.logout}
-        >
-          {
-            saindo
-              ? "Saindo..."
-              : "Sair"
-          }
-        </button>
-
-      </aside>
+      <Sidebar
+usuario={usuario}
+plano={plano}
+isAdmin={isAdmin}
+estadoAtual={estadoAtual}
+saindo={saindo}
+sair={sair}
+setMostrarAdmin={setMostrarAdmin}
+/>
 
       <main style={styles.main}>
 

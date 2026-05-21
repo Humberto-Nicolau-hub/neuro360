@@ -1339,9 +1339,11 @@ flexShrink:0,
 
    minHeight:0,
 
-   overflow:"hidden",
+   overflowY:"auto",
 
-   gap:4,
+   overflowX:"hidden",
+
+   gap:6,
 },
 
   topCards:{
@@ -1459,7 +1461,9 @@ flexShrink:1,
 
    flexDirection:"column",
 
-   minHeight:220,
+   minHeight:180,
+
+   maxHeight:180,
 
    overflow:"hidden",
 
@@ -1471,6 +1475,8 @@ flexShrink:1,
    border:"1px solid #1e293b",
 
    marginTop:2,
+
+   flexShrink:0,
 },
 
   chatArea:{
@@ -1493,7 +1499,6 @@ flexShrink:1,
    scrollbarWidth:"thin",
 },
 estadoVazio:{
-
 display:"flex",
 
 flexDirection:"column",
@@ -1504,7 +1509,7 @@ alignItems:"center",
 
 height:"100%",
 
-padding:"22px 25px",
+padding:"8px 20px",
 
 textAlign:"center",
 
@@ -1512,7 +1517,7 @@ borderRadius:18,
 
 background:"rgba(255,255,255,.03)",
 
-minHeight:120,
+minHeight:70,
 },
   msg:{
 
@@ -1545,9 +1550,11 @@ alignItems:"center",
 
 gap:8,
 
-padding:6,
+padding:"8px",
 
 borderTop:"1px solid #1e293b",
+
+minHeight:55,
 
 flexShrink:0,
 },

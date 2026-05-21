@@ -296,6 +296,45 @@ emocaoPredominante[b]
     mediaHawkins >= 300
       ? "Estabilidade crescente"
       : "Processo de reorganização emocional";
+      const alertaEmocional = (()=>{
+
+const ultimas =
+historicoCompleto
+.slice(-5)
+.map(item=>item.emocao);
+
+const diferentes =
+new Set(ultimas).size;
+
+if(diferentes>=4){
+
+return{
+tipo:"alerta",
+texto:
+"Oscilação emocional elevada detectada."
+};
+
+}
+
+if(
+mediaHawkins>=300
+){
+
+return{
+tipo:"positivo",
+texto:
+"Estabilidade emocional crescente."
+};
+
+}
+
+return{
+tipo:"atencao",
+texto:
+"Processo gradual de reorganização emocional."
+};
+
+})();
 
   const mensagensMicroVitoria = {
 
@@ -1030,6 +1069,21 @@ Emoção predominante
               {microVitoria}
             </p>
           </div>
+          <div style={styles.insightCard}>
+
+<h4>
+
+🚨 Alerta emocional
+
+</h4>
+
+<p>
+
+{alertaEmocional.texto}
+
+</p>
+
+</div>
 
         </div>
 
@@ -1512,11 +1566,17 @@ minHeight:60,
    boxShadow:"0 0 30px rgba(34,211,238,0.08)"
 },
 
-  insightsGrid: {
-  display:"grid",
-  gridTemplateColumns:"repeat(4,minmax(150px,1fr))",
-  gap:10,
-  flexShrink:0,
+  insightsGrid:{
+display:"grid",
+
+gridTemplateColumns:
+"repeat(auto-fit,minmax(180px,1fr))",
+
+gap:10,
+
+flexShrink:0,
+
+alignItems:"stretch",
 },
 
   insightCard: {

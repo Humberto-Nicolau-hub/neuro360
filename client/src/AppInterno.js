@@ -604,48 +604,95 @@ carregarHistoricoEmocional();
     try {
 
       const response =
-        await fetch(
-          "https://neuro360-api.onrender.com/api/chat",
-          {
-            method: "POST",
+await fetch(
+"https://neuro360-api.onrender.com/api/chat",
+{
+method:"POST",
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
+headers:{
+"Content-Type":
+"application/json",
+},
 
-            body: JSON.stringify({
-              mensagem: texto,
-              perfil: plano,
-              premium:
-                isAdmin ||
-                usuario?.premium,
-              email:
-                usuario?.email,
-              emocao:
-                estadoAtual.emocao,
-              hawkins:
-                estadoAtual.hawkins,
-            }),
-          }
-        );
+body:JSON.stringify({
 
-      const data =
-        await response.json();
+mensagem:texto,
 
-      setHistorico((prev) => [
-  ...prev,
-  {
-    tipo:"ia",
-    texto:
-      (
-        data?.resposta ||
-        gerarMensagemEvolutiva(
-          estadoAtual.emocao
-        )
-      ) +
-      "\n\nSua evolução emocional continua mesmo nos dias mais desafiadores."
-  }
+perfil:plano,
+
+premium:
+isAdmin ||
+usuario?.premium,
+
+email:
+usuario?.email,
+
+emocaoAtual:
+estadoAtual.emocao,
+
+scoreAtual:
+estadoAtual.score,
+
+hawkinsAtual:
+estadoAtual.hawkins,
+
+emocaoPredominante:
+emocaoMaisFrequente,
+
+mediaScore,
+
+mediaHawkins,
+
+tendenciaEmocional,
+
+estabilidadeEmocional,
+
+microVitoria,
+
+ultimasEmocoes:
+historicoCompleto
+.slice(-5)
+.map(item=>item.emocao),
+
+historicoDetalhado:
+historicoCompleto
+.slice(-5)
+.map(item=>({
+
+emocao:item.emocao,
+score:item.score,
+hawkins:item.hawkins
+
+}))
+
+})
+
+}
+);
+
+const data =
+await response.json();
+      setHistorico((prev)=>[
+...prev,
+{
+tipo:"ia",
+
+texto:
+(
+data?.resposta ||
+
+gerarMensagemEvolutiva(
+estadoAtual.emocao
+)
+
+)
+
++
+
+"\n\nSua evolução emocional continua mesmo nos dias mais desafiadores."
+
+}
+
 ]);
 
     } finally {

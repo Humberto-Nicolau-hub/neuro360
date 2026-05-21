@@ -1457,13 +1457,13 @@ flexShrink:1,
 },
 
   chatContainer:{
-   flex:1.5,
+   flex:1,
 
    display:"flex",
 
    flexDirection:"column",
 
-   minHeight:220,
+   minHeight:180,
 
    maxHeight:"100%",
 
@@ -1482,7 +1482,7 @@ flexShrink:1,
 
    height:0,
 
-   padding:12,
+   padding:8,
 
    display:"flex",
 
@@ -1550,9 +1550,9 @@ display:"flex",
 
 alignItems:"center",
 
-gap:10,
+gap:8,
 
-padding:10,
+padding:6,
 
 borderTop:"1px solid #1e293b",
 
@@ -1582,10 +1582,9 @@ fontSize:16,
 },
 
   send:{
+width:110,
 
-width:120,
-
-height:46,
+height:40,
 
 border:"none",
 
@@ -1598,7 +1597,7 @@ color:"white",
 
 fontWeight:700,
 
-fontSize:15,
+fontSize:14,
 
 cursor:"pointer",
 
@@ -1606,6 +1605,5 @@ transition:"0.3s",
 
 boxShadow:
 "0 0 25px rgba(34,211,238,0.4)"
-
 },
 };

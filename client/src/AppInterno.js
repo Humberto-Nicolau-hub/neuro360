@@ -1408,11 +1408,11 @@ maxHeight:48,
 background:
 "linear-gradient(180deg,#0b1120,#111827)",
 borderRadius:20,
-padding:2,
+padding:1,
 
-height:40,
-minHeight:40,
-maxHeight:40,
+height:34,
+minHeight:34,
+maxHeight:34,
 
 border:"1px solid #1e293b",
 flexShrink:0,
@@ -1509,7 +1509,7 @@ alignItems:"center",
 
 height:"100%",
 
-padding:"8px 20px",
+padding:"4px 20px",
 
 textAlign:"center",
 
@@ -1517,7 +1517,7 @@ borderRadius:18,
 
 background:"rgba(255,255,255,.03)",
 
-minHeight:70,
+minHeight:50,
 },
   msg:{
 

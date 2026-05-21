@@ -1227,7 +1227,7 @@ const styles = {
 },
 
   sidebar:{
-width:"240px",
+width:"260px",
 flexShrink:0,
    background:"linear-gradient(180deg,#071226,#0f172a)",
    padding:24,
@@ -1341,13 +1341,13 @@ flexShrink:0,
 
    overflow:"hidden",
 
-   gap:2,
+   gap:4,
 },
 
   topCards:{
    display:"grid",
    gridTemplateColumns:"repeat(3,minmax(150px,1fr))",
-   gap:8,
+   gap:12,
 },
 
   card:{
@@ -1364,7 +1364,7 @@ minHeight:60,
   insightsGrid: {
   display:"grid",
   gridTemplateColumns:"repeat(4,minmax(150px,1fr))",
-  gap:6,
+  gap:10,
   flexShrink:0,
 },
 
@@ -1383,13 +1383,13 @@ minHeight:60,
 background:
 "linear-gradient(90deg,#0f172a,#111827)",
 
-padding:"8px 12px",
+padding:"6px 10px",
 
 borderRadius:18,
 
-minHeight:72,
+minHeight:48,
 
-maxHeight:72,
+maxHeight:48,
 
    overflow:"hidden",
 

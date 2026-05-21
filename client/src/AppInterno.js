@@ -1008,7 +1008,7 @@ marginBottom:10
 
 <div
 style={{
-height:85,
+height:65,
 overflow:"hidden",
 flexShrink:0
 }}
@@ -1423,9 +1423,11 @@ overflow:"hidden",
 
   emocoes:{
 display:"flex",
-gap:8,
+gap:6,
 flexWrap:"wrap",
 flexShrink:0,
+
+marginBottom:4,
 
 overflow:"visible",
 },
@@ -1434,7 +1436,7 @@ overflow:"visible",
 
 borderRadius:30,
 
-padding:"6px 10px",
+padding:"4px 10px",
 
 cursor:"pointer",
 
@@ -1455,13 +1457,13 @@ flexShrink:1,
 },
 
   chatContainer:{
-   flex:1,
+   flex:1.5,
 
    display:"flex",
 
    flexDirection:"column",
 
-   minHeight:0,
+   minHeight:220,
 
    maxHeight:"100%",
 

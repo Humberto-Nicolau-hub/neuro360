@@ -57,6 +57,9 @@ useState([]);
   const [historico, setHistorico] =
     useState([]);
 
+    const chatEndRef =
+useRef(null);
+
   const [loading, setLoading] =
     useState(false);
 
@@ -446,6 +449,18 @@ carregarHistoricoEmocional();
   async function carregarHistoricoEmocional() {
 
     try {
+
+      useEffect(()=>{
+
+chatEndRef?.current?.scrollIntoView({
+behavior:"smooth"
+});
+
+},[
+historico,
+mensagemIA,
+loading
+]);
 
       const { data, error } =
         await supabase
@@ -1155,11 +1170,13 @@ ativo
         </div>
 
         <PainelIA
-conversa={conversa}
+mensagemIA={mensagemIA}
 mensagem={mensagem}
 setMensagem={setMensagem}
 enviarMensagem={enviarMensagem}
 loading={loading}
+historico={historico}
+chatEndRef={chatEndRef}
 />
 
       </main>

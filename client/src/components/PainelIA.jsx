@@ -1,10 +1,12 @@
 export default function PainelIA({
 
-conversa,
+mensagemIA,
 mensagem,
 setMensagem,
 enviarMensagem,
-loading
+loading,
+historico,
+chatEndRef
 
 }){
 
@@ -94,6 +96,8 @@ Escolha um estado emocional acima ou escreva como está se sentindo para iniciar
 </div>
 
 }
+
+<div ref={chatEndRef}></div>
 
 </div>
 

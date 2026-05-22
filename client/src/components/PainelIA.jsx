@@ -1,6 +1,6 @@
 export default function PainelIA({
 
-mensagemIA,
+conversa,
 mensagem,
 setMensagem,
 enviarMensagem,
@@ -38,15 +38,54 @@ IA analisando...
 
 :
 
-mensagemIA
+conversa.length > 0
 
 ?
 
-<p>
-{mensagemIA}
-</p>
+conversa.map((msg,index)=>(
+
+<div
+key={index}
+
+style={{
+
+padding:"12px",
+marginBottom:10,
+
+borderRadius:14,
+
+background:
+
+msg.tipo==="usuario"
+
+? "rgba(34,211,238,.15)"
+
+: "rgba(255,255,255,.05)"
+
+}}
+
+>
+
+<b>
+
+{msg.tipo==="usuario"
+
+? "Você"
+
+: "Neuro360 IA"}
+
+:</b>
+
+<br/>
+
+{msg.texto}
+
+</div>
+
+))
 
 :
+
 
 <div style={styles.estadoVazio}>
 

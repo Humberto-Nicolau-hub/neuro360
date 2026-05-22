@@ -51,8 +51,8 @@ export default function AppInterno({
   const [mensagem, setMensagem] =
   useState("");
 
-  const [mensagemIA, setMensagemIA] =
-    useState("");
+  const [conversa,setConversa] =
+useState([]);
 
   const [historico, setHistorico] =
     useState([]);
@@ -683,13 +683,14 @@ carregarHistoricoEmocional();
 
     const texto = mensagem;
 
-    setHistorico((prev) => [
-      ...prev,
-      {
-        tipo: "usuario",
-        texto,
-      },
-    ]);
+    setConversa(prev=>[
+...prev,
+
+{
+tipo:"usuario",
+texto
+}
+]);
 
     setMensagem("");
 
@@ -769,22 +770,24 @@ hawkins:item.hawkins
 
 const data =
 await response.json();
-      setMensagemIA(
+      const respostaIA =
 
-(
 data?.resposta ||
 
 gerarMensagemEvolutiva(
 estadoAtual.emocao
-)
-
-)
-
-+
-
-"\n\nSua evolução emocional continua mesmo nos dias mais desafiadores."
-
 );
+
+setConversa(prev=>[
+
+...prev,
+
+{
+tipo:"ia",
+texto:respostaIA
+}
+
+]);
 
     } finally {
 
@@ -1152,7 +1155,7 @@ ativo
         </div>
 
         <PainelIA
-mensagemIA={mensagemIA}
+conversa={conversa}
 mensagem={mensagem}
 setMensagem={setMensagem}
 enviarMensagem={enviarMensagem}

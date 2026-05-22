@@ -54,12 +54,6 @@ export default function AppInterno({
   const [conversa,setConversa] =
 useState([]);
 
-  const [historico, setHistorico] =
-    useState([]);
-
-    const chatEndRef =
-useRef(null);
-
   const [loading, setLoading] =
     useState(false);
 
@@ -419,13 +413,14 @@ Carregando NeuroMapa360...
 
   useEffect(()=>{
 
-chatAreaRef.current?.scrollTo({
-top:
-chatAreaRef.current.scrollHeight,
+chatEndRef?.current?.scrollIntoView({
 behavior:"smooth"
 });
 
-},[historico.length]);
+},[
+conversa,
+loading
+]);
 
   /* =========================================
      CARREGAR HISTÓRICO
@@ -449,18 +444,6 @@ carregarHistoricoEmocional();
   async function carregarHistoricoEmocional() {
 
     try {
-
-      useEffect(()=>{
-
-chatEndRef?.current?.scrollIntoView({
-behavior:"smooth"
-});
-
-},[
-historico,
-mensagemIA,
-loading
-]);
 
       const { data, error } =
         await supabase
@@ -1170,12 +1153,11 @@ ativo
         </div>
 
         <PainelIA
-mensagemIA={mensagemIA}
+conversa={conversa}
 mensagem={mensagem}
 setMensagem={setMensagem}
 enviarMensagem={enviarMensagem}
 loading={loading}
-historico={historico}
 chatEndRef={chatEndRef}
 />
 

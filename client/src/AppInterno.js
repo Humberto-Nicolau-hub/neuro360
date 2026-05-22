@@ -748,6 +748,9 @@ historicoCompleto
 .slice(-5)
 .map(item=>item.emocao),
 
+historicoConversa:
+conversa.slice(-8),
+
 historicoDetalhado:
 historicoCompleto
 .slice(-5)

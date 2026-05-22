@@ -1156,6 +1156,7 @@ mensagemIA={mensagemIA}
 mensagem={mensagem}
 setMensagem={setMensagem}
 enviarMensagem={enviarMensagem}
+loading={loading}
 />
 
       </main>

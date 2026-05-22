@@ -3,7 +3,8 @@ export default function PainelIA({
 mensagemIA,
 mensagem,
 setMensagem,
-enviarMensagem
+enviarMensagem,
+loading
 
 }){
 
@@ -19,14 +20,30 @@ IA Terapêutica pronta
 
 {
 
+loading
+
+?
+
+<p
+style={{
+color:"#67e8f9",
+fontWeight:"bold",
+textAlign:"center"
+}}
+>
+
+IA analisando...
+
+</p>
+
+:
+
 mensagemIA
 
 ?
 
 <p>
-
 {mensagemIA}
-
 </p>
 
 :
@@ -90,8 +107,8 @@ background:
 "rgba(30,41,59,.55)",
 padding:16,
 borderRadius:18,
-minHeight:160,
-maxHeight:240,
+minHeight:120,
+maxHeight:220,
 overflowY:"auto"
 },
 

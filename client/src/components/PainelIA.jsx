@@ -1,11 +1,9 @@
 export default function PainelIA({
-
-mensagemIA,
+conversa,
 mensagem,
 setMensagem,
 enviarMensagem,
 loading,
-historico,
 chatEndRef
 
 }){
@@ -47,6 +45,7 @@ conversa.length > 0
 conversa.map((msg,index)=>(
 
 <div
+
 key={index}
 
 style={{

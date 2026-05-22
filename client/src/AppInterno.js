@@ -1,8 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import { useState, useEffect, useRef } from "react";
 
 import {
   LineChart,
@@ -53,6 +49,8 @@ export default function AppInterno({
 
   const [conversa,setConversa] =
 useState([]);
+
+const chatEndRef = useRef(null);
 
   const [loading, setLoading] =
     useState(false);

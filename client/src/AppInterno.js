@@ -24,6 +24,8 @@ import Sidebar from "./components/Sidebar";
 
 import DashboardCards from "./components/DashboardCards";
 
+import PainelIA from "./components/PainelIA";
+
 import {
 
 calcularMediaHawkins,
@@ -47,6 +49,9 @@ export default function AppInterno({
 }) {
 
   const [mensagem, setMensagem] =
+  useState("");
+
+  const [mensagemIA, setMensagemIA] =
     useState("");
 
   const [historico, setHistorico] =
@@ -764,12 +769,8 @@ hawkins:item.hawkins
 
 const data =
 await response.json();
-      setHistorico((prev)=>[
-...prev,
-{
-tipo:"ia",
+      setMensagemIA(
 
-texto:
 (
 data?.resposta ||
 
@@ -783,9 +784,7 @@ estadoAtual.emocao
 
 "\n\nSua evolução emocional continua mesmo nos dias mais desafiadores."
 
-}
-
-]);
+);
 
     } finally {
 
@@ -1152,114 +1151,12 @@ ativo
 
         </div>
 
-        <div style={styles.chatContainer}>
-
-          <div
-            ref={chatAreaRef}
-            style={styles.chatArea}
-          >
-
-            {
-historico.length===0 ? (
-
-<div style={styles.estadoVazio}>
-
-<h3
-style={{
-color:"#22d3ee",
-marginBottom:12
-}}
->
-IA Terapêutica pronta
-</h3>
-
-<p
-style={{
-opacity:.8,
-lineHeight:1.7
-}}
->
-Escolha um estado emocional acima ou escreva como está se sentindo para iniciar sua jornada emocional.
-</p>
-
-</div>
-
-) : (
-
-historico.map(
-(msg,index)=>(
-
-<div
-key={index}
-style={{
-display:"flex",
-justifyContent:
-msg.tipo==="usuario"
-? "flex-end"
-: "flex-start",
-}}
->
-
-<div
-style={{
-...styles.msg,
-
-background:
-msg.tipo==="usuario"
-? "#10b981"
-: "#111827",
-}}
->
-
-{msg.texto}
-
-</div>
-
-</div>
-
-))
-)
-}
-              
-
-            {loading && (
-              <div
-                style={{
-                  color: "#4ade80",
-                  fontWeight: "bold",
-                }}
-              >
-                IA analisando seu contexto emocional...
-              </div>
-            )}
-
-          </div>
-
-          <div style={styles.inputArea}>
-
-            <input
-              value={mensagem}
-              onChange={(e) =>
-                setMensagem(
-                  e.target.value
-                )
-              }
-              placeholder="Compartilhe como você está se sentindo..."
-              style={styles.input}
-            />
-
-            <button
-              onClick={
-                enviarMensagem
-              }
-              style={styles.send}
-            >
-              Enviar
-            </button>
-
-          </div>
-
-        </div>
+        <PainelIA
+mensagemIA={mensagemIA}
+mensagem={mensagem}
+setMensagem={setMensagem}
+enviarMensagem={enviarMensagem}
+/>
 
       </main>
 

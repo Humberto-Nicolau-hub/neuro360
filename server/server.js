@@ -111,9 +111,9 @@ function analisarEstadoEmocional(texto) {
     textoLower.includes("nervoso") ||
     textoLower.includes("preocupado")
   ) {
-    emocao = "Ansiedade";
+    emocao = "Ansioso";
     score = 42;
-    hawkins = 125;
+    hawkins = 100;
     consciencia = "Contração";
     trilha = "Acalmamento Neural";
     intervencao = "Respiração profunda";
@@ -392,16 +392,26 @@ REGRAS ABSOLUTAS:
 - Fazer perguntas específicas.
 - Investigar a origem emocional.
 - Conversar naturalmente.
+- Nunca explicar sentimentos antes de perguntar.
+- Nunca transformar a resposta em mini palestra.
+- Ir direto ao ponto.
+- Responder primeiro com observação curta e depois pergunta.
 - Considerar contexto anterior.
 - Soar humano.
 
 SE O USUÁRIO ESTIVER ANSIOSO:
 
-Identifique rapidamente a causa.
+Faça:
 
-Exemplo:
+Observação curta + pergunta específica.
 
-"O atraso parece estar pesando bastante. O que gera mais tensão: esperar ou imaginar o resultado?"
+Exemplos:
+
+"O lançamento parece estar carregando muita expectativa. O que pesa mais: atraso ou resultado?"
+
+"Parece existir pressão ao redor disso. O que você imagina que pode acontecer?"
+
+"Isso parece estar ocupando bastante espaço na sua mente. O que mais preocupa nisso?"
 
 SE O USUÁRIO DEMONSTRAR EVOLUÇÃO:
 
@@ -429,7 +439,7 @@ Exemplo:
       await openai.chat.completions.create({
         model: "gpt-4o-mini",
 
-        temperature: 0.8,
+        temperature: 0.5,
 
         messages: [
           {

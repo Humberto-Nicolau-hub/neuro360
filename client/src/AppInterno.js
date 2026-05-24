@@ -549,30 +549,40 @@ carregarHistoricoEmocional();
 
   async function sair() {
 
-    if (saindo) return;
+   if (saindo) return;
 
-    try {
+   try {
 
       setSaindo(true);
 
-      localStorage.clear();
+      // encerra sessão Supabase corretamente
+      await supabase.auth.signOut();
 
+      // limpa apenas dados locais
+      localStorage.clear();
       sessionStorage.clear();
 
-      if (onLogout) {
+      // avisa componente pai
+      if(onLogout){
 
-        await onLogout();
+         onLogout();
+
       }
 
-    } catch (erro) {
+   } catch(erro){
 
-      console.log(erro);
+      console.log(
+         "Erro logout:",
+         erro
+      );
 
-    } finally {
+   } finally {
 
-      window.location.href = "/";
-    }
-  }
+      setSaindo(false);
+
+   }
+
+}
 
   /* =========================================
      SALVAR EMOÇÃO

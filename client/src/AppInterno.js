@@ -584,6 +584,61 @@ carregarHistoricoEmocional();
 
 }
 
+async function virarPremium(){
+
+try{
+
+const response = await fetch(
+"https://backend-neuro360.onrender.com/api/assinar-premium",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+user_id: usuario?.id || localStorage.getItem("user_id")
+})
+
+}
+);
+
+const data = await response.json();
+
+console.log(
+"Resposta Premium:",
+data
+);
+
+if(response.ok){
+
+alert(
+"Plano PREMIUM ativado!"
+);
+
+window.location.reload();
+
+}else{
+
+alert(
+data.erro ||
+"Erro ao ativar Premium"
+);
+
+}
+
+}catch(err){
+
+console.log(err);
+
+alert("Erro de conexão");
+
+}
+
+}
+
+
   /* =========================================
      SALVAR EMOÇÃO
   ========================================= */
@@ -890,6 +945,7 @@ estadoAtual={estadoAtual}
 saindo={saindo}
 sair={sair}
 setMostrarAdmin={setMostrarAdmin}
+virarPremium={virarPremium}
 />
 
       <main style={styles.main}>

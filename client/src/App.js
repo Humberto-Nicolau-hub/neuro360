@@ -4,7 +4,7 @@ import React, {
 } from "react";
 
 import AppInterno from "./AppInterno";
-
+import Landing from "./Landing";
 import { supabase } from "./supabaseClient";
 
 /* ======================================================
@@ -40,6 +40,9 @@ export default function App() {
   const [loadingAuth,
     setLoadingAuth] =
     useState(false);
+
+    const [mostrarLogin,setMostrarLogin] =
+useState(false);
 
   /* ======================================================
      CRIAR / BUSCAR PROFILE
@@ -582,104 +585,97 @@ export default function App() {
   }
 
   /* ======================================================
-     LOGIN SCREEN
-  ====================================================== */
+   LANDING + LOGIN
+====================================================== */
 
-  return (
+if (!mostrarLogin) {
 
-    <div style={styles.container}>
+return(
 
-      <div style={styles.blur}></div>
-
-      <div style={styles.card}>
-
-        <div style={styles.logoContainer}>
-
-          <div style={styles.logoCircle}></div>
-
-          <h1 style={styles.logo}>
-            NeuroMapa360
-          </h1>
-
-          <p style={styles.subtitle}>
-            IA Terapêutica Neuro Sistêmica
-          </p>
-
-        </div>
-
-        <div style={styles.form}>
-
-          <input
-            type="email"
-
-            placeholder="Seu email"
-
-            value={email}
-
-            onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
-            }
-
-            style={styles.input}
-          />
-
-          <input
-            type="password"
-
-            placeholder="Sua senha"
-
-            value={senha}
-
-            onChange={(e) =>
-              setSenha(
-                e.target.value
-              )
-            }
-
-            style={styles.input}
-          />
-
-          <button
-            style={styles.button}
-
-            onClick={entrar}
-
-            disabled={loadingAuth}
-          >
-            {
-              loadingAuth
-                ? "Entrando..."
-                : "Entrar"
-            }
-          </button>
-
-          <button
-            style={
-              styles.secondaryButton
-            }
-
-            onClick={
-              criarConta
-            }
-
-            disabled={loadingAuth}
-          >
-            {
-              loadingAuth
-                ? "Processando..."
-                : "Criar Conta"
-            }
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
+<Landing
+onEntrar={() =>
+setMostrarLogin(true)
 }
+/>
+
+);
+
+}
+
+return(
+
+<div style={styles.container}>
+
+<div style={styles.blur}></div>
+
+<div style={styles.card}>
+
+<div style={styles.logoContainer}>
+
+<div style={styles.logoCircle}></div>
+
+<h1 style={styles.logo}>
+NeuroMapa360
+</h1>
+
+<p style={styles.subtitle}>
+IA Terapêutica Neuro Sistêmica
+</p>
+
+</div>
+
+<div style={styles.form}>
+
+<input
+type="email"
+placeholder="Seu email"
+value={email}
+onChange={(e)=>
+setEmail(e.target.value)
+}
+style={styles.input}
+/>
+
+<input
+type="password"
+placeholder="Sua senha"
+value={senha}
+onChange={(e)=>
+setSenha(e.target.value)
+}
+style={styles.input}
+/>
+
+<button
+style={styles.button}
+onClick={entrar}
+disabled={loadingAuth}
+>
+
+{loadingAuth
+? "Entrando..."
+: "Entrar"}
+
+</button>
+
+<button
+style={styles.secondaryButton}
+onClick={criarConta}
+disabled={loadingAuth}
+>
+
+Criar Conta
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+);
+
 
 /* ======================================================
    STYLES

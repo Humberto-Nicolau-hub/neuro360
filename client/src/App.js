@@ -518,34 +518,35 @@ useState(false);
 
   async function sairSistema() {
 
-    try {
+  try {
 
-      setCarregandoSessao(true);
+    setCarregandoSessao(true);
 
-      await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-      localStorage.clear();
+    localStorage.clear();
 
-      sessionStorage.clear();
+    sessionStorage.clear();
 
-      setUsuarioAtual(null);
+    setUsuarioAtual(null);
 
-      setLogado(false);
+    setLogado(false);
 
-      window.location.href = "/";
+    // força voltar para tela login
+    setMostrarLogin(true);
 
-    } catch (erro) {
+  } catch (erro) {
 
-      console.log(
-        "ERRO LOGOUT:",
-        erro
-      );
+    console.log(
+      "ERRO LOGOUT:",
+      erro
+    );
 
-    } finally {
+  } finally {
 
-      setCarregandoSessao(false);
-    }
+    setCarregandoSessao(false);
   }
+}
 
   /* ======================================================
      LOADING

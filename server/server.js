@@ -605,7 +605,7 @@ app.post("/api/chat", processarIA);
    ASSINATURA PREMIUM
 ====================================================== */
 
-app.post("/api/assinar-premium", async(req,res)=>{
+app.post("/api/assinar-premium", async (req,res)=>{
 
 try{
 
@@ -619,28 +619,51 @@ erro:"user_id obrigatório"
 
 }
 
-const { error } = await supabase
+/* salva assinatura */
+
+const { error:subscriptionError } =
+await supabase
 .from("subscriptions")
 .upsert({
 
 user_id:user_id,
-
 plano:"PREMIUM",
-
 status:"active"
 
 });
 
-if(error){
+if(subscriptionError){
 
-throw error;
+throw subscriptionError;
 
 }
+
+
+/* salva status do usuário */
+
+const { error:userError } =
+await supabase
+.from("usuarios")
+.update({
+
+plano:"PREMIUM"
+
+})
+.eq("id",user_id);
+
+
+if(userError){
+
+throw userError;
+
+}
+
 
 return res.json({
 
 sucesso:true,
-
+premium:true,
+plano:"PREMIUM",
 mensagem:"Plano PREMIUM ativado"
 
 });

@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 
+const API_URL =
+"https://neuro360-api.onrender.com";
+
 import {
   LineChart,
   Line,
@@ -590,7 +593,7 @@ try{
 
 const response =
 await fetch(
-"https://neuro360-tkyx.onrender.com/api/assinar-premium",
+`${API_URL}/api/assinar-premium`,
 {
 method:"POST",
 
@@ -621,7 +624,12 @@ alert(
 "Plano PREMIUM ativado!"
 );
 
-window.location.reload();
+// atualiza localmente o usuário
+usuario.premium = true;
+usuario.plano = "PREMIUM";
+
+// força renderização sem recarregar página
+setEstadoAtual(prev => ({...prev}));
 
 }else{
 
@@ -767,7 +775,7 @@ texto
 
       const response =
 await fetch(
-"https://neuro360-tkyx.onrender.com/api/chat",
+`${API_URL}/api/chat`,
 {
 method:"POST",
 

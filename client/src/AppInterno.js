@@ -588,8 +588,9 @@ async function virarPremium(){
 
 try{
 
-const response = await fetch(
-"https://backend-neuro360.onrender.com/api/assinar-premium",
+const response =
+await fetch(
+"https://neuro360-tkyx.onrender.com/api/assinar-premium",
 {
 method:"POST",
 
@@ -598,18 +599,21 @@ headers:{
 },
 
 body:JSON.stringify({
-user_id: usuario?.id || localStorage.getItem("user_id")
+
+user_id:
+usuario?.id ||
+
+localStorage.getItem(
+"user_id"
+)
+
 })
 
 }
 );
 
-const data = await response.json();
-
-console.log(
-"Resposta Premium:",
-data
-);
+const data =
+await response.json();
 
 if(response.ok){
 
@@ -632,7 +636,9 @@ data.erro ||
 
 console.log(err);
 
-alert("Erro de conexão");
+alert(
+"Erro de conexão"
+);
 
 }
 
@@ -761,7 +767,7 @@ texto
 
       const response =
 await fetch(
-"https://neuro360-api.onrender.com/api/chat",
+"https://neuro360-tkyx.onrender.com/api/chat",
 {
 method:"POST",
 

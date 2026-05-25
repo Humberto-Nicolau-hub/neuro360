@@ -12,18 +12,12 @@ const app = express();
    CONFIG
 ====================================================== */
 
-app.use(
-  cors({
-    origin:[
-      "https://neuromapa360.ia.br",
-      "https://neuro360-2h8c5u3bo-humberto-nicolau-hubs-projects.vercel.app",
-      "http://localhost:3000"
-    ],
-    methods:["GET","POST","PUT","DELETE"],
-    allowedHeaders:["Content-Type"],
-    credentials:true
-  })
-);
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+app.options("*", cors());
 
 app.use(express.json());
 

@@ -24,8 +24,44 @@ NeuroMapa360
 IA Terapêutica Ativa
 </p>
 
-<div style={styles.plano}>
-Plano: {plano}
+<div style={{
+
+...styles.plano,
+
+background:
+
+(plano || "").includes("PREMIUM")
+
+? "linear-gradient(90deg,#facc15,#f59e0b)"
+
+: "rgba(255,255,255,.05)",
+
+padding:"10px",
+
+borderRadius:14,
+
+textAlign:"center",
+
+color:
+
+(plano || "").includes("PREMIUM")
+
+? "#111827"
+
+: "#facc15"
+
+}}>
+
+{
+
+(plano || "").includes("PREMIUM")
+
+? "⭐ " + plano
+
+: "FREE"
+
+}
+
 </div>
 
 {

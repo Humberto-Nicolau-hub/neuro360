@@ -593,6 +593,69 @@ app.post("/api/ia", processarIA);
 app.post("/api/chat", processarIA);
 
 /* ======================================================
+   ASSINATURA PREMIUM
+====================================================== */
+
+app.post("/api/assinar-premium", async(req,res)=>{
+
+try{
+
+const { user_id } = req.body;
+
+if(!user_id){
+
+return res.status(400).json({
+erro:"user_id obrigatório"
+});
+
+}
+
+const { error } = await supabase
+.from("subscriptions")
+.upsert({
+
+user_id:user_id,
+
+plano:"PREMIUM",
+
+status:"active"
+
+});
+
+if(error){
+
+throw error;
+
+}
+
+return res.json({
+
+sucesso:true,
+
+mensagem:"Plano PREMIUM ativado"
+
+});
+
+}
+
+catch(erro){
+
+console.log(
+"ERRO PREMIUM:",
+erro.message
+);
+
+return res.status(500).json({
+
+erro:"Erro ativando premium"
+
+});
+
+}
+
+});
+
+/* ======================================================
    START
 ====================================================== */
 

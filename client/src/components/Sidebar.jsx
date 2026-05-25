@@ -6,7 +6,8 @@ isAdmin,
 estadoAtual,
 saindo,
 sair,
-setMostrarAdmin
+setMostrarAdmin,
+virarPremium
 
 }){
 
@@ -63,6 +64,23 @@ color:
 }
 
 </div>
+
+{
+
+!(plano || "").includes("PREMIUM") && (
+
+<button
+onClick={virarPremium}
+style={styles.premiumBtn}
+>
+
+⭐ Virar Premium
+
+</button>
+
+)
+
+}
 
 {
 isAdmin && (
@@ -222,6 +240,25 @@ lineHeight:1.6,
 border:"1px solid #1e293b",
 overflow:"hidden",
 wordBreak:"break-word"
+},
+
+premiumBtn:{
+
+border:"none",
+
+background:
+"linear-gradient(90deg,#facc15,#f59e0b)",
+
+color:"#111827",
+
+fontWeight:"bold",
+
+padding:"14px",
+
+borderRadius:14,
+
+cursor:"pointer"
+
 },
 
 logout:{

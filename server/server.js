@@ -643,14 +643,14 @@ throw subscriptionError;
 
 const { error:userError } =
 await supabase
-.from("usuarios")
+.from("profiles")
 .update({
 
-plano:"PREMIUM"
+plano:"premium",
+premium:true
 
 })
 .eq("id",user_id);
-
 
 if(userError){
 

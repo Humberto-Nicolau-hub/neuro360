@@ -203,50 +203,15 @@ useState(false);
       }
 
       /* =========================================
-         USUÁRIO FREE
-      ========================================= */
+   USUÁRIO NORMAL
+========================================= */
 
-      const {
-        data: profileFree,
-        error: freeError,
-      } =
-        await supabase
-          .from("profiles")
-          .update({
+setUsuarioAtual(
+   profileExistente
+);
 
-            plano: "free",
+return;
 
-            premium: false,
-
-            admin: false,
-          })
-
-          .eq(
-            "id",
-            user.id
-          )
-
-          .select()
-
-          .single();
-
-      if (freeError) {
-
-        console.log(
-          "ERRO UPDATE FREE:",
-          freeError
-        );
-
-        setUsuarioAtual(
-          profileExistente
-        );
-
-        return;
-      }
-
-      setUsuarioAtual(
-        profileFree
-      );
 
     } catch (erro) {
 

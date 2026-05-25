@@ -478,6 +478,68 @@ return;
   }
 
   /* ======================================================
+   VIRAR PREMIUM
+====================================================== */
+
+async function virarPremium() {
+
+  try {
+
+    const response =
+      await fetch(
+        "https://backend-neuro360.onrender.com/api/assinar-premium",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":"application/json"
+          },
+
+          body:JSON.stringify({
+
+            user_id:
+              usuarioAtual.id
+
+          })
+
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(data.sucesso){
+
+      alert(
+        "Plano PREMIUM ativado!"
+      );
+
+      await carregarProfile({
+        id:usuarioAtual.id,
+        email:usuarioAtual.email
+      });
+
+    }else{
+
+      alert(
+        "Erro ao ativar Premium"
+      );
+
+    }
+
+  } catch(err){
+
+    console.log(err);
+
+    alert(
+      "Erro ao conectar servidor"
+    );
+
+  }
+
+}
+
+  /* ======================================================
      LOGOUT
   ====================================================== */
 
@@ -539,14 +601,10 @@ return;
     return (
 
       <AppInterno
-        usuario={
-          usuarioAtual
-        }
-
-        onLogout={
-          sairSistema
-        }
-      />
+   usuario={usuarioAtual}
+   onLogout={sairSistema}
+   virarPremium={virarPremium}
+/>
     );
   }
 

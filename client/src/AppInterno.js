@@ -542,12 +542,12 @@ carregarHistoricoEmocional();
   const isAdmin =
     usuario?.admin === true;
 
-  const plano =
-    isAdmin
-      ? "ADMIN PREMIUM"
-      : (
-          usuario?.plano || "FREE"
-        ).toUpperCase();
+  const planoUsuario =
+isAdmin
+? "ADMIN PREMIUM"
+: (
+usuario?.plano || "FREE"
+).toUpperCase();
 
   /* =========================================
      LOGOUT
@@ -837,7 +837,7 @@ mensagem:texto,
 systemPrompt:
 promptSystemNeuro360,
 
-perfil:plano,
+perfil:planoUsuario,
 
 premium:
 isAdmin ||
@@ -1012,7 +1012,7 @@ setLoading(false);
 
       <Sidebar
 usuario={usuario}
-plano={plano}
+plano={planoUsuario}
 isAdmin={isAdmin}
 estadoAtual={estadoAtual}
 saindo={saindo}

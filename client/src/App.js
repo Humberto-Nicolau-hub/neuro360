@@ -604,6 +604,14 @@ async function virarPremium() {
    usuario={usuarioAtual}
    onLogout={sairSistema}
    virarPremium={virarPremium}
+
+   premium={
+      usuarioAtual?.premium || false
+   }
+
+   plano={
+      usuarioAtual?.plano || "free"
+   }
 />
     );
   }

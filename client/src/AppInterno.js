@@ -43,8 +43,11 @@ promptSystemNeuro360
 from "./services/promptSystemNeuro360";
 
 export default function AppInterno({
-  usuario,
-  onLogout,
+usuario,
+onLogout,
+virarPremium,
+premium,
+plano
 }) {
 
   const [mensagem, setMensagem] =
@@ -754,34 +757,77 @@ alert(
 
   async function enviarMensagem() {
 
-    if (!mensagem.trim()) return;
+if (!mensagem.trim()) return;
 
-    const texto = mensagem;
+/* ==============================
+   BLOQUEIO FREE
+============================== */
 
-    setConversa(prev=>[
+if(!premium){
+
+const mensagensHoje = Number(
+
+localStorage.getItem(
+"mensagensHoje"
+)
+
+|| 0
+
+);
+
+if(mensagensHoje >= 10){
+
+alert(
+"Limite diário FREE atingido. Faça upgrade para PREMIUM."
+);
+
+return;
+
+}
+
+localStorage.setItem(
+
+"mensagensHoje",
+
+mensagensHoje + 1
+
+);
+
+}
+
+/* ==============================
+   CONTINUA FLUXO NORMAL
+============================== */
+
+const texto = mensagem;
+
+setConversa(prev=>[
+
 ...prev,
 
 {
 tipo:"usuario",
 texto
 }
+
 ]);
 
-    setMensagem("");
+setMensagem("");
 
-    setLoading(true);
+setLoading(true);
 
-    try {
+try{
 
-      const response =
-await fetch(
+const response = await fetch(
+
 `${API_URL}/api/chat`,
+
 {
+
 method:"POST",
 
 headers:{
-"Content-Type":
-"application/json",
+"Content-Type":"application/json"
 },
 
 body:JSON.stringify({
@@ -844,11 +890,13 @@ hawkins:item.hawkins
 })
 
 }
+
 );
 
 const data =
 await response.json();
-      const respostaIA =
+
+const respostaIA =
 
 data?.resposta ||
 
@@ -867,11 +915,22 @@ texto:respostaIA
 
 ]);
 
-    } finally {
+}
+catch(err){
 
-      setLoading(false);
-    }
-  }
+console.log(
+"Erro IA:",
+err
+);
+
+}
+finally{
+
+setLoading(false);
+
+}
+
+}
 
   /* =========================================
      ADMIN DASHBOARD

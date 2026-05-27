@@ -97,6 +97,122 @@ app.get("/api/ia", (req, res) => {
 
 const memoriaUsuarios = {};
 
+async function gerarPerfilEmocional(userId) {
+
+  try {
+
+    const { data: historico, error } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+    if (error || !historico) {
+      console.log("Erro ao carregar histórico emocional");
+      return null;
+    }
+
+    let ansiedade = 0;
+    let tristeza = 0;
+    let motivacao = 0;
+    let raiva = 0;
+    let confusao = 0;
+
+    historico.forEach((item) => {
+
+      const emocao =
+        (item.emocao || "").toLowerCase();
+
+      if (emocao.includes("ans")) ansiedade++;
+      if (emocao.includes("tris")) tristeza++;
+      if (emocao.includes("motiv")) motivacao++;
+      if (emocao.includes("raiva")) raiva++;
+      if (emocao.includes("conf")) confusao++;
+
+    });
+
+    const mapa = {
+      ansiedade,
+      tristeza,
+      motivacao,
+      raiva,
+      confusao
+    };
+
+    const dominante =
+      Object.keys(mapa).reduce((a, b) =>
+        mapa[a] > mapa[b] ? a : b
+      );
+
+    const scoreEmocional =
+      (motivacao * 10) -
+      (ansiedade * 5) -
+      (tristeza * 4);
+
+    const scoreEvolucao =
+      Math.max(0, 100 + scoreEmocional);
+
+    let perfilTerapeutico =
+      "equilibrado";
+
+    if (dominante === "ansiedade") {
+      perfilTerapeutico =
+        "acolhedor_calmo";
+    }
+
+    if (dominante === "tristeza") {
+      perfilTerapeutico =
+        "emocional_profundo";
+    }
+
+    if (dominante === "motivacao") {
+      perfilTerapeutico =
+        "expansivo_acao";
+    }
+
+    await supabase
+      .from("perfil_emocional_usuario")
+      .upsert({
+
+        user_id: userId,
+
+        emocao_dominante: dominante,
+
+        nivel_ansiedade: ansiedade,
+        nivel_tristeza: tristeza,
+        nivel_motivacao: motivacao,
+        nivel_raiva: raiva,
+        nivel_confusao: confusao,
+
+        score_emocional: scoreEmocional,
+        score_evolucao: scoreEvolucao,
+
+        perfil_terapeutico: perfilTerapeutico,
+
+        atualizado_em: new Date()
+
+      });
+
+    return {
+      dominante,
+      scoreEmocional,
+      scoreEvolucao,
+      perfilTerapeutico
+    };
+
+  } catch (err) {
+
+    console.log(
+      "ERRO PERFIL EMOCIONAL:",
+      err.message
+    );
+
+    return null;
+  }
+}
+
 /* ======================================================
    ANALISE EMOCIONAL
 ====================================================== */
@@ -220,106 +336,6 @@ async function carregarMemoriaUsuario(usuarioId) {
 }
 
 /* ======================================================
-   PERFIL EMOCIONAL
-====================================================== */
-
-async function gerarPerfilEmocional(usuarioId) {
-  try {
-    const { data, error } = await supabase
-      .from("conversas")
-      .select("*")
-      .eq("user_id", usuarioId)
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(20);
-
-    if (error || !data || data.length === 0) {
-      return {
-        resumo: "",
-        scoreMedio: 0,
-        emocaoDominante: "Equilibrado",
-        tendencia: "Neutra",
-      };
-    }
-
-    const somaScores = data.reduce(
-      (total, item) => total + (item.score || 0),
-      0
-    );
-
-    const scoreMedio = Math.round(
-      somaScores / data.length
-    );
-
-    const contador = {};
-
-    data.forEach((item) => {
-      const emocao =
-        item.emocao || "Equilibrado";
-
-      contador[emocao] =
-        (contador[emocao] || 0) + 1;
-    });
-
-    const emocaoDominante =
-      Object.keys(contador).reduce((a, b) =>
-        contador[a] > contador[b]
-          ? a
-          : b
-      );
-
-    let tendencia = "Neutra";
-
-    if (scoreMedio < 45) {
-      tendencia = "Desgaste emocional";
-    }
-
-    if (scoreMedio > 75) {
-      tendencia = "Evolução positiva";
-    }
-
-    let resumo = "";
-
-    if (emocaoDominante === "Ansiedade") {
-      resumo =
-        "Percebo sinais recorrentes de ansiedade e sobrecarga emocional.";
-    }
-
-    if (emocaoDominante === "Tristeza") {
-      resumo =
-        "Seu histórico demonstra necessidade de acolhimento emocional.";
-    }
-
-    if (emocaoDominante === "Raiva") {
-      resumo =
-        "Há sinais de tensão emocional e reatividade.";
-    }
-
-    if (emocaoDominante === "Evolução") {
-      resumo =
-        "Seu histórico demonstra evolução emocional positiva.";
-    }
-
-    return {
-      resumo,
-      scoreMedio,
-      emocaoDominante,
-      tendencia,
-    };
-  } catch (erro) {
-    console.log("ERRO PERFIL:", erro.message);
-
-    return {
-      resumo: "",
-      scoreMedio: 0,
-      emocaoDominante: "Equilibrado",
-      tendencia: "Neutra",
-    };
-  }
-}
-
-/* ======================================================
    IA TERAPÊUTICA PRINCIPAL
 ====================================================== */
 
@@ -405,53 +421,54 @@ ${memoriaRecente.map((m) => `
 
     const promptSistema = systemPrompt || `
 
-Você é NeuroMapa360 IA.
+Você é a IA terapêutica oficial do NeuroMapa360.
 
-Uma IA terapêutica emocional sofisticada.
+Seu papel é oferecer:
+- acolhimento emocional;
+- escuta terapêutica;
+- apoio emocional;
+- clareza mental;
+- evolução emocional;
+- reflexão profunda;
+- orientação emocional leve.
 
-Você atua como:
-- terapeuta neuro sistêmico,
-- especialista em PNL,
-- analista emocional,
-- facilitador de expansão emocional.
+IMPORTANTE:
+Nunca seja agressiva.
+Nunca julgue.
+Nunca responda friamente.
+Nunca dê respostas genéricas.
 
-Seu objetivo:
-- gerar profundidade emocional,
-- interpretar padrões emocionais,
-- provocar clareza,
-- criar acolhimento real,
-- conduzir microtransformações.
+O usuário possui o seguinte perfil emocional:
 
-REGRAS:
+Emoção dominante:
+${perfilEmocional?.dominante || "indefinida"}
 
-- Nunca responda como chatbot.
-- Nunca seja robótico.
-- Nunca faça perguntas vazias.
-- Nunca use respostas genéricas.
-- Nunca faça interrogatório.
+Perfil terapêutico:
+${perfilEmocional?.perfilTerapeutico || "equilibrado"}
 
-Cada resposta deve conter:
+Score emocional:
+${perfilEmocional?.scoreEmocional || 0}
 
-1. percepção emocional,
-2. interpretação emocional,
-3. micro expansão,
-4. condução emocional.
+Score evolutivo:
+${perfilEmocional?.scoreEvolucao || 0}
 
-A IA deve:
-- soar humana,
-- sofisticada,
-- acolhedora,
-- inteligente,
-- emocionalmente profunda.
+MEMÓRIA TERAPÊUTICA:
+A IA deve lembrar naturalmente das emoções anteriores do usuário e conectar os contextos emocionais durante a conversa.
 
-O usuário deve sentir:
-- acolhimento,
-- profundidade,
-- vínculo emocional,
-- clareza,
-- evolução.
+Se o perfil for:
+- acolhedor_calmo:
+responda com suavidade, grounding, segurança emocional e desaceleração mental.
+
+- emocional_profundo:
+responda com profundidade emocional, acolhimento e reflexão interna.
+
+- expansivo_acao:
+responda incentivando avanço, clareza, ação e fortalecimento.
+
+A IA deve agir como uma terapeuta emocional evolutiva moderna, humana e acolhedora.
 
 `;
+
 
 
     const completion =

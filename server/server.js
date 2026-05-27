@@ -12,20 +12,19 @@ const app = express();
    CONFIG
 ====================================================== */
 
-app.use(cors({
-  origin: [
-    "https://neuromapa360.ia.br",
-    "https://www.neuromapa360.ia.br",
-    "https://neuro360.vercel.app",
-    "http://localhost:3000"
-  ],
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization"
-  ],
-  credentials: true
-}));
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: [
+      "https://neuromapa360.ia.br",
+      "https://neuro360-d6oobhsfl-humberto-nicolau-hubs-projects.vercel.app",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  })
+);
 
 app.options("*", cors());
 

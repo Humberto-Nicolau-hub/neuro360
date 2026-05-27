@@ -12,16 +12,11 @@ const app = express();
    CONFIG
 ====================================================== */
 
-const cors = require("cors");
-
 app.use(cors({
   origin: [
     "https://neuromapa360.ia.br",
-
-    "https://neuro360-jxa5vie18-humberto-nicolau-hubs-projects.vercel.app",
-
+    "https://neuro360-e2w1e97qo-humberto-nicolau-hubs-projects.vercel.app",
     "http://localhost:5173",
-
     "http://localhost:3000"
   ],
 

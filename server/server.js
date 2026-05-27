@@ -473,6 +473,51 @@ O usuário deve sentir:
         );
       }
 
+            /* =========================================
+         MEMÓRIA TERAPÊUTICA EVOLUTIVA
+      ========================================= */
+
+      const intensidadeEmocional =
+        emocional.score >= 80
+          ? 10
+          : emocional.score >= 60
+          ? 7
+          : emocional.score >= 40
+          ? 5
+          : 3;
+
+      const { error: erroMemoria } =
+        await supabase
+          .from("memoria_emocional")
+          .insert({
+            user_id: usuarioId,
+
+            mensagem_usuario: mensagem,
+
+            resposta_ia: respostaIA,
+
+            emocao: emocional.emocao,
+
+            intensidade: intensidadeEmocional,
+
+            score_emocional: emocional.score,
+
+            nivel_hawkins: emocional.hawkins,
+
+            trilha: emocional.trilha,
+          });
+
+      if (erroMemoria) {
+        console.log(
+          "ERRO MEMORIA EMOCIONAL:",
+          erroMemoria.message
+        );
+      } else {
+        console.log(
+          "MEMORIA TERAPEUTICA SALVA"
+        );
+      }
+      
       /* =========================================
          HISTORICO EMOCIONAL
       ========================================= */

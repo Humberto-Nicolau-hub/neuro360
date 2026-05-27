@@ -12,17 +12,23 @@ const app = express();
    CONFIG
 ====================================================== */
 
-app.use(
-  cors({
-    origin: [
-      "https://neuromapa360.ia.br",
-      "https://neuro360-d6oobhsfl-humberto-nicolau-hubs-projects.vercel.app",
-      "http://localhost:5173"
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
-  })
-);
+const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "https://neuromapa360.ia.br",
+
+    "https://neuro360-jxa5vie18-humberto-nicolau-hubs-projects.vercel.app",
+
+    "http://localhost:5173",
+
+    "http://localhost:3000"
+  ],
+
+  methods: ["GET", "POST", "PUT", "DELETE"],
+
+  credentials: true
+}));
 
 app.options("*", cors());
 
@@ -517,7 +523,7 @@ O usuário deve sentir:
           "MEMORIA TERAPEUTICA SALVA"
         );
       }
-      
+
       /* =========================================
          HISTORICO EMOCIONAL
       ========================================= */

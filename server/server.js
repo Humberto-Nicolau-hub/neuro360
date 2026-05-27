@@ -352,6 +352,35 @@ async function processarIA(req, res) {
     const emocional =
       analisarEstadoEmocional(mensagem);
 
+      /* =========================================
+| MEMÓRIA TERAPÊUTICA EVOLUTIVA
+========================================= */
+
+const { data: memoriaRecente } =
+await supabase
+.from("memoria_emocional")
+.select("*")
+.eq("user_id", usuarioId)
+.order("created_at", { ascending: false })
+.limit(5);
+
+let contextoMemoria = "";
+
+if (memoriaRecente && memoriaRecente.length > 0) {
+
+contextoMemoria =
+`
+HISTÓRICO EMOCIONAL RECENTE DO USUÁRIO:
+
+${memoriaRecente.map((m) => `
+- Emoção: ${m.emocao}
+- Usuário disse: ${m.mensagem_usuario}
+- IA respondeu: ${m.resposta_ia}
+`).join("\n")}
+`;
+
+}
+
     if (!memoriaUsuarios[usuarioId]) {
       memoriaUsuarios[usuarioId] =
         await carregarMemoriaUsuario(
@@ -433,9 +462,10 @@ O usuário deve sentir:
 
         messages: [
           {
-            role: "system",
-            content: promptSistema,
-          },
+role: "system",
+content:
+promptSistema + "\n\n" + contextoMemoria
+},
 
           ...memoriaUsuarios[usuarioId],
         ],

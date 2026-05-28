@@ -514,6 +514,17 @@ promptSistema + "\n\n" + contextoMemoria
           intervencao: emocional.intervencao,
         });
 
+        await supabase.from("evolucao_emocional").insert({
+  user_id: usuarioId,
+
+  emocao: emocional.emocao,
+  score: emocional.score,
+  hawkins: emocional.hawkins,
+  consciencia: emocional.consciencia,
+
+  resumo_ia: respostaIA,
+});
+
       if (erroConversas) {
         console.log(
           "ERRO TABELA CONVERSAS:",

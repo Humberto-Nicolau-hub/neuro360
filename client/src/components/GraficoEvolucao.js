@@ -8,18 +8,7 @@ import {
   CartesianGrid
 } from "recharts";
 
-export default function GraficoEvolucao() {
-
-  // Dados fixos somente para teste
-  const dados = [
-    { dia: "1", hawkins: 100 },
-    { dia: "2", hawkins: 180 },
-    { dia: "3", hawkins: 250 },
-    { dia: "4", hawkins: 320 },
-    { dia: "5", hawkins: 400 },
-    { dia: "6", hawkins: 480 },
-    { dia: "7", hawkins: 540 }
-  ];
+export default function GraficoEvolucao({ dados }) {
 
   return (
     <div
@@ -40,7 +29,7 @@ overflow:"hidden"
       </h3>
 
       <ResponsiveContainer width="100%" height={55}>
-        <LineChart data={dados}>
+        <LineChart data={dados || []}>
           
           <CartesianGrid stroke="#1c2749" />
 

@@ -3,15 +3,6 @@ import { useState, useEffect, useRef } from "react";
 const API_URL =
 "https://neuro360-api.onrender.com";
 
-import {
-  LineChart,
-  Line,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
-
 import AdminDashboard from "./AdminDashboard";
 
 import { supabase }
@@ -53,6 +44,9 @@ plano
   const [mensagem, setMensagem] =
   useState("");
 
+  const [dadosGrafico, setDadosGrafico] =
+useState([]);
+
   const [conversa,setConversa] =
 useState([]);
 
@@ -70,10 +64,6 @@ const chatEndRef = useRef(null);
   const [emocaoSelecionada,
     setEmocaoSelecionada] =
       useState("");
-
-  const [graficoData,
-    setGraficoData] =
-      useState([]);
 
   const [historicoCompleto,
     setHistoricoCompleto] =
@@ -475,26 +465,26 @@ carregarHistoricoEmocional();
 
       if (!data?.length) {
 
-        setGraficoData([
-          { dia: 1, valor: 72 },
-          { dia: 2, valor: 76 },
-          { dia: 3, valor: 81 },
-          { dia: 4, valor: 82 },
-        ]);
+        setDadosGrafico([
+  { dia: "1", hawkins: 72 },
+  { dia: "2", hawkins: 76 },
+  { dia: "3", hawkins: 81 },
+  { dia: "4", hawkins: 82 },
+]);
 
         return;
       }
 
       const formatado =
-        data.map(
-          (item, index) => ({
-            dia: index + 1,
-            valor:
-              item.hawkins || 50
-          })
-        );
+data.map(
+(item, index) => ({
+  dia: String(index + 1),
+  hawkins:
+    item.hawkins || 50
+})
+);
 
-      setGraficoData(formatado);
+setDadosGrafico(formatado);
 
       const ultimo =
         data[data.length - 1];
@@ -896,6 +886,28 @@ hawkins:item.hawkins
 const data =
 await response.json();
 
+await supabase
+.from("historico_emocional")
+.insert([
+{
+email: usuario?.email || "anonimo",
+emocao: estadoAtual.emocao,
+score: estadoAtual.score,
+hawkins: estadoAtual.hawkins,
+consciencia: estadoAtual.consciencia
+}
+]);
+
+console.log("RESPOSTA IA:", data);
+
+setDadosGrafico((prev) => [
+  ...prev,
+  {
+    dia: String(prev.length + 1),
+    hawkins: data?.hawkins || 100
+  }
+]);
+
 const respostaIA =
 
 data?.resposta ||
@@ -1143,45 +1155,6 @@ fontWeight:"bold"
 Média Hawkins: {mediaHawkins}
 </div>
 
-</div>
-
-        <div style={styles.graphCard}>
-
-          <ResponsiveContainer
-            width="100%"
-            height={40}
-          >
-
-            <LineChart
-              data={graficoData}
-            >
-
-              <CartesianGrid
-                stroke="#1e293b"
-              />
-
-              <XAxis
-                dataKey="dia"
-                stroke="#64748b"
-              />
-
-              <Tooltip />
-
-              <Line
-                type="monotone"
-                dataKey="valor"
-                stroke="#22d3ee"
-                strokeWidth={4}
-                dot={{
-                  r: 6,
-                  fill: "#22d3ee",
-                }}
-              />
-
-            </LineChart>
-
-          </ResponsiveContainer>
-
         </div>
                 <div
 style={{
@@ -1210,9 +1183,7 @@ overflow:"hidden",
 flexShrink:0
 }}
 >
-<GraficoEvolucao
-historico={historicoCompleto}
-/>
+<GraficoEvolucao dados={dadosGrafico} />
 </div>
 
 <h3

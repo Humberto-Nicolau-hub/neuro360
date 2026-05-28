@@ -252,7 +252,10 @@ async function gerarAnaliseLongitudinal(userId) {
 
     historico.forEach((item) => {
 
-      somaHawkins += item.nivel_hawkins || 0;
+      const hawkinsAtual =
+Number(item.nivel_hawkins || 0);
+
+somaHawkins += hawkinsAtual;
 
       const emocao =
         (item.emocao || "").toLowerCase();
@@ -265,7 +268,9 @@ async function gerarAnaliseLongitudinal(userId) {
     });
 
     const mediaHawkins =
-      Math.round(somaHawkins / historico.length);
+historico.length > 0
+? Math.round(somaHawkins / historico.length)
+: 0;
 
     const mapa = {
       ansiedade,
@@ -309,7 +314,7 @@ async function gerarAnaliseLongitudinal(userId) {
       tristeza >= 6;
 
     const scoreEvolucao =
-      mediaHawkins;
+Number(mediaHawkins || 0);
 
     const resumo =
 `
@@ -619,6 +624,26 @@ ${perfilEmocional?.scoreEvolucao || 0}
 MEMÓRIA TERAPÊUTICA:
 A IA deve lembrar naturalmente das emoções anteriores do usuário e conectar os contextos emocionais durante a conversa.
 
+ANÁLISE LONGITUDINAL:
+
+Emoção predominante:
+${analiseLongitudinal?.emocaoDominante || "indefinida"}
+
+Média Hawkins:
+${analiseLongitudinal?.mediaHawkins || 0}
+
+Tendência emocional:
+${analiseLongitudinal?.tendencia || "neutra"}
+
+Estabilidade emocional:
+${analiseLongitudinal?.estabilidade || "moderada"}
+
+Risco de recaída:
+${analiseLongitudinal?.riscoRecaida ? "SIM" : "NÃO"}
+
+Resumo emocional:
+${analiseLongitudinal?.resumo || ""}
+
 Se o perfil for:
 - acolhedor_calmo:
 responda com suavidade, grounding, segurança emocional e desaceleração mental.
@@ -630,6 +655,7 @@ responda com profundidade emocional, acolhimento e reflexão interna.
 responda incentivando avanço, clareza, ação e fortalecimento.
 
 A IA deve agir como uma terapeuta emocional evolutiva moderna, humana e acolhedora.
+
 
 `;
 

@@ -214,6 +214,167 @@ async function gerarPerfilEmocional(userId) {
 }
 
 /* ======================================================
+   ANALISE LONGITUDINAL
+====================================================== */
+
+async function gerarAnaliseLongitudinal(userId) {
+
+  try {
+
+    const { data: historico, error } =
+      await supabase
+        .from("memoria_emocional")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(15);
+
+    if (error || !historico || historico.length === 0) {
+
+      return {
+        emocaoDominante: "indefinida",
+        mediaHawkins: 0,
+        tendencia: "neutra",
+        estabilidade: "desconhecida",
+        riscoRecaida: false,
+        scoreEvolucao: 0,
+        resumo: "Sem dados suficientes"
+      };
+
+    }
+
+    let somaHawkins = 0;
+
+    let ansiedade = 0;
+    let tristeza = 0;
+    let motivacao = 0;
+    let raiva = 0;
+
+    historico.forEach((item) => {
+
+      somaHawkins += item.nivel_hawkins || 0;
+
+      const emocao =
+        (item.emocao || "").toLowerCase();
+
+      if (emocao.includes("ans")) ansiedade++;
+      if (emocao.includes("tris")) tristeza++;
+      if (emocao.includes("evol")) motivacao++;
+      if (emocao.includes("raiva")) raiva++;
+
+    });
+
+    const mediaHawkins =
+      Math.round(somaHawkins / historico.length);
+
+    const mapa = {
+      ansiedade,
+      tristeza,
+      motivacao,
+      raiva
+    };
+
+    const emocaoDominante =
+      Object.keys(mapa).reduce((a, b) =>
+        mapa[a] > mapa[b] ? a : b
+      );
+
+    let tendencia = "neutra";
+
+    if (mediaHawkins >= 400) {
+      tendencia = "evolucao_positiva";
+    }
+
+    if (mediaHawkins < 200) {
+      tendencia = "instabilidade_emocional";
+    }
+
+    let estabilidade = "moderada";
+
+    if (
+      ansiedade >= 5 ||
+      tristeza >= 5
+    ) {
+      estabilidade = "baixa";
+    }
+
+    if (
+      motivacao >= 5
+    ) {
+      estabilidade = "alta";
+    }
+
+    const riscoRecaida =
+      ansiedade >= 6 ||
+      tristeza >= 6;
+
+    const scoreEvolucao =
+      mediaHawkins;
+
+    const resumo =
+`
+O usuário apresenta predominância emocional em ${emocaoDominante}.
+A média Hawkins atual é ${mediaHawkins}.
+A tendência emocional identificada é ${tendencia}.
+O nível de estabilidade emocional é ${estabilidade}.
+`;
+
+    /* =========================================
+       SALVAR ANALISE LONGITUDINAL
+    ========================================= */
+
+    await supabase
+      .from("analise_longitudinal")
+      .insert({
+
+        user_id: userId,
+
+        emocao_dominante: emocaoDominante,
+
+        media_hawkins: mediaHawkins,
+
+        tendencia: tendencia,
+
+        estabilidade: estabilidade,
+
+        risco_recaida: riscoRecaida,
+
+        score_evolucao: scoreEvolucao,
+
+        resumo_longitudinal: resumo
+
+      });
+
+    return {
+
+      emocaoDominante,
+
+      mediaHawkins,
+
+      tendencia,
+
+      estabilidade,
+
+      riscoRecaida,
+
+      scoreEvolucao,
+
+      resumo
+
+    };
+
+  } catch (err) {
+
+    console.log(
+      "ERRO ANALISE LONGITUDINAL:",
+      err.message
+    );
+
+    return null;
+  }
+}
+
+/* ======================================================
    ANALISE EMOCIONAL
 ====================================================== */
 
@@ -418,6 +579,9 @@ ${memoriaRecente.map((m) => `
 
     const perfilEmocional =
       await gerarPerfilEmocional(usuarioId);
+
+      const analiseLongitudinal =
+  await gerarAnaliseLongitudinal(usuarioId);
 
     const promptSistema = systemPrompt || `
 

@@ -79,14 +79,16 @@ console.log(
 
 console.log("INICIO CONSULTA");
 
+let respostaProfile;
+
 try {
 
-  const respostaProfile = await Promise.race([
+  respostaProfile = await Promise.race([
 
     supabase
       .from("profiles")
-      .select("id")
-      .limit(1),
+      .select("*")
+      .eq("id", user.id),
 
     new Promise((resolve) =>
       setTimeout(
@@ -116,18 +118,22 @@ try {
 
 console.log("FIM CONSULTA");
 
-console.log(
-  "RESPOSTA PROFILE:",
-  respostaProfile
-);
+if (respostaProfile?.timeout) {
 
-console.log("RESPOSTA PROFILE:", respostaProfile);
+  console.log(
+    "CONSULTA TIMEOUT"
+  );
+
+  setCarregandoSessao(false);
+
+  return;
+}
 
 const profileExistente =
-  respostaProfile.data?.[0];
+  respostaProfile?.data?.[0];
 
 const error =
-  respostaProfile.error;
+  respostaProfile?.error;
 
   console.log(
   "PROFILE EXISTENTE:",

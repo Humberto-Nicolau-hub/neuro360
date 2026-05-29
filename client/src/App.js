@@ -54,6 +54,8 @@ useState(false);
 
     console.log("=== ENTROU carregarProfile ===");
     console.log("USER:", user);
+    console.log("USER ID:", user.id);
+console.log("EMAIL:", user.email);
 
     const isAdmin =
       user.email?.toLowerCase().trim() ===
@@ -63,17 +65,15 @@ useState(false);
          BUSCAR PROFILE
       ========================================= */
 
-      console.log("ANTES SELECT PROFILES");
+      console.log("ANTES TESTE");
 
-const {
-  data: profileExistente,
-  error,
-} =
-  await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+const teste =
+await supabase
+.from("profiles")
+.select("*")
+.limit(1);
+
+console.log("TESTE:", teste);
 
 console.log("DEPOIS SELECT PROFILES");
 console.log("PROFILE:", profileExistente);

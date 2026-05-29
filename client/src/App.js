@@ -79,11 +79,10 @@ console.log(
 
 console.log("INICIO CONSULTA");
 
-const respostaProfile = await Promise.race([
-  supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id),
+const respostaProfile = await supabase
+  .from("profiles")
+  .select("id")
+  .limit(1);
 
   new Promise((resolve) =>
     setTimeout(
@@ -93,8 +92,7 @@ const respostaProfile = await Promise.race([
         }),
       10000
     )
-  )
-]);
+  );
 
 console.log(
   "FIM CONSULTA"

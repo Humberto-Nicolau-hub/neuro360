@@ -77,10 +77,33 @@ console.log(
   supabase
 );
 
-const respostaProfile = await supabase
-  .from("profiles")
-  .select("*")
-  .eq("id", user.id);
+console.log("INICIO CONSULTA");
+
+const respostaProfile = await Promise.race([
+  supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id),
+
+  new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve({
+          timeout: true
+        }),
+      10000
+    )
+  )
+]);
+
+console.log(
+  "FIM CONSULTA"
+);
+
+console.log(
+  "RESPOSTA PROFILE:",
+  respostaProfile
+);
 
 console.log("RESPOSTA PROFILE:", respostaProfile);
 

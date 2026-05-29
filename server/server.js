@@ -14,11 +14,12 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://neuromapa360.ia.br",
-    "https://neuro360-e2w1e97qo-humberto-nicolau-hubs-projects.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000"
-  ],
+  "https://neuromapa360.ia.br",
+  "https://neuro360-e2w1e97qo-humberto-nicolau-hubs-projects.vercel.app",
+  "https://neuro360-dhgob3ao7-humberto-nicolau-hubs-projects.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+],
 
   methods: ["GET", "POST", "PUT", "DELETE"],
 
@@ -528,6 +529,9 @@ async function processarIA(req, res) {
         erro: "OPENAI_API_KEY ausente",
       });
     }
+
+    console.log("BODY RECEBIDO:", req.body);
+console.log("USER_ID RECEBIDO:", user_id);
 
     const usuarioId = user_id || "anonimo";
 

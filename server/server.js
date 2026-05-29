@@ -17,6 +17,7 @@ app.use(cors({
   "https://neuromapa360.ia.br",
   "https://neuro360-e2w1e97qo-humberto-nicolau-hubs-projects.vercel.app",
   "https://neuro360-dhgob3ao7-humberto-nicolau-hubs-projects.vercel.app",
+  "https://neuro360-p25dsw0ng-humberto-nicolau-hubs-projects.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000"
 ],

@@ -79,24 +79,42 @@ console.log(
 
 console.log("INICIO CONSULTA");
 
-const respostaProfile = await supabase
-  .from("profiles")
-  .select("id")
-  .limit(1);
+try {
 
-  new Promise((resolve) =>
-    setTimeout(
-      () =>
-        resolve({
-          timeout: true
-        }),
-      10000
+  const respostaProfile = await Promise.race([
+
+    supabase
+      .from("profiles")
+      .select("id")
+      .limit(1),
+
+    new Promise((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            timeout: true
+          }),
+        10000
+      )
     )
+
+  ]);
+
+  console.log(
+    "RESPOSTA PROFILE:",
+    respostaProfile
   );
 
-console.log(
-  "FIM CONSULTA"
-);
+} catch (err) {
+
+  console.log(
+    "ERRO CONSULTA:",
+    err
+  );
+
+}
+
+console.log("FIM CONSULTA");
 
 console.log(
   "RESPOSTA PROFILE:",

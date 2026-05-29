@@ -65,17 +65,18 @@ console.log("EMAIL:", user.email);
          BUSCAR PROFILE
       ========================================= */
 
-      console.log("ANTES TESTE");
+      console.log("ANTES SELECT PROFILE");
 
-const teste =
-await supabase
-.from("profiles")
-.select("*")
-.limit(1);
+const {
+  data: profileExistente,
+  error
+} = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", user.id)
+  .single();
 
-console.log("TESTE:", teste);
-
-console.log("DEPOIS SELECT PROFILES");
+console.log("DEPOIS SELECT PROFILE");
 console.log("PROFILE:", profileExistente);
 console.log("ERROR:", error);
 

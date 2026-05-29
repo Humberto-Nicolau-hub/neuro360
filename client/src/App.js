@@ -248,6 +248,9 @@ return;
           error,
         } =
           await supabase.auth.getSession();
+          console.log("SESSION:", session);
+console.log("SESSION USER:", session?.user);
+console.log("SESSION ERROR:", error);
 
         if (error) {
 

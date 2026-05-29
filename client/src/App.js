@@ -50,25 +50,34 @@ useState(false);
 
   async function carregarProfile(user) {
 
-    try {
+  try {
 
-      const isAdmin =
-        user.email?.toLowerCase().trim() ===
-        ADMIN_EMAIL.toLowerCase().trim();
+    console.log("=== ENTROU carregarProfile ===");
+    console.log("USER:", user);
+
+    const isAdmin =
+      user.email?.toLowerCase().trim() ===
+      ADMIN_EMAIL.toLowerCase().trim();
 
       /* =========================================
          BUSCAR PROFILE
       ========================================= */
 
-      const {
-        data: profileExistente,
-        error,
-      } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
+      console.log("ANTES SELECT PROFILES");
+
+const {
+  data: profileExistente,
+  error,
+} =
+  await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+console.log("DEPOIS SELECT PROFILES");
+console.log("PROFILE:", profileExistente);
+console.log("ERROR:", error);
 
       if (error) {
 

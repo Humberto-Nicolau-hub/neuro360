@@ -608,6 +608,14 @@ localStorage.getItem(
 }
 );
 
+if (!response.ok) {
+
+throw new Error(
+"Erro na API"
+);
+
+}
+
 const data =
 await response.json();
 
@@ -808,6 +816,15 @@ setLoading(true);
 
 try{
 
+  console.log("USUARIO COMPLETO:", usuario);
+
+console.log("USER_ID:", usuario?.id);
+
+console.log(
+  "LOCAL STORAGE:",
+  localStorage.getItem("user_id")
+);
+
 const response = await fetch(
 
 `${API_URL}/api/chat`,
@@ -823,6 +840,10 @@ headers:{
 body:JSON.stringify({
 
 mensagem:texto,
+
+user_id:
+usuario?.id ||
+localStorage.getItem("user_id"),
 
 systemPrompt:
 promptSystemNeuro360,
@@ -882,6 +903,14 @@ hawkins:item.hawkins
 }
 
 );
+
+if (!response.ok) {
+
+throw new Error(
+"Erro na API"
+);
+
+}
 
 const data =
 await response.json();

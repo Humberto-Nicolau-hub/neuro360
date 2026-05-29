@@ -67,14 +67,38 @@ console.log("EMAIL:", user.email);
 
       console.log("ANTES SELECT PROFILE");
 
-const {
-  data: profileExistente,
-  error
-} = await supabase
+      console.log(
+  "SUPABASE URL:",
+  process.env.REACT_APP_SUPABASE_URL
+);
+
+console.log(
+  "SUPABASE CLIENT:",
+  supabase
+);
+
+const respostaProfile = await supabase
   .from("profiles")
   .select("*")
-  .eq("id", user.id)
-  .single();
+  .eq("id", user.id);
+
+console.log("RESPOSTA PROFILE:", respostaProfile);
+
+const profileExistente =
+  respostaProfile.data?.[0];
+
+const error =
+  respostaProfile.error;
+
+  console.log(
+  "PROFILE EXISTENTE:",
+  profileExistente
+);
+
+console.log(
+  "PROFILE ERROR:",
+  error
+);
 
 console.log("DEPOIS SELECT PROFILE");
 console.log("PROFILE:", profileExistente);

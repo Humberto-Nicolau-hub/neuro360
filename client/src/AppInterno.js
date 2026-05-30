@@ -386,6 +386,21 @@ frequencia[
 emocaoDominante
 ] || 0;
 
+console.log(
+"EMOCAO DOMINANTE:",
+emocaoDominante
+);
+
+console.log(
+"OCORRENCIAS:",
+ocorrencias
+);
+
+console.log(
+"MEDIA HAWKINS:",
+mediaHawkins
+);
+
 /* ==========================
    ANSIEDADE RECORRENTE
 ========================== */

@@ -359,6 +359,16 @@ estadoAtual.emocao
 
       function gerarDiagnosticoAdaptativo() {
 
+        console.log(
+"HISTORICO COMPLETO:",
+historicoCompleto
+);
+
+console.log(
+"TAMANHO HISTORICO:",
+historicoCompleto?.length
+);
+
 const ultimasEmocoes =
 historicoCompleto
 .slice(-10)

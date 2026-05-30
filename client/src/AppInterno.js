@@ -439,6 +439,11 @@ return
 const diagnosticoAdaptativo =
 gerarDiagnosticoAdaptativo();
 
+console.log(
+"DIAGNOSTICO:",
+diagnosticoAdaptativo
+);
+
       function gerarTrilhaAdaptativa() {
 
 const trilhaBase =

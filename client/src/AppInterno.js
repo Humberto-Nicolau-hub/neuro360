@@ -357,6 +357,88 @@ estadoAtual.emocao
       ? "Continue fortalecendo hábitos emocionais positivos."
       : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
 
+      function gerarDiagnosticoAdaptativo() {
+
+const ultimasEmocoes =
+historicoCompleto
+.slice(-10)
+.map(item => item.emocao);
+
+const frequencia = {};
+
+ultimasEmocoes.forEach(emocao => {
+
+frequencia[emocao] =
+(frequencia[emocao] || 0) + 1;
+
+});
+
+const emocaoDominante =
+Object.keys(frequencia)
+.sort(
+(a,b)=>
+frequencia[b] -
+frequencia[a]
+)[0];
+
+const ocorrencias =
+frequencia[
+emocaoDominante
+] || 0;
+
+/* ==========================
+   ANSIEDADE RECORRENTE
+========================== */
+
+if (
+emocaoDominante === "Ansioso" &&
+ocorrencias >= 4
+) {
+
+return
+"Ansiedade recorrente detectada. O sistema identifica um padrão repetitivo de antecipação mental. Priorize estabilização emocional antes de decisões importantes.";
+
+}
+
+/* ==========================
+   TRISTEZA PROLONGADA
+========================== */
+
+if (
+emocaoDominante === "Triste" &&
+ocorrencias >= 3
+) {
+
+return
+"Há sinais de contração emocional prolongada. O foco atual deve ser fortalecimento gradual de energia emocional.";
+
+}
+
+/* ==========================
+   EXPANSÃO
+========================== */
+
+if (
+mediaHawkins >= 300
+) {
+
+return
+"Seu histórico demonstra expansão emocional consistente. Continue fortalecendo hábitos positivos.";
+
+}
+
+/* ==========================
+   TRANSIÇÃO
+========================== */
+
+return
+"Seu histórico demonstra processo gradual de reorganização emocional.";
+
+}
+
+const diagnosticoAdaptativo =
+gerarDiagnosticoAdaptativo();
+
       function gerarTrilhaAdaptativa() {
 
 const trilhaBase =

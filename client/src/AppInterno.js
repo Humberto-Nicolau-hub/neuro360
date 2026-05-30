@@ -249,6 +249,8 @@ microacao:"Escreva algo pelo qual sente gratidão."
 }
 
 };
+
+
   /* =========================================
      INSIGHTS INTELIGENTES
   ========================================= */
@@ -354,11 +356,86 @@ estadoAtual.emocao
     mediaHawkins >= 300
       ? "Continue fortalecendo hábitos emocionais positivos."
       : "Permita-se avançar um passo de cada vez. Evolução emocional é processo.";
-      
-      const trilhaAtual =
+
+      function gerarTrilhaAdaptativa() {
+
+const trilhaBase =
 trilhasAutomaticas[
 estadoAtual.emocao
 ];
+
+if (!trilhaBase) {
+
+return null;
+
+}
+
+/* ==========================
+   ESTADO CRÍTICO
+========================== */
+
+if (mediaHawkins <= 150) {
+
+return {
+
+respiracao:
+trilhaBase.respiracao,
+
+pnl:
+"Neste momento o foco não é desempenho. O foco é estabilização emocional e segurança interna.",
+
+microacao:
+"Escolha apenas uma pequena ação possível para as próximas 2 horas."
+
+};
+
+}
+
+/* ==========================
+   ESTADO DE TRANSIÇÃO
+========================== */
+
+if (
+mediaHawkins > 150 &&
+mediaHawkins < 300
+) {
+
+return {
+
+respiracao:
+trilhaBase.respiracao,
+
+pnl:
+trilhaBase.pnl,
+
+microacao:
+"Execute uma ação simples que gere sensação de progresso."
+
+};
+
+}
+
+/* ==========================
+   ESTADO DE EXPANSÃO
+========================== */
+
+return {
+
+respiracao:
+trilhaBase.respiracao,
+
+pnl:
+"Você demonstra recursos emocionais disponíveis. Direcione essa energia para crescimento e realização.",
+
+microacao:
+"Defina uma meta concreta para hoje e avance imediatamente."
+
+};
+
+}
+      
+      const trilhaAtual =
+gerarTrilhaAdaptativa();
 
   useEffect(() => {
 

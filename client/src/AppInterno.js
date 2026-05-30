@@ -1283,6 +1283,22 @@ Emoção predominante
 
 </div>
 
+<div style={styles.insightCard}>
+
+<h4>
+
+🧠 Diagnóstico Adaptativo
+
+</h4>
+
+<p>
+
+{diagnosticoAdaptativo}
+
+</p>
+
+</div>
+
         </div>
 
         <div style={styles.recomendacaoCard}>

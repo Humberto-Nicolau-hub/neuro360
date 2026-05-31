@@ -1109,8 +1109,7 @@ await supabase
       email: usuario?.email || "anonimo",
       emocao: estadoAtual.emocao,
       score: estadoAtual.score,
-      hawkins: estadoAtual.hawkins,
-      consciencia: estadoAtual.consciencia
+      hawkins: estadoAtual.hawkins
     }
   ]);
 

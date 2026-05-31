@@ -630,7 +630,7 @@ carregarHistoricoEmocional();
 
       const { data, error } =
         await supabase
-          .from("emocoes_historico")
+          .from("historico_emocional")
           .select("*")
           .eq(
             "user_id",
@@ -641,6 +641,16 @@ carregarHistoricoEmocional();
             { ascending: true }
           )
           .limit(20);
+
+          console.log(
+  "HISTORICO RETORNADO:",
+  data
+);
+
+console.log(
+  "TOTAL REGISTROS:",
+  data?.length
+);
 
       if (error) {
 

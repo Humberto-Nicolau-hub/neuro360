@@ -1116,7 +1116,7 @@ await supabase
 
 console.log(
   "ERRO HISTORICO:",
-  error
+  JSON.stringify(error, null, 2)
 );
 
 console.log(

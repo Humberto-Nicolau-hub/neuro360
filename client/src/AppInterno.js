@@ -629,16 +629,23 @@ carregarHistoricoEmocional();
     try {
 
       const { data, error } =
-await supabase
-  .from("historico_emocional")
-  .select("*")
-  .limit(5);
+  await supabase
+    .from("historico_emocional")
+    .select("*")
+    .order(
+      "created_at",
+      { ascending: false }
+    )
+    .limit(20);
 
-console.log("DATA:", data);
-console.log("ERROR:", error);
+console.log(
+  "DATA:",
+  data
+);
 
-setHistoricoCompleto(
-  data || []
+console.log(
+  "ERROR:",
+  error
 );
 
       if (!data?.length) {

@@ -1100,19 +1100,29 @@ throw new Error(
 const data =
 await response.json();
 
+const { error } =
 await supabase
-.from("historico_emocional")
-.insert([
-{
-email: usuario?.email || "anonimo",
-emocao: estadoAtual.emocao,
-score: estadoAtual.score,
-hawkins: estadoAtual.hawkins,
-consciencia: estadoAtual.consciencia
-}
-]);
+  .from("historico_emocional")
+  .insert([
+    {
+      user_id: usuario?.id,
+      email: usuario?.email || "anonimo",
+      emocao: estadoAtual.emocao,
+      score: estadoAtual.score,
+      hawkins: estadoAtual.hawkins,
+      consciencia: estadoAtual.consciencia
+    }
+  ]);
 
-console.log("RESPOSTA IA:", data);
+console.log(
+  "ERRO HISTORICO:",
+  error
+);
+
+console.log(
+  "RESPOSTA IA:",
+  data
+);
 
 setDadosGrafico((prev) => [
   ...prev,

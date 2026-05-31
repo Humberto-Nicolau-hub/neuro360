@@ -629,38 +629,17 @@ carregarHistoricoEmocional();
     try {
 
       const { data, error } =
-        await supabase
-          .from("historico_emocional")
-          .select("*")
-          .eq(
-            "user_id",
-            usuario?.id
-          )
-          .order(
-            "created_at",
-            { ascending: true }
-          )
-          .limit(20);
+await supabase
+  .from("historico_emocional")
+  .select("*")
+  .limit(5);
 
-          console.log(
-  "HISTORICO RETORNADO:",
-  data
+console.log("DATA:", data);
+console.log("ERROR:", error);
+
+setHistoricoCompleto(
+  data || []
 );
-
-console.log(
-  "TOTAL REGISTROS:",
-  data?.length
-);
-
-      if (error) {
-
-        console.log(error);
-        return;
-      }
-
-      setHistoricoCompleto(
-        data || []
-      );
 
       if (!data?.length) {
 

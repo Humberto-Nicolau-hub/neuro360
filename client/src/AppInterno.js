@@ -632,20 +632,34 @@ carregarHistoricoEmocional();
   await supabase
     .from("historico_emocional")
     .select("*")
+    .eq(
+      "user_id",
+      usuario?.id
+    )
     .order(
       "created_at",
       { ascending: false }
     )
     .limit(20);
 
+    console.log(
+  "USUARIO LOGADO:",
+  usuario?.id
+);
+
 console.log(
-  "DATA:",
+  "REGISTROS ENCONTRADOS:",
   data
 );
 
 console.log(
-  "ERROR:",
+  "ERRO:",
   error
+);
+
+console.log(
+  "DATA:",
+  data
 );
 
       if (!data?.length) {
@@ -665,7 +679,7 @@ data.map(
 (item, index) => ({
   dia: String(index + 1),
   hawkins:
-    item.hawkins || 50
+  item.score_hawkins || 50
 })
 );
 

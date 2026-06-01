@@ -686,7 +686,7 @@ data.map(
 setDadosGrafico(formatado);
 
       const ultimo =
-        data[data.length - 1];
+  data[0];
 
       if (
         ultimo?.emocao &&
@@ -1093,7 +1093,7 @@ historicoCompleto
 
 emocao:item.emocao,
 score:item.score,
-hawkins:item.hawkins
+hawkins:item.score_hawkins
 
 }))
 
@@ -1123,7 +1123,7 @@ await supabase
       email: usuario?.email || "anonimo",
       emocao: estadoAtual.emocao,
       score: estadoAtual.score,
-      hawkins: estadoAtual.hawkins
+      score_hawkins: estadoAtual.hawkins
     }
   ]);
 

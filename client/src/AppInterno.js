@@ -823,55 +823,48 @@ alert(
      SALVAR EMOÇÃO
   ========================================= */
 
-  async function salvarEmocao(
-    emocao
-  ) {
+  async function salvarEmocao(emocao) {
 
-    try {
+  try {
 
-      const dados =
-        mapaEmocional[
-          emocao
-        ];
+    const dados = mapaEmocional[emocao];
 
-      await supabase
-        .from(
-          "emocoes_historico"
-        )
-        .insert([
-          {
-            user_id:
-              usuario?.id,
+    await supabase
+      .from("historico_emocional")
+      .insert([
+        {
+          user_id: usuario?.id,
+          email: usuario?.email || null,
+          emocao: emocao,
+          score_hawkins: dados.hawkins,
+          mensagem: `Estado emocional selecionado: ${emocao}`,
+          resposta_ia: "Registro emocional automático"
+        }
+      ]);
 
-            emocao,
+    setEstadoAtual({
+      emocao,
+      score: dados.score,
+      hawkins: dados.hawkins,
+      consciencia: dados.consciencia,
+      trilha: dados.trilha
+    });
 
-            score:
-              dados.score,
+    await carregarHistoricoEmocional();
 
-            hawkins:
-              dados.hawkins,
-          },
-        ]);
+  } catch (erro) {
 
-      setEstadoAtual({
-        emocao,
-        score:
-          dados.score,
-        hawkins:
-          dados.hawkins,
-        consciencia:
-          dados.consciencia,
-        trilha:
-          dados.trilha,
-      });
+    console.log(
+      "ERRO SALVAR EMOCAO:",
+      erro
+    );
 
-      carregarHistoricoEmocional();
+  }
 
-    } catch (erro) {
+}
 
       console.log(erro);
     }
-  }
 
   /* =========================================
      REENQUADRAMENTO PNL

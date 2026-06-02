@@ -676,33 +676,51 @@ console.log(
 
 if (ultimoRegistro) {
 
-  const dadosMapa =
-    mapaEmocional[
-      ultimoRegistro.emocao
-    ];
+  /* =========================================
+   EMOÇÃO DOMINANTE DO HISTÓRICO
+========================================= */
 
-  if (dadosMapa) {
+const frequencia = {};
 
-    setEstadoAtual({
+data.forEach((item) => {
 
-      emocao:
-        ultimoRegistro.emocao,
+  frequencia[item.emocao] =
+    (frequencia[item.emocao] || 0) + 1;
 
-      score:
-        dadosMapa.score,
+});
 
-      hawkins:
-        dadosMapa.hawkins,
+const emocaoDominante =
+Object.keys(frequencia).sort(
+(a,b)=>
+frequencia[b] -
+frequencia[a]
+)[0];
 
-      consciencia:
-        dadosMapa.consciencia,
+const dadosMapa =
+mapaEmocional[
+emocaoDominante
+];
 
-      trilha:
-        dadosMapa.trilha
+if (dadosMapa) {
 
-    });
+  setEstadoAtual({
 
-  }
+    emocao:
+      emocaoDominante,
+
+    score:
+      dadosMapa.score,
+
+    hawkins:
+      dadosMapa.hawkins,
+
+    consciencia:
+      dadosMapa.consciencia,
+
+    trilha:
+      dadosMapa.trilha
+
+  });
 
 }
 
@@ -711,14 +729,15 @@ data.map(
 (item, index) => ({
   dia: String(index + 1),
   hawkins:
-  item.score_hawkins || 50
+    item.score_hawkins || 50
 })
 );
 
 setDadosGrafico(formatado);
 
+} // fecha if (ultimoRegistro)
 
-    } catch (erro) {
+} catch (erro) {
 
       console.log(erro);
     }

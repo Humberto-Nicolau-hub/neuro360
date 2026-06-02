@@ -8,7 +8,7 @@ return historicoCompleto.length
 
 historicoCompleto.reduce(
 (acc,item)=>
-acc+(item.hawkins||0),
+acc + (item.score_hawkins || 0),
 0
 )
 

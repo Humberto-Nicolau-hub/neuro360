@@ -420,8 +420,7 @@ emocaoDominante === "Ansioso" &&
 ocorrencias >= 4
 ) {
 
-return
-"Ansiedade recorrente detectada. O sistema identifica um padrão repetitivo de antecipação mental. Priorize estabilização emocional antes de decisões importantes.";
+return "Ansiedade recorrente detectada. O sistema identifica um padrão repetitivo de antecipação mental. Priorize estabilização emocional antes de decisões importantes.";
 
 }
 
@@ -434,8 +433,7 @@ emocaoDominante === "Triste" &&
 ocorrencias >= 3
 ) {
 
-return
-"Há sinais de contração emocional prolongada. O foco atual deve ser fortalecimento gradual de energia emocional.";
+return "Há sinais de contração emocional prolongada. O foco atual deve ser fortalecimento gradual de energia emocional.";
 
 }
 
@@ -446,9 +444,8 @@ return
 if (
 mediaHawkins >= 300
 ) {
-
-return
-"Seu histórico demonstra expansão emocional consistente. Continue fortalecendo hábitos positivos.";
+ 
+  return "Seu histórico demonstra expansão emocional consistente. Continue fortalecendo hábitos positivos.";
 
 }
 
@@ -456,8 +453,7 @@ return
    TRANSIÇÃO
 ========================== */
 
-return
-"Seu histórico demonstra processo gradual de reorganização emocional.";
+return "Seu histórico demonstra processo gradual de reorganização emocional.";
 
 }
 
@@ -673,6 +669,8 @@ console.log(
 
         return;
       }
+
+      setHistoricoCompleto(data);
 
       const formatado =
 data.map(
@@ -1092,7 +1090,7 @@ historicoCompleto
 .map(item=>({
 
 emocao:item.emocao,
-score:item.score,
+score:item.score_hawkins,
 hawkins:item.score_hawkins
 
 }))
@@ -1122,8 +1120,9 @@ await supabase
       user_id: usuario?.id,
       email: usuario?.email || "anonimo",
       emocao: estadoAtual.emocao,
-      score: estadoAtual.score,
-      score_hawkins: estadoAtual.hawkins
+      score_hawkins: estadoAtual.hawkins,
+      mensagem: texto,
+      resposta_ia: data?.resposta || ""
     }
   ]);
 

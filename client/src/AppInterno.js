@@ -70,14 +70,14 @@ const chatEndRef = useRef(null);
       useState([]);
 
   const [estadoAtual,
-    setEstadoAtual] =
-      useState({
-        score: 82,
-        hawkins: 540,
-        consciencia: "Expansão",
-        trilha: "Reequilíbrio",
-        emocao: "Equilibrado",
-      });
+setEstadoAtual] =
+useState({
+  score: 0,
+  hawkins: 0,
+  consciencia: "",
+  trilha: "",
+  emocao: ""
+});
 
   const chatAreaRef =
 useRef(null);
@@ -683,38 +683,6 @@ data.map(
 
 setDadosGrafico(formatado);
 
-      const ultimo =
-  data[0];
-
-      if (
-        ultimo?.emocao &&
-        mapaEmocional[
-          ultimo.emocao
-        ]
-      ) {
-
-        const dados =
-          mapaEmocional[
-            ultimo.emocao
-          ];
-
-        setEstadoAtual({
-          emocao:
-            ultimo.emocao,
-          score:
-            dados.score,
-          hawkins:
-            dados.hawkins,
-          consciencia:
-            dados.consciencia,
-          trilha:
-            dados.trilha,
-        });
-
-        setEmocaoSelecionada(
-          ultimo.emocao
-        );
-      }
 
     } catch (erro) {
 

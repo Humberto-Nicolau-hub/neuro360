@@ -672,6 +672,40 @@ console.log(
 
       setHistoricoCompleto(data);
 
+      const ultimoRegistro = data[0];
+
+if (ultimoRegistro) {
+
+  const dadosMapa =
+    mapaEmocional[
+      ultimoRegistro.emocao
+    ];
+
+  if (dadosMapa) {
+
+    setEstadoAtual({
+
+      emocao:
+        ultimoRegistro.emocao,
+
+      score:
+        dadosMapa.score,
+
+      hawkins:
+        dadosMapa.hawkins,
+
+      consciencia:
+        dadosMapa.consciencia,
+
+      trilha:
+        dadosMapa.trilha
+
+    });
+
+  }
+
+}
+
       const formatado =
 data.map(
 (item, index) => ({

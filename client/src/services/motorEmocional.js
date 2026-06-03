@@ -47,18 +47,91 @@ historicoCompleto.length
 }
 
 export function gerarTendencia(
-mediaScore
+historicoCompleto,
+mediaHawkins
 ){
 
-return mediaScore>=70
+if(!historicoCompleto?.length){
 
-? "Evolução positiva"
+return "Aguardando dados emocionais";
+}
 
-: mediaScore>=50
+const ultimos =
+historicoCompleto
+.slice(0,5);
 
-? "Oscilação moderada"
+const primeiro =
+ultimos[ultimos.length - 1];
 
-: "Momento de fortalecimento emocional";
+const ultimo =
+ultimos[0];
+
+const hawkinsInicial =
+primeiro?.score_hawkins || 0;
+
+const hawkinsFinal =
+ultimo?.score_hawkins || 0;
+
+const diferenca =
+hawkinsFinal -
+hawkinsInicial;
+
+/* ==========================
+EVOLUÇÃO
+========================== */
+
+if(
+diferenca >= 100
+){
+
+return "📈 Evolução emocional positiva";
+}
+
+/* ==========================
+EXPANSÃO
+========================== */
+
+if(
+mediaHawkins >= 300
+){
+
+return "🚀 Expansão emocional consistente";
+}
+
+/* ==========================
+OSCILAÇÃO
+========================== */
+
+const emocoesDiferentes =
+new Set(
+ultimos.map(
+item => item.emocao
+)
+).size;
+
+if(
+emocoesDiferentes >= 4
+){
+
+return "⚠️ Oscilação emocional recente";
+}
+
+/* ==========================
+ESTABILIDADE
+========================== */
+
+if(
+Math.abs(diferenca) <= 30
+){
+
+return "⚖️ Estabilidade emocional";
+}
+
+/* ==========================
+PADRÃO PADRÃO
+========================== */
+
+return "🔄 Processo de fortalecimento emocional";
 
 }
 

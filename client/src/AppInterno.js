@@ -294,7 +294,8 @@ estadoAtual
 
   const tendenciaEmocional =
 gerarTendencia(
-mediaScore
+historicoCompleto,
+mediaHawkins
 );
 
   const estabilidadeEmocional =

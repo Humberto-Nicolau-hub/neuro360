@@ -385,9 +385,7 @@ frequencia[emocao] =
 });
 
 const emocaoAtual =
-ultimasEmocoes[
-ultimasEmocoes.length - 1
-];
+ultimasEmocoes[0];
 
 const ocorrencias =
 frequencia[

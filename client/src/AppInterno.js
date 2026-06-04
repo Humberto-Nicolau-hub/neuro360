@@ -1268,14 +1268,31 @@ estadoAtual={estadoAtual}
 
       <div style={styles.insightsGrid}>
 <div style={styles.insightCard}>
-     
 
 <h4>
 Emoção predominante
 </h4>
 
-<p>
-{emocaoMaisFrequente}
+<p
+style={{
+marginBottom:8
+}}
+>
+🎯 Atual:
+<br />
+<b>{estadoAtual.emocao}</b>
+</p>
+
+<p
+style={{
+fontSize:13,
+opacity:0.85,
+margin:0
+}}
+>
+📊 Histórico:
+<br />
+<b>{emocaoMaisFrequente}</b>
 </p>
 
 </div>

@@ -1273,31 +1273,30 @@ estadoAtual={estadoAtual}
 Emoção predominante
 </h4>
 
-<p
+<div
 style={{
-marginBottom:8
+marginBottom:8,
+lineHeight:"1.4"
 }}
 >
-🎯 Atual:
+🎯 Agora:
 <br />
-<b>{estadoAtual.emocao}</b>
-</p>
+{estadoAtual.emocao}
+</div>
 
-<p
+<div
 style={{
-fontSize:13,
-opacity:0.85,
-margin:0
+lineHeight:"1.4"
 }}
 >
-📊 Histórico:
+📈 Padrão:
 <br />
-<b>{emocaoMaisFrequente}</b>
-</p>
+{emocaoMaisFrequente}
+</div>
 
 </div>
 
-          <div style={styles.insightCard}>
+<div style={styles.insightCard}>
             <h4>
               Tendência emocional
             </h4>

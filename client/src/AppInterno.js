@@ -372,7 +372,7 @@ historicoCompleto?.length
 
 const ultimasEmocoes =
 historicoCompleto
-.slice(-10)
+.slice(0,10)
 .map(item => item.emocao);
 
 const frequencia = {};
@@ -384,22 +384,19 @@ frequencia[emocao] =
 
 });
 
-const emocaoDominante =
-Object.keys(frequencia)
-.sort(
-(a,b)=>
-frequencia[b] -
-frequencia[a]
-)[0];
+const emocaoAtual =
+ultimasEmocoes[
+ultimasEmocoes.length - 1
+];
 
 const ocorrencias =
 frequencia[
-emocaoDominante
+emocaoAtual
 ] || 0;
 
 console.log(
-"EMOCAO DOMINANTE:",
-emocaoDominante
+"EMOCAO ATUAL:",
+emocaoAtual
 );
 
 console.log(
@@ -417,7 +414,7 @@ mediaHawkins
 ========================== */
 
 if (
-emocaoDominante === "Ansioso" &&
+emocaoAtual === "Ansioso" &&
 ocorrencias >= 4
 ) {
 
@@ -430,7 +427,7 @@ return "Ansiedade recorrente detectada. O sistema identifica um padrão repetiti
 ========================== */
 
 if (
-emocaoDominante === "Triste" &&
+emocaoAtual === "Triste" &&
 ocorrencias >= 3
 ) {
 
@@ -681,25 +678,9 @@ if (ultimoRegistro) {
    EMOÇÃO DOMINANTE DO HISTÓRICO
 ========================================= */
 
-const frequencia = {};
-
-data.forEach((item) => {
-
-  frequencia[item.emocao] =
-    (frequencia[item.emocao] || 0) + 1;
-
-});
-
-const emocaoDominante =
-Object.keys(frequencia).sort(
-(a,b)=>
-frequencia[b] -
-frequencia[a]
-)[0];
-
 const dadosMapa =
 mapaEmocional[
-emocaoDominante
+ultimoRegistro.emocao
 ];
 
 if (dadosMapa) {
@@ -707,7 +688,7 @@ if (dadosMapa) {
   setEstadoAtual({
 
     emocao:
-      emocaoDominante,
+      ultimoRegistro.emocao,
 
     score:
       dadosMapa.score,

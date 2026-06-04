@@ -51,14 +51,31 @@ historicoCompleto,
 mediaHawkins
 ){
 
+console.log(
+"=== GERAR TENDENCIA ==="
+);
+
+console.log(
+"HISTORICO:",
+historicoCompleto
+);
+
+console.log(
+"MEDIA HAWKINS:",
+mediaHawkins
+);
+
 if(!historicoCompleto?.length){
+
+console.log(
+"RETORNO: SEM DADOS"
+);
 
 return "Aguardando dados emocionais";
 }
 
 const ultimos =
-historicoCompleto
-.slice(0,5);
+historicoCompleto.slice(0,5);
 
 const primeiro =
 ultimos[ultimos.length - 1];
@@ -73,19 +90,22 @@ const hawkinsFinal =
 ultimo?.score_hawkins || 0;
 
 const diferenca =
-hawkinsFinal -
-hawkinsInicial;
+hawkinsFinal - hawkinsInicial;
 
-/* ==========================
-EVOLUÇÃO
-========================== */
+console.log(
+"HAWKINS INICIAL:",
+hawkinsInicial
+);
 
-if(
-diferenca >= 100
-){
+console.log(
+"HAWKINS FINAL:",
+hawkinsFinal
+);
 
-return "📈 Evolução emocional positiva";
-}
+console.log(
+"DIFERENCA:",
+diferenca
+);
 
 /* ==========================
 EXPANSÃO
@@ -95,7 +115,41 @@ if(
 mediaHawkins >= 300
 ){
 
+console.log(
+"RETORNO: EXPANSAO"
+);
+
 return "🚀 Expansão emocional consistente";
+}
+
+/* ==========================
+EVOLUÇÃO
+========================== */
+
+if(
+diferenca >= 50
+){
+
+console.log(
+"RETORNO: EVOLUCAO"
+);
+
+return "📈 Evolução emocional positiva";
+}
+
+/* ==========================
+REGRESSÃO
+========================== */
+
+if(
+diferenca <= -50
+){
+
+console.log(
+"RETORNO: REGRESSAO"
+);
+
+return "📉 Queda emocional recente";
 }
 
 /* ==========================
@@ -113,6 +167,10 @@ if(
 emocoesDiferentes >= 4
 ){
 
+console.log(
+"RETORNO: OSCILACAO"
+);
+
 return "⚠️ Oscilação emocional recente";
 }
 
@@ -121,15 +179,23 @@ ESTABILIDADE
 ========================== */
 
 if(
-Math.abs(diferenca) <= 30
+Math.abs(diferenca) <= 20
 ){
+
+console.log(
+"RETORNO: ESTABILIDADE"
+);
 
 return "⚖️ Estabilidade emocional";
 }
 
 /* ==========================
-PADRÃO PADRÃO
+PADRÃO
 ========================== */
+
+console.log(
+"RETORNO: FORTALECIMENTO"
+);
 
 return "🔄 Processo de fortalecimento emocional";
 

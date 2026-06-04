@@ -536,6 +536,23 @@ console.log("USER_ID RECEBIDO:", user_id);
 
     const usuarioId = user_id || "anonimo";
 
+    const { data: profile } =
+await supabase
+.from("profiles")
+.select("plano,premium,admin")
+.eq("id", usuarioId)
+.single();
+
+const usuarioPremium =
+profile?.premium === true;
+
+const usuarioAdmin =
+profile?.admin === true;
+
+const planoUsuario =
+(profile?.plano || "free")
+.toLowerCase();
+
     const emocional =
       analisarEstadoEmocional(mensagem);
 
@@ -670,7 +687,10 @@ A IA deve agir como uma terapeuta emocional evolutiva moderna, humana e acolhedo
       await openai.chat.completions.create({
         model: "gpt-4o-mini",
 
-        temperature: premium ? 0.95 : 0.72,
+        temperature:
+(usuarioPremium || usuarioAdmin)
+? 0.95
+: 0.72,
 
         messages: [
           {

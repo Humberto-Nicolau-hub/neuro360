@@ -1037,6 +1037,104 @@ erro:
 
 });
 
+app.post(
+"/api/mercadopago/webhook",
+async (req,res)=>{
+
+try{
+
+console.log(
+"WEBHOOK MP:",
+JSON.stringify(req.body)
+);
+
+const data =
+req.body?.data?.id;
+
+const type =
+req.body?.type;
+
+if(
+type !== "subscription_preapproval"
+){
+return res.sendStatus(200);
+}
+
+const response =
+await fetch(
+`https://api.mercadopago.com/preapproval/${data}`,
+{
+headers:{
+Authorization:
+`Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
+}
+}
+);
+
+const subscription =
+await response.json();
+
+console.log(
+"ASSINATURA:",
+subscription
+);
+
+const email =
+subscription?.payer_email;
+
+if(!email){
+
+return res.sendStatus(200);
+
+}
+
+await supabase
+.from("subscriptions")
+.update({
+
+status:
+subscription.status,
+
+mercadopago_subscription_id:
+subscription.id
+
+})
+.eq("email",email);
+
+if(
+subscription.status ===
+"authorized"
+){
+
+await supabase
+.from("profiles")
+.update({
+
+premium:true,
+
+plano:"premium"
+
+})
+.eq("email",email);
+
+}
+
+return res.sendStatus(200);
+
+}
+catch(error){
+
+console.log(
+"ERRO WEBHOOK:",
+error
+);
+
+return res.sendStatus(500);
+
+}
+
+});
+
 /* ======================================================
    START
 ====================================================== */

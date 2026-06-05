@@ -778,38 +778,21 @@ usuario?.plano || "FREE"
 
 }
 
-async function virarPremium(){
+async function virarPremium() {
 
-try{
+try {
 
-const response =
-await fetch(
-`${API_URL}/api/assinar-premium`,
+const response = await fetch(
+`${API_URL}/api/criar-plano-premium`,
 {
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-user_id:
-usuario?.id ||
-
-localStorage.getItem(
-"user_id"
-)
-
-})
-
+method:"POST"
 }
 );
 
 if (!response.ok) {
 
 throw new Error(
-"Erro na API"
+"Erro ao criar assinatura"
 );
 
 }
@@ -817,34 +800,26 @@ throw new Error(
 const data =
 await response.json();
 
-if(response.ok){
+if (data.init_point) {
 
-alert(
-"Plano PREMIUM ativado!"
-);
+window.location.href =
+data.init_point;
 
-// atualiza localmente o usuário
-usuario.premium = true;
-usuario.plano = "PREMIUM";
-
-// força renderização sem recarregar página
-setEstadoAtual(prev => ({...prev}));
-
-}else{
-
-alert(
-data.erro ||
-"Erro ao ativar Premium"
-);
+return;
 
 }
 
-}catch(err){
+alert(
+"Link de assinatura não encontrado."
+);
+
+}
+catch(err){
 
 console.log(err);
 
 alert(
-"Erro de conexão"
+"Erro ao conectar com Mercado Pago."
 );
 
 }

@@ -870,7 +870,7 @@ app.post("/api/chat", processarIA);
    ASSINATURA PREMIUM
 ====================================================== */
 
-app.post("/api/assinar-premium", async (req,res)=>{
+app.post("/api/criar-checkout-premium", async (req,res)=>{
 
 try{
 
@@ -945,6 +945,91 @@ erro.message
 return res.status(500).json({
 
 erro:"Erro ativando premium"
+
+});
+
+}
+
+});
+/* ======================================================
+   CRIAR PLANO PREMIUM MERCADO PAGO
+====================================================== */
+
+import { MercadoPagoConfig } from "mercadopago";
+
+const mpClient =
+new MercadoPagoConfig({
+
+accessToken:
+process.env.MERCADOPAGO_ACCESS_TOKEN
+
+});
+
+app.post(
+"/api/criar-plano-premium",
+async (req,res)=>{
+
+try{
+
+const response =
+await fetch(
+"https://api.mercadopago.com/preapproval_plan",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":
+`Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
+},
+
+body:JSON.stringify({
+
+reason:
+"NeuroMapa360 Premium",
+
+auto_recurring:{
+
+frequency:1,
+
+frequency_type:"months",
+
+transaction_amount:29.90,
+
+currency_id:"BRL"
+
+},
+
+back_url:
+`${process.env.FRONTEND_URL}`
+
+})
+
+}
+);
+
+const data =
+await response.json();
+
+console.log(
+"PLANO CRIADO:",
+data
+);
+
+return res.json(data);
+
+}
+catch(error){
+
+console.log(
+"ERRO PLANO:",
+error
+);
+
+return res.status(500).json({
+
+erro:
+"Erro ao criar plano"
 
 });
 

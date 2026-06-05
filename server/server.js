@@ -1048,14 +1048,30 @@ console.log(
 JSON.stringify(req.body)
 );
 
+console.log(
+"BODY COMPLETO:",
+JSON.stringify(
+req.body,
+null,
+2
+)
+);
+
 const data =
 req.body?.data?.id;
 
 const type =
 req.body?.type;
 
-if(
-type !== "subscription_preapproval"
+console.log(
+"TIPO RECEBIDO:",
+type
+);
+
+if (
+type !== "subscription_preapproval" &&
+type !== "preapproval" &&
+type !== "payment"
 ){
 return res.sendStatus(200);
 }

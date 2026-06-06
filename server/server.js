@@ -1047,9 +1047,7 @@ try{
 console.log(req.headers);
 
 console.log("BODY:");
-console.log(req.body);
-
-return res.status(200).send("OK");
+console.log(JSON.stringify(req.body, null, 2));
 
 console.log(
 "WEBHOOK MP:",

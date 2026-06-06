@@ -1043,6 +1043,14 @@ async (req,res)=>{
 
 try{
 
+  console.log("HEADERS:");
+console.log(req.headers);
+
+console.log("BODY:");
+console.log(req.body);
+
+return res.status(200).send("OK");
+
 console.log(
 "WEBHOOK MP:",
 JSON.stringify(req.body)

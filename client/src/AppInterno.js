@@ -782,10 +782,33 @@ async function virarPremium() {
 
 try {
 
+const {
+data: { session }
+} = await supabase.auth.getSession();
+
+if (!session?.user?.id) {
+
+alert("Usuário não identificado.");
+
+return;
+
+}
+
 const response = await fetch(
 `${API_URL}/api/criar-plano-premium`,
 {
-method:"POST"
+method: "POST",
+
+headers: {
+"Content-Type": "application/json"
+},
+
+body: JSON.stringify({
+
+user_id: session.user.id
+
+})
+
 }
 );
 
@@ -799,6 +822,11 @@ throw new Error(
 
 const data =
 await response.json();
+
+console.log(
+"RETORNO MP:",
+data
+);
 
 if (data.init_point) {
 

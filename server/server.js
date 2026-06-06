@@ -1106,6 +1106,31 @@ type !== "payment"
 return res.sendStatus(200);
 }
 
+let subscription;
+
+if(type === "payment"){
+
+const response =
+await fetch(
+`https://api.mercadopago.com/v1/payments/${data}`,
+{
+headers:{
+Authorization:
+`Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
+}
+}
+);
+
+subscription =
+await response.json();
+
+console.log(
+"PAGAMENTO:",
+subscription
+);
+
+}else{
+
 const response =
 await fetch(
 `https://api.mercadopago.com/preapproval/${data}`,
@@ -1117,7 +1142,7 @@ Authorization:
 }
 );
 
-const subscription =
+subscription =
 await response.json();
 
 console.log(
@@ -1125,10 +1150,22 @@ console.log(
 subscription
 );
 
+}
+
 const email =
-subscription?.payer_email;
+subscription?.payer_email ||
+subscription?.payer?.email;
+
+console.log(
+"EMAIL RECEBIDO:",
+email
+);
 
 if(!email){
+
+console.log(
+"NENHUM EMAIL ENCONTRADO"
+);
 
 return res.sendStatus(200);
 
@@ -1148,8 +1185,8 @@ subscription.id
 .eq("email",email);
 
 if(
-subscription.status ===
-"authorized"
+subscription.status === "authorized" ||
+subscription.status === "approved"
 ){
 
 await supabase

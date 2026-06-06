@@ -1063,11 +1063,22 @@ null,
 )
 );
 
+console.log(
+"QUERY:",
+JSON.stringify(
+req.query,
+null,
+2
+)
+);
+
 const data =
-req.body?.data?.id;
+req.body?.data?.id ||
+req.query?.id;
 
 const type =
-req.body?.type;
+req.body?.type ||
+req.query?.topic;
 
 console.log(
 "TIPO RECEBIDO:",

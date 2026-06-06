@@ -31,6 +31,10 @@ app.options("*", cors());
 
 app.use(express.json());
 
+app.use(express.urlencoded({
+  extended: true
+}));
+
 const PORT = process.env.PORT || 3001;
 
 /* ======================================================
@@ -1072,13 +1076,22 @@ null,
 )
 );
 
+console.log(
+"URL ORIGINAL:",
+req.originalUrl
+);
+
 const data =
 req.body?.data?.id ||
-req.query?.id;
+req.body?.id ||
+req.query?.id ||
+req.query?.["data.id"];
 
 const type =
 req.body?.type ||
-req.query?.topic;
+req.body?.topic ||
+req.query?.topic ||
+req.query?.type;
 
 console.log(
 "TIPO RECEBIDO:",

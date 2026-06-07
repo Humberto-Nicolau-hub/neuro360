@@ -1194,6 +1194,21 @@ console.log(
 subscription
 );
 
+console.log(
+"SUBSCRIPTION ID:",
+subscription.id
+);
+
+console.log(
+"PAYER ID:",
+subscription.payer_id
+);
+
+console.log(
+"STATUS:",
+subscription.status
+);
+
 }
 
 const email =

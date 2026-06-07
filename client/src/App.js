@@ -565,7 +565,15 @@ console.log("SESSION ERROR:", error);
 
 async function virarPremium() {
 
+  console.log("BOTAO PREMIUM CLICADO");
+
   try {
+
+    console.log(
+"VAI CHAMAR API PREMIUM"
+);
+
+
 
     const response =
       await fetch(

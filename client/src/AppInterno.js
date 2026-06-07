@@ -780,19 +780,34 @@ usuario?.plano || "FREE"
 
 async function virarPremium() {
 
+console.log("BOTAO PREMIUM CLICADO");
+
 try {
 
 const {
 data: { session }
 } = await supabase.auth.getSession();
 
+console.log("SESSION:", session);
+
 if (!session?.user?.id) {
+
+console.log("USUARIO SEM ID");
 
 alert("Usuário não identificado.");
 
 return;
 
 }
+
+console.log(
+"USER ID:",
+session.user.id
+);
+
+console.log(
+"VAI CHAMAR API PREMIUM"
+);
 
 const response = await fetch(
 `${API_URL}/api/criar-plano-premium`,
@@ -810,6 +825,11 @@ user_id: session.user.id
 })
 
 }
+);
+
+console.log(
+"STATUS RESPONSE:",
+response.status
 );
 
 if (!response.ok) {
@@ -844,8 +864,10 @@ alert(
 }
 catch(err){
 
-console.log(err);
-
+console.log(
+"ERRO PREMIUM:",
+err
+);
 alert(
 "Erro ao conectar com Mercado Pago."
 );

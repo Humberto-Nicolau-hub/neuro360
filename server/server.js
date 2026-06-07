@@ -975,6 +975,36 @@ async (req,res)=>{
 
 try{
 
+  const { user_id } = req.body;
+
+if(!user_id){
+
+return res.status(400).json({
+erro:"user_id obrigatório"
+});
+
+}
+
+const { data: profile } =
+await supabase
+.from("profiles")
+.select("*")
+.eq("id", user_id)
+.single();
+
+if(!profile){
+
+return res.status(404).json({
+erro:"Usuário não encontrado"
+});
+
+}
+
+console.log(
+"PROFILE ENCONTRADO:",
+profile
+);
+
 const response =
 await fetch(
 "https://api.mercadopago.com/preapproval_plan",
@@ -1014,6 +1044,20 @@ back_url:
 
 const data =
 await response.json();
+
+await supabase
+.from("subscriptions")
+.upsert({
+
+user_id: profile.id,
+
+email: profile.email,
+
+status: "pending",
+
+plano: "PREMIUM"
+
+});
 
 console.log(
 "PLANO CRIADO:",
@@ -1160,6 +1204,7 @@ console.log(
 "EMAIL RECEBIDO:",
 email
 );
+
 
 if(!email){
 

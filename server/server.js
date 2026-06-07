@@ -1019,19 +1019,15 @@ headers:{
 
 body:JSON.stringify({
 
-reason:
-"NeuroMapa360 Premium",
+reason:"NeuroMapa360 Premium",
+
+external_reference:user_id,
 
 auto_recurring:{
-
 frequency:1,
-
 frequency_type:"months",
-
 transaction_amount:29.90,
-
 currency_id:"BRL"
-
 },
 
 back_url:
@@ -1171,6 +1167,11 @@ subscription =
 await response.json();
 
 console.log(
+"EXTERNAL REFERENCE:",
+subscription.external_reference
+);
+
+console.log(
 "PAGAMENTO:",
 subscription
 );
@@ -1223,20 +1224,13 @@ subscription.id
 
 }
 
-const email =
-subscription?.payer_email ||
-subscription?.payer?.email;
+const userId =
+subscription.external_reference;
+
+if(!userId){
 
 console.log(
-"EMAIL RECEBIDO:",
-email
-);
-
-
-if(!email){
-
-console.log(
-"NENHUM EMAIL ENCONTRADO"
+"NENHUM USER_ID ENCONTRADO"
 );
 
 return res.sendStatus(200);
@@ -1254,7 +1248,7 @@ mercadopago_subscription_id:
 subscription.id
 
 })
-.eq("email",email);
+.eq("user_id",userId);
 
 if(
 subscription.status === "authorized" ||
@@ -1270,7 +1264,7 @@ premium:true,
 plano:"premium"
 
 })
-.eq("email",email);
+.eq("id",userId);
 
 }
 

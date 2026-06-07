@@ -1055,7 +1055,9 @@ email: profile.email,
 
 status: "pending",
 
-plano: "PREMIUM"
+plano: "PREMIUM",
+
+mercadopago_plan_id: data.id
 
 });
 
@@ -1207,6 +1209,16 @@ subscription.payer_id
 console.log(
 "STATUS:",
 subscription.status
+);
+
+console.log(
+"PREAPPROVAL PLAN:",
+subscription.preapproval_plan_id
+);
+
+console.log(
+"SUBSCRIPTION ID:",
+subscription.id
 );
 
 }

@@ -1150,14 +1150,18 @@ type
 if (
 type !== "subscription_preapproval" &&
 type !== "preapproval" &&
-type !== "payment"
+type !== "payment" &&
+type !== "subscription_authorized_payment"
 ){
 return res.sendStatus(200);
 }
 
 let subscription;
 
-if(type === "payment"){
+if(
+type === "payment" ||
+type === "subscription_authorized_payment"
+){
 
 const response =
 await fetch(
@@ -1172,6 +1176,21 @@ Authorization:
 
 subscription =
 await response.json();
+
+console.log(
+"STATUS PAGAMENTO:",
+subscription.status
+);
+
+console.log(
+"DETAIL:",
+subscription.status_detail
+);
+
+console.log(
+"EXTERNAL_REFERENCE:",
+subscription.external_reference
+);
 
 console.log(
 "EXTERNAL REFERENCE:",

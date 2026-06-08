@@ -1090,6 +1090,156 @@ erro:
 
 });
 
+/* ======================================================
+   CHECKOUT PRO AVULSO
+====================================================== */
+
+app.post(
+"/api/criar-checkout-avulso",
+async (req,res)=>{
+
+try{
+
+const { user_id } = req.body;
+
+if(!user_id){
+
+return res.status(400).json({
+erro:"user_id obrigatório"
+});
+
+}
+
+const { data: profile } =
+await supabase
+.from("profiles")
+.select("*")
+.eq("id", user_id)
+.single();
+
+if(!profile){
+
+return res.status(404).json({
+erro:"Usuário não encontrado"
+});
+
+}
+
+/* salva compra pendente */
+
+await supabase
+.from("subscriptions")
+.upsert({
+
+user_id: profile.id,
+
+email: profile.email,
+
+status: "pending",
+
+plano: "PREMIUM_AVULSO"
+
+});
+
+const response =
+await fetch(
+"https://api.mercadopago.com/checkout/preferences",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":
+`Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
+},
+
+body:JSON.stringify({
+
+items:[
+
+{
+title:"NeuroMapa360 Premium Avulso",
+
+quantity:1,
+
+currency_id:"BRL",
+
+unit_price:29.90
+}
+
+],
+
+external_reference:
+profile.id,
+
+back_urls:{
+
+success:
+`${process.env.FRONTEND_URL}`,
+
+pending:
+`${process.env.FRONTEND_URL}`,
+
+failure:
+`${process.env.FRONTEND_URL}`
+
+},
+
+auto_return:"approved"
+
+})
+
+}
+);
+
+const data =
+await response.json();
+
+console.log(
+"STATUS MP:",
+response.status
+);
+
+console.log(
+"RESPOSTA CHECKOUT:",
+JSON.stringify(
+data,
+null,
+2
+)
+);
+
+console.log(
+"CHECKOUT PRO:",
+data
+);
+
+return res.json({
+
+init_point:
+data.init_point
+
+});
+
+}
+catch(error){
+
+console.log(
+"ERRO CHECKOUT PRO:",
+error
+);
+
+return res.status(500).json({
+
+erro:
+"Erro criando checkout"
+
+});
+
+}
+
+});
+
 app.post(
 "/api/mercadopago/webhook",
 async (req,res)=>{

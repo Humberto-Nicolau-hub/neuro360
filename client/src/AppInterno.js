@@ -881,6 +881,92 @@ alert(
 
 }
 
+async function comprarPremiumAvulso() {
+
+console.log(
+"BOTAO PREMIUM AVULSO CLICADO"
+);
+
+try {
+
+const {
+data: { session }
+} = await supabase.auth.getSession();
+
+if (!session?.user?.id) {
+
+alert(
+"Usuário não identificado."
+);
+
+return;
+
+}
+
+const response = await fetch(
+`${API_URL}/api/criar-checkout-avulso`,
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+user_id:
+session.user.id
+
+})
+
+}
+);
+
+if(!response.ok){
+
+throw new Error(
+"Erro ao criar checkout"
+);
+
+}
+
+const data =
+await response.json();
+
+console.log(
+"CHECKOUT AVULSO:",
+data
+);
+
+if(data.init_point){
+
+window.location.href =
+data.init_point;
+
+return;
+
+}
+
+alert(
+"Link de pagamento não encontrado."
+);
+
+}
+catch(err){
+
+console.log(
+"ERRO AVULSO:",
+err
+);
+
+alert(
+"Erro ao abrir checkout."
+);
+
+}
+
+}
+
 
   /* =========================================
      SALVAR EMOÇÃO
@@ -1281,13 +1367,14 @@ setLoading(false);
 
       <Sidebar
 usuario={usuario}
-plano={planoUsuario}
+plano={plano}
 isAdmin={isAdmin}
 estadoAtual={estadoAtual}
 saindo={saindo}
 sair={sair}
 setMostrarAdmin={setMostrarAdmin}
 virarPremium={virarPremium}
+comprarPremiumAvulso={comprarPremiumAvulso}
 />
 
       <main style={styles.main}>

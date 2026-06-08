@@ -7,7 +7,8 @@ estadoAtual,
 saindo,
 sair,
 setMostrarAdmin,
-virarPremium
+virarPremium,
+comprarPremiumAvulso
 
 }){
 
@@ -66,17 +67,23 @@ color:
 </div>
 
 {
-
 !(plano || "").includes("PREMIUM") && (
 
+<>
 <button
 onClick={virarPremium}
 style={styles.premiumBtn}
 >
-
-⭐ Virar Premium
-
+⭐ Premium Mensal
 </button>
+
+<button
+onClick={comprarPremiumAvulso}
+style={styles.avulsoBtn}
+>
+⚡ Premium Avulso
+</button>
+</>
 
 )
 
@@ -243,22 +250,25 @@ wordBreak:"break-word"
 },
 
 premiumBtn:{
-
 border:"none",
-
 background:
 "linear-gradient(90deg,#facc15,#f59e0b)",
-
 color:"#111827",
-
 fontWeight:"bold",
-
 padding:"14px",
-
 borderRadius:14,
-
 cursor:"pointer"
+},
 
+avulsoBtn:{
+border:"none",
+background:
+"linear-gradient(90deg,#22d3ee,#06b6d4)",
+color:"#ffffff",
+fontWeight:"bold",
+padding:"14px",
+borderRadius:14,
+cursor:"pointer"
 },
 
 logout:{

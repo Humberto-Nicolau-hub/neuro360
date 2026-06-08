@@ -850,6 +850,11 @@ data
 
 if (data.init_point) {
 
+  localStorage.setItem(
+  "assinatura_pendente",
+  "true"
+);
+
 window.location.href =
 data.init_point;
 
@@ -1286,7 +1291,6 @@ virarPremium={virarPremium}
 />
 
       <main style={styles.main}>
-
      <DashboardCards
 estadoAtual={estadoAtual}
 />

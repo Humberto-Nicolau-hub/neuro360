@@ -27,6 +27,11 @@ export default function App() {
     setUsuarioAtual] =
     useState(null);
 
+    const [
+  assinaturaPendente,
+  setAssinaturaPendente
+] = useState(false);
+
   const [email, setEmail] =
     useState("");
 
@@ -270,6 +275,37 @@ console.log("ERROR:", error);
           setUsuarioAtual(
             profileExistente
           );
+
+          const pendente =
+  localStorage.getItem(
+    "assinatura_pendente"
+  );
+
+if (
+  pendente === "true" &&
+  !profileExistente.premium
+){
+
+  setAssinaturaPendente(true);
+
+}
+
+if (
+  pendente === "true" &&
+  profileExistente.premium
+){
+
+  localStorage.removeItem(
+    "assinatura_pendente"
+  );
+
+  setAssinaturaPendente(false);
+
+  alert(
+    "🎉 Premium ativado com sucesso!"
+  );
+
+}
 
           return;
         }
@@ -681,8 +717,76 @@ async function virarPremium() {
 
   /* ======================================================
      DASHBOARD
-  ====================================================== */
+     ====================================================== */
 
+     if (
+  logado &&
+  usuarioAtual &&
+  assinaturaPendente &&
+  !usuarioAtual.premium
+){
+
+  return (
+
+    <div
+      style={{
+        height:"100vh",
+        display:"flex",
+        justifyContent:"center",
+        alignItems:"center",
+        background:"#020617",
+        color:"#fff",
+        padding:"30px"
+      }}
+    >
+
+      <div
+        style={{
+          maxWidth:"600px",
+          textAlign:"center"
+        }}
+      >
+
+        <h1>
+          ⏳ Pagamento pendente
+        </h1>
+
+        <p
+          style={{
+            fontSize:"18px",
+            lineHeight:"1.7"
+          }}
+        >
+          Seu boleto foi gerado com sucesso.
+        </p>
+
+        <p
+          style={{
+            fontSize:"18px",
+            lineHeight:"1.7"
+          }}
+        >
+          Assim que o pagamento for confirmado,
+          seu plano Premium será liberado
+          automaticamente.
+        </p>
+
+        <p
+          style={{
+            color:"#94a3b8"
+          }}
+        >
+          Você pode fechar esta página
+          e retornar depois.
+        </p>
+
+      </div>
+
+    </div>
+
+  );
+
+}
   if (
     logado &&
     usuarioAtual

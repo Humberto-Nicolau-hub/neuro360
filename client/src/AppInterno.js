@@ -1381,6 +1381,77 @@ comprarPremiumAvulso={comprarPremiumAvulso}
      <DashboardCards
 estadoAtual={estadoAtual}
 />
+{/* ===================================
+   PERFIL EVOLUTIVO PREMIUM
+=================================== */}
+
+{premium ? (
+
+<div style={styles.premiumCard}>
+
+<h2>
+🧠 Perfil Evolutivo Premium
+</h2>
+
+<p>
+🎯 Emoção predominante:
+{" "}
+{emocaoMaisFrequente}
+</p>
+
+<p>
+📊 Score médio:
+{" "}
+{mediaScore}
+</p>
+
+<p>
+🔥 Hawkins médio:
+{" "}
+{mediaHawkins}
+</p>
+
+<p>
+📈 Tendência:
+{" "}
+{tendenciaEmocional}
+</p>
+
+<p>
+⚖️ Estabilidade:
+{" "}
+{estabilidadeEmocional}
+</p>
+
+</div>
+
+) : (
+
+<div style={styles.lockedPremium}>
+
+<h2>
+🔒 Perfil Evolutivo Premium
+</h2>
+
+<p>
+
+Descubra seus padrões emocionais,
+sua evolução e seu potencial de crescimento.
+
+</p>
+
+<button
+onClick={comprarPremiumAvulso}
+style={styles.unlockBtn}
+>
+
+Desbloquear Premium
+
+</button>
+
+</div>
+
+)}
 
       <div style={styles.insightsGrid}>
 <div style={styles.insightCard}>
@@ -2058,5 +2129,65 @@ transition:"0.3s",
 
 boxShadow:
 "0 0 25px rgba(34,211,238,0.4)"
+},
+premiumCard:{
+
+background:
+"linear-gradient(135deg,#0f172a,#111827)",
+
+padding:20,
+
+borderRadius:20,
+
+border:
+"1px solid #22d3ee",
+
+marginBottom:12,
+
+boxShadow:
+"0 0 20px rgba(34,211,238,.15)"
+
+},
+
+lockedPremium:{
+
+background:
+"linear-gradient(135deg,#111827,#0f172a)",
+
+padding:20,
+
+borderRadius:20,
+
+border:
+"1px solid #facc15",
+
+marginBottom:12,
+
+textAlign:"center",
+
+boxShadow:
+"0 0 20px rgba(250,204,21,.15)"
+
+},
+
+unlockBtn:{
+
+marginTop:10,
+
+padding:"12px 20px",
+
+border:"none",
+
+borderRadius:12,
+
+cursor:"pointer",
+
+fontWeight:"bold",
+
+background:
+"linear-gradient(90deg,#facc15,#f59e0b)",
+
+color:"#111827"
+
 },
 };

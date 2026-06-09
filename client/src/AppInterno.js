@@ -1428,24 +1428,54 @@ estadoAtual={estadoAtual}
 
 <div style={styles.lockedPremium}>
 
-<h2>
+<h3>
 🔒 Perfil Evolutivo Premium
-</h2>
+</h3>
 
 <p>
-
-Descubra seus padrões emocionais,
-sua evolução e seu potencial de crescimento.
-
+Descubra padrões ocultos da sua mente,
+acompanhe sua evolução emocional
+e receba análises terapêuticas avançadas.
 </p>
+
+<div
+style={{
+marginTop:15,
+marginBottom:15,
+lineHeight:"28px",
+fontSize:14
+}}
+>
+
+🔒 Tendência emocional dos últimos 30 dias
+
+<br/>
+
+🔒 Evolução da consciência Hawkins
+
+<br/>
+
+🔒 Diagnóstico adaptativo aprofundado
+
+<br/>
+
+🔒 Padrões emocionais recorrentes
+
+<br/>
+
+🔒 Relatório terapêutico inteligente
+
+<br/>
+
+🔒 Recomendações evolutivas personalizadas
+
+</div>
 
 <button
 onClick={comprarPremiumAvulso}
 style={styles.unlockBtn}
 >
-
-Desbloquear Premium
-
+🚀 Desbloquear Análise Completa
 </button>
 
 </div>

@@ -34,7 +34,7 @@ background:
 
 (plano || "").includes("PREMIUM")
 
-? "linear-gradient(90deg,#facc15,#f59e0b)"
+? "linear-gradient(90deg,#22c55e,#16a34a)"
 
 : "rgba(255,255,255,.05)",
 
@@ -58,7 +58,7 @@ color:
 
 (plano || "").includes("PREMIUM")
 
-? "⭐ " + plano
+? "⭐ PREMIUM ATIVO"
 
 : "FREE"
 

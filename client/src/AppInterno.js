@@ -1422,36 +1422,34 @@ estadoAtual={estadoAtual}
 {estabilidadeEmocional}
 </p>
 
-<br /><br />
-
+<p>
 🧠 Consciência predominante:
-{conscienciaAtual || "Em evolução"}
+{estadoAtual?.consciencia || "Em evolução"}
+</p>
 
-<br /><br />
-
+<p>
 📈 Fase evolutiva:
+{" "}
 {
 mediaHawkins >= 500
 ? "Expansão"
-
 : mediaHawkins >= 200
 ? "Transição"
-
 : "Contração"
 }
+</p>
 
-<br /><br />
-
+<p>
 🎯 Potencial atual:
+{" "}
 {
 mediaHawkins >= 500
 ? "Alta realização"
-
 : mediaHawkins >= 200
 ? "Crescimento consistente"
-
 : "Reorganização emocional"
 }
+</p>
 
 </div>
 

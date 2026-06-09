@@ -36,7 +36,6 @@ from "./services/promptSystemNeuro360";
 export default function AppInterno({
 usuario,
 onLogout,
-virarPremium,
 premium,
 plano
 }) {
@@ -1509,18 +1508,17 @@ lineHeight:"1.4"
               {microVitoria}
             </p>
           </div>
-          <div style={styles.insightCard}>
+          {premium ? (
+
+<>
+<div style={styles.insightCard}>
 
 <h4>
-
 🚨 Alerta emocional
-
 </h4>
 
 <p>
-
 {alertaEmocional.texto}
-
 </p>
 
 </div>
@@ -1528,22 +1526,41 @@ lineHeight:"1.4"
 <div style={styles.insightCard}>
 
 <h4>
-
 🧠 Diagnóstico Adaptativo
+</h4>
 
+<p>
+{diagnosticoAdaptativo}
+</p>
+
+</div>
+
+</>
+
+) : (
+
+<div style={styles.insightCard}>
+
+<h4>
+🔒 Diagnóstico Premium
 </h4>
 
 <p>
 
-{diagnosticoAdaptativo}
+Desbloqueie análise emocional profunda,
+alertas inteligentes e padrões emocionais.
 
 </p>
 
 </div>
 
+)}
+
         </div>
 
-        <div style={styles.recomendacaoCard}>
+        {premium ? (
+
+<div style={styles.recomendacaoCard}>
 
 {trilhaAtual && (
 
@@ -1601,7 +1618,35 @@ fontWeight:"bold"
 Média Hawkins: {mediaHawkins}
 </div>
 
-        </div>
+</div>
+
+) : (
+
+<div style={styles.recomendacaoCard}>
+
+<h3>
+🔒 Insight Evolutivo Premium
+</h3>
+
+<p>
+
+O NeuroMapa360 identificará seus padrões emocionais,
+tendências, evolução de consciência e fornecerá
+orientações avançadas baseadas na sua jornada.
+
+</p>
+
+<button
+onClick={comprarPremiumAvulso}
+style={styles.unlockBtn}
+>
+
+Desbloquear Premium
+
+</button>
+
+</div>
+)}
                 <div
 style={{
 display:"flex",

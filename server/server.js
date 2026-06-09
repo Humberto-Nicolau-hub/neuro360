@@ -1172,6 +1172,9 @@ unit_price:29.90
 external_reference:
 profile.id,
 
+notification_url:
+"https://neuro360-api.onrender.com/api/mercadopago/webhook",
+
 back_urls:{
 
 success:

@@ -1386,6 +1386,8 @@ estadoAtual={estadoAtual}
 
 {premium ? (
 
+<div style={styles.topPremiumGrid}>
+
 <div style={styles.premiumCard}>
 
 <h2>
@@ -1429,7 +1431,6 @@ estadoAtual={estadoAtual}
 
 <p>
 📈 Fase evolutiva:
-{" "}
 {
 mediaHawkins >= 500
 ? "Expansão"
@@ -1441,7 +1442,6 @@ mediaHawkins >= 500
 
 <p>
 🎯 Potencial atual:
-{" "}
 {
 mediaHawkins >= 500
 ? "Alta realização"
@@ -1450,6 +1450,61 @@ mediaHawkins >= 500
 : "Reorganização emocional"
 }
 </p>
+
+</div>
+
+<div
+style={{
+background:"linear-gradient(135deg,#0f172a,#111827)",
+border:"1px solid #22d3ee",
+borderRadius:20,
+padding:16,
+boxShadow:"0 0 20px rgba(34,211,238,.15)"
+}}
+>
+
+<h3 style={{marginTop:0}}>
+🏆 Jornada de Consciência
+</h3>
+
+<div>
+Nível atual:
+<b> {estadoAtual?.consciencia || "Em evolução"}</b>
+</div>
+
+<div style={{marginTop:6}}>
+🔥 Hawkins atual:
+<b> {mediaHawkins}</b>
+</div>
+
+<div style={{marginTop:6}}>
+🎯 Próximo estágio:
+<b>
+{
+mediaHawkins < 200
+? "Transição (200)"
+: mediaHawkins < 500
+? "Expansão (500)"
+: "Nível avançado"
+}
+</b>
+</div>
+
+<div style={{marginTop:6}}>
+📈 Faltam:
+<b>
+{
+mediaHawkins < 200
+? 200 - mediaHawkins
+: mediaHawkins < 500
+? 500 - mediaHawkins
+: 0
+}
+</b>
+{" "}pontos
+</div>
+
+</div>
 
 </div>
 
@@ -1615,145 +1670,6 @@ alertas inteligentes e padrões emocionais.
 
 )}
 
-{premium ? (
-
-<div
-style={{
-background:"linear-gradient(135deg,#0f172a,#111827)",
-border:"1px solid #22d3ee",
-borderRadius:20,
-padding:16,
-marginBottom:10,
-boxShadow:"0 0 20px rgba(34,211,238,.15)"
-}}
->
-
-<h3 style={{marginTop:0}}>
-🏆 Jornada de Consciência
-</h3>
-
-<div>
-Nível atual:
-<b> {estadoAtual?.consciencia || "Em evolução"}</b>
-</div>
-
-<div style={{marginTop:6}}>
-🔥 Hawkins atual:
-<b> {mediaHawkins}</b>
-</div>
-
-<div style={{marginTop:6}}>
-🎯 Próximo estágio:
-<b>
-{
-mediaHawkins < 200
-? "Transição (200)"
-: mediaHawkins < 500
-? "Expansão (500)"
-: "Nível avançado"
-}
-</b>
-</div>
-
-<div style={{marginTop:6}}>
-📈 Faltam:
-<b>
-{
-mediaHawkins < 200
-? 200 - mediaHawkins
-: mediaHawkins < 500
-? 500 - mediaHawkins
-: 0
-}
-</b>
-{" "}pontos
-</div>
-
-<div
-style={{
-marginTop:12,
-height:12,
-borderRadius:20,
-background:"#1e293b",
-overflow:"hidden"
-}}
->
-
-<div
-style={{
-height:"100%",
-width:`${
-mediaHawkins >= 500
-? 100
-: mediaHawkins >= 200
-? (mediaHawkins / 500) * 100
-: (mediaHawkins / 200) * 100
-}%`,
-background:
-"linear-gradient(90deg,#22d3ee,#4ade80)",
-borderRadius:20
-}}
-/>
-
-<hr
-style={{
-margin:"16px 0",
-border:"none",
-borderTop:"1px solid rgba(255,255,255,.08)"
-}}
-/>
-
-{trilhaAtual && (
-
-<div
-style={{
-fontSize:12,
-marginBottom:10,
-color:"#67e8f9",
-lineHeight:1.7
-}}
->
-
-🫁 {trilhaAtual.respiracao}
-
-<br />
-
-🧠 {trilhaAtual.pnl}
-
-<br />
-
-⚡ {trilhaAtual.microacao}
-
-</div>
-
-)}
-
-<div
-style={{
-fontSize:15,
-fontWeight:"bold",
-marginBottom:8
-}}
->
-💡 Insight Evolutivo IA
-</div>
-
-<p
-style={{
-fontSize:13,
-lineHeight:"22px",
-margin:0
-}}
->
-{recomendacaoIA}
-</p>
-
-</div>
-
-</div>
-
-) : (
-
 <div style={styles.lockedPremium}>
 
 <h3>
@@ -1775,7 +1691,6 @@ Desbloquear Premium
 
 </div>
 
-)}
 
         </div>
 
@@ -2316,6 +2231,14 @@ boxShadow:
 "0 0 25px rgba(34,211,238,0.4)"
 },
 premiumCard:{
+
+  topPremiumGrid:{
+display:"grid",
+gridTemplateColumns:"3fr 1fr",
+gap:12,
+marginBottom:10,
+alignItems:"stretch"
+},
 
 background:
 "linear-gradient(135deg,#0f172a,#111827)",

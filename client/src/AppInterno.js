@@ -1670,27 +1670,6 @@ alertas inteligentes e padrões emocionais.
 
 )}
 
-<div style={styles.lockedPremium}>
-
-<h3>
-🔒 Jornada de Consciência Premium
-</h3>
-
-<p>
-Acompanhe sua evolução emocional,
-descubra seu próximo nível Hawkins
-e visualize seu progresso pessoal.
-</p>
-
-<button
-onClick={comprarPremiumAvulso}
-style={styles.unlockBtn}
->
-Desbloquear Premium
-</button>
-
-</div>
-
 
         </div>
 

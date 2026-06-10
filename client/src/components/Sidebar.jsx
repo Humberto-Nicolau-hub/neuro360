@@ -32,7 +32,7 @@ IA Terapêutica Ativa
 
 background:
 
-(plano || "").includes("PREMIUM")
+(plano || "").toLowerCase().includes("premium")
 
 ? "linear-gradient(90deg,#22c55e,#16a34a)"
 
@@ -46,7 +46,7 @@ textAlign:"center",
 
 color:
 
-(plano || "").includes("PREMIUM")
+(plano || "").toLowerCase().includes("premium")
 
 ? "#111827"
 
@@ -56,7 +56,7 @@ color:
 
 {
 
-(plano || "").includes("PREMIUM")
+(plano || "").toLowerCase().includes("premium")
 
 ? "⭐ PREMIUM ATIVO"
 
@@ -67,7 +67,7 @@ color:
 </div>
 
 {
-!(plano || "").includes("PREMIUM") && (
+!(plano || "").toLowerCase().includes("premium") && (
 
 <>
 <button

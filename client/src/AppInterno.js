@@ -1695,6 +1695,59 @@ borderRadius:20
 }}
 />
 
+<hr
+style={{
+margin:"16px 0",
+border:"none",
+borderTop:"1px solid rgba(255,255,255,.08)"
+}}
+/>
+
+{trilhaAtual && (
+
+<div
+style={{
+fontSize:12,
+marginBottom:10,
+color:"#67e8f9",
+lineHeight:1.7
+}}
+>
+
+🫁 {trilhaAtual.respiracao}
+
+<br />
+
+🧠 {trilhaAtual.pnl}
+
+<br />
+
+⚡ {trilhaAtual.microacao}
+
+</div>
+
+)}
+
+<div
+style={{
+fontSize:15,
+fontWeight:"bold",
+marginBottom:8
+}}
+>
+💡 Insight Evolutivo IA
+</div>
+
+<p
+style={{
+fontSize:13,
+lineHeight:"22px",
+margin:0
+}}
+>
+{recomendacaoIA}
+</p>
+
 </div>
 
 </div>
@@ -1726,95 +1779,7 @@ Desbloquear Premium
 
         </div>
 
-        {premium ? (
 
-<div style={styles.recomendacaoCard}>
-
-{trilhaAtual && (
-
-<div
-style={{
-fontSize:11,
-marginBottom:8,
-color:"#67e8f9",
-lineHeight:1.6
-}}
->
-
-🫁 {trilhaAtual.respiracao}
-
-<br/>
-
-🧠 {trilhaAtual.pnl}
-
-<br/>
-
-⚡ {trilhaAtual.microacao}
-
-</div>
-
-)}
-
-<h3
-style={{
-margin:"0",
-fontSize:18
-}}
->
-Insight evolutivo IA
-</h3>
-
-<p
-style={{
-margin:"2px 0",
-fontSize:13,
-lineHeight:"20px",
-whiteSpace:"normal",
-overflow:"visible"
-}}
->
-{recomendacaoIA}
-</p>
-
-<div
-style={{
-fontSize:12,
-color:"#22d3ee",
-fontWeight:"bold"
-}}
->
-Média Hawkins: {mediaHawkins}
-</div>
-
-</div>
-
-) : (
-
-<div style={styles.recomendacaoCard}>
-
-<h3>
-🔒 Insight Evolutivo Premium
-</h3>
-
-<p>
-
-O NeuroMapa360 identificará seus padrões emocionais,
-tendências, evolução de consciência e fornecerá
-orientações avançadas baseadas na sua jornada.
-
-</p>
-
-<button
-onClick={comprarPremiumAvulso}
-style={styles.unlockBtn}
->
-
-Desbloquear Premium
-
-</button>
-
-</div>
-)}
                 <div
 style={{
 display:"flex",

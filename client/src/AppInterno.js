@@ -1813,6 +1813,7 @@ ativo
 
         </div>
 
+
         <PainelIA
 conversa={conversa}
 mensagem={mensagem}

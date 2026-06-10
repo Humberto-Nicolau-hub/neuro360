@@ -2230,15 +2230,16 @@ transition:"0.3s",
 boxShadow:
 "0 0 25px rgba(34,211,238,0.4)"
 },
-premiumCard:{
 
-  topPremiumGrid:{
-display:"grid",
-gridTemplateColumns:"3fr 1fr",
-gap:12,
-marginBottom:10,
-alignItems:"stretch"
+topPremiumGrid:{
+  display:"grid",
+  gridTemplateColumns:"3fr 1fr",
+  gap:12,
+  marginBottom:10,
+  alignItems:"stretch"
 },
+
+premiumCard:{
 
 background:
 "linear-gradient(135deg,#0f172a,#111827)",

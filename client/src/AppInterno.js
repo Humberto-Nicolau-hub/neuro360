@@ -2109,14 +2109,20 @@ alignItems:"stretch",
 },
 
   insightCard: {
-  background:
-    "linear-gradient(180deg,#111827,#0f172a)",
-  padding:6,
-  borderRadius:12,
-  minHeight:30,
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
+background:
+"linear-gradient(180deg,#111827,#0f172a)",
+
+padding:10,
+
+borderRadius:12,
+
+minHeight:0,
+
+display:"flex",
+
+flexDirection:"column",
+
+justifyContent:"flex-start",
 },
 
   recomendacaoCard:{
@@ -2349,14 +2355,14 @@ premiumCard:{
 background:
 "linear-gradient(135deg,#0f172a,#111827)",
 
-padding:20,
+padding:14,
 
-borderRadius:20,
+borderRadius:16,
 
 border:
 "1px solid #22d3ee",
 
-marginBottom:12,
+marginBottom:8,
 
 boxShadow:
 "0 0 20px rgba(34,211,238,.15)"
@@ -2368,14 +2374,14 @@ lockedPremium:{
 background:
 "linear-gradient(135deg,#111827,#0f172a)",
 
-padding:20,
+padding:14,
 
-borderRadius:20,
+borderRadius:16,
 
 border:
 "1px solid #facc15",
 
-marginBottom:12,
+marginBottom:8,
 
 textAlign:"center",
 

@@ -1615,6 +1615,115 @@ alertas inteligentes e padrões emocionais.
 
 )}
 
+{premium ? (
+
+<div
+style={{
+background:"linear-gradient(135deg,#0f172a,#111827)",
+border:"1px solid #22d3ee",
+borderRadius:20,
+padding:16,
+marginBottom:10,
+boxShadow:"0 0 20px rgba(34,211,238,.15)"
+}}
+>
+
+<h3 style={{marginTop:0}}>
+🏆 Jornada de Consciência
+</h3>
+
+<div>
+Nível atual:
+<b> {estadoAtual?.consciencia || "Em evolução"}</b>
+</div>
+
+<div style={{marginTop:6}}>
+🔥 Hawkins atual:
+<b> {mediaHawkins}</b>
+</div>
+
+<div style={{marginTop:6}}>
+🎯 Próximo estágio:
+<b>
+{
+mediaHawkins < 200
+? "Transição (200)"
+: mediaHawkins < 500
+? "Expansão (500)"
+: "Nível avançado"
+}
+</b>
+</div>
+
+<div style={{marginTop:6}}>
+📈 Faltam:
+<b>
+{
+mediaHawkins < 200
+? 200 - mediaHawkins
+: mediaHawkins < 500
+? 500 - mediaHawkins
+: 0
+}
+</b>
+{" "}pontos
+</div>
+
+<div
+style={{
+marginTop:12,
+height:12,
+borderRadius:20,
+background:"#1e293b",
+overflow:"hidden"
+}}
+>
+
+<div
+style={{
+height:"100%",
+width:`${
+mediaHawkins >= 500
+? 100
+: mediaHawkins >= 200
+? (mediaHawkins / 500) * 100
+: (mediaHawkins / 200) * 100
+}%`,
+background:
+"linear-gradient(90deg,#22d3ee,#4ade80)",
+borderRadius:20
+}}
+/>
+
+</div>
+
+</div>
+
+) : (
+
+<div style={styles.lockedPremium}>
+
+<h3>
+🔒 Jornada de Consciência Premium
+</h3>
+
+<p>
+Acompanhe sua evolução emocional,
+descubra seu próximo nível Hawkins
+e visualize seu progresso pessoal.
+</p>
+
+<button
+onClick={comprarPremiumAvulso}
+style={styles.unlockBtn}
+>
+Desbloquear Premium
+</button>
+
+</div>
+
+)}
+
         </div>
 
         {premium ? (

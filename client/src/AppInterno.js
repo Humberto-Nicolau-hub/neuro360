@@ -285,6 +285,9 @@ historicoCompleto,
 estadoAtual
 );
 
+const hawkinsAtual =
+estadoAtual.hawkins || 0;
+
   const mediaScore =
 calcularMediaScore(
 historicoCompleto,
@@ -1480,8 +1483,8 @@ Nível atual:
 </div>
 
 <div style={{marginTop:6}}>
-🔥 Hawkins médio:
-<b> {mediaHawkins}</b>
+🔥 Hawkins Atual:
+<b>{estadoAtual.hawkins}</b>
 </div>
 
 <div
@@ -1512,14 +1515,18 @@ overflow:"hidden"
 style={{
 height:"100%",
 width:`${
-mediaHawkins >= 500
+hawkinsAtual >= 500
 ? 100
-: mediaHawkins >= 200
-? (mediaHawkins / 500) * 100
-: (mediaHawkins / 200) * 100
+: hawkinsAtual >= 200
+? (hawkinsAtual / 500) * 100
+: (hawkinsAtual / 200) * 100
 }%`,
 background:
-"linear-gradient(90deg,#22d3ee,#4ade80)"
+hawkinsAtual >= 500
+? "linear-gradient(90deg,#22d3ee,#4ade80)"
+: hawkinsAtual >= 200
+? "linear-gradient(90deg,#facc15,#22d3ee)"
+: "linear-gradient(90deg,#f97316,#facc15)"
 }}
 />
 
@@ -1531,12 +1538,13 @@ marginTop:4,
 fontSize:12
 }}
 >
-{Math.min(
-Math.round(
-(mediaHawkins / 200) * 100
-),
-100
-)}%
+{
+hawkinsAtual >= 500
+? "100%"
+: `${Math.round(
+(hawkinsAtual / 500) * 100
+)}%`
+}
 </div>
 
 </div>

@@ -1439,9 +1439,9 @@ estadoAtual={estadoAtual}
 <b>📈 Fase</b>
 <br/>
 {
-mediaHawkins >= 500
+hawkinsAtual >= 500
 ? "Expansão"
-: mediaHawkins >= 200
+: hawkinsAtual >= 200
 ? "Transição"
 : "Contração"
 }
@@ -1451,9 +1451,9 @@ mediaHawkins >= 500
 <b>🎯 Potencial</b>
 <br/>
 {
-mediaHawkins >= 500
+hawkinsAtual >= 500
 ? "Alta realização"
-: mediaHawkins >= 200
+: hawkinsAtual >= 200
 ? "Crescimento"
 : "Reorganização"
 }

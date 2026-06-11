@@ -1480,7 +1480,7 @@ Nível atual:
 </div>
 
 <div style={{marginTop:6}}>
-🔥 Hawkins atual:
+🔥 Hawkins médio:
 <b> {mediaHawkins}</b>
 </div>
 

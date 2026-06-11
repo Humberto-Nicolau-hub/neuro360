@@ -1394,43 +1394,47 @@ estadoAtual={estadoAtual}
 🧠 Perfil Evolutivo Premium
 </h2>
 
-<p>
-🎯 Emoção predominante:
-{" "}
+<div style={styles.perfilGrid}>
+
+<div>
+<b>🎯 Emoção</b>
+<br/>
 {emocaoMaisFrequente}
-</p>
+</div>
 
-<p>
-📊 Score médio:
-{" "}
+<div>
+<b>📊 Score</b>
+<br/>
 {mediaScore}
-</p>
+</div>
 
-<p>
-🔥 Hawkins médio:
-{" "}
+<div>
+<b>🔥 Hawkins</b>
+<br/>
 {mediaHawkins}
-</p>
+</div>
 
-<p>
-📈 Tendência:
-{" "}
+<div>
+<b>📈 Tendência</b>
+<br/>
 {tendenciaEmocional}
-</p>
+</div>
 
-<p>
-⚖️ Estabilidade:
-{" "}
+<div>
+<b>⚖️ Estabilidade</b>
+<br/>
 {estabilidadeEmocional}
-</p>
+</div>
 
-<p>
-🧠 Consciência predominante:
+<div>
+<b>🧠 Consciência</b>
+<br/>
 {estadoAtual?.consciencia || "Em evolução"}
-</p>
+</div>
 
-<p>
-📈 Fase evolutiva:
+<div>
+<b>📈 Fase</b>
+<br/>
 {
 mediaHawkins >= 500
 ? "Expansão"
@@ -1438,18 +1442,21 @@ mediaHawkins >= 500
 ? "Transição"
 : "Contração"
 }
-</p>
+</div>
 
-<p>
-🎯 Potencial atual:
+<div>
+<b>🎯 Potencial</b>
+<br/>
 {
 mediaHawkins >= 500
 ? "Alta realização"
 : mediaHawkins >= 200
-? "Crescimento consistente"
-: "Reorganização emocional"
+? "Crescimento"
+: "Reorganização"
 }
-</p>
+</div>
+
+</div>
 
 </div>
 
@@ -1798,6 +1805,15 @@ chatEndRef={chatEndRef}
 }
 
 const styles = {
+
+  perfilGrid:{
+display:"grid",
+gridTemplateColumns:"repeat(4,1fr)",
+gap:12,
+marginTop:12,
+fontSize:13,
+lineHeight:"20px"
+},
 
   container:{
    display:"flex",

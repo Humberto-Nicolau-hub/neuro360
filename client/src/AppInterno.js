@@ -1399,19 +1399,19 @@ estadoAtual={estadoAtual}
 <div>
 <b>🎯 Emoção</b>
 <br/>
-{emocaoMaisFrequente}
+{estadoAtual?.emocao}
 </div>
 
 <div>
-<b>📊 Score</b>
+<b>📊 Score Atual</b>
 <br/>
-{mediaScore}
+{estadoAtual?.score}
 </div>
 
 <div>
-<b>🔥 Hawkins</b>
+<b>🔥 Hawkins Atual</b>
 <br/>
-{mediaHawkins}
+{estadoAtual?.hawkins}
 </div>
 
 <div>

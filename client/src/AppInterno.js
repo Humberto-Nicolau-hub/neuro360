@@ -1484,6 +1484,60 @@ Nível atual:
 <b> {mediaHawkins}</b>
 </div>
 
+<div
+style={{
+marginTop:12
+}}
+>
+
+<div
+style={{
+fontSize:12,
+marginBottom:6
+}}
+>
+Progresso evolutivo
+</div>
+
+<div
+style={{
+height:10,
+background:"#1e293b",
+borderRadius:20,
+overflow:"hidden"
+}}
+>
+
+<div
+style={{
+height:"100%",
+width:`${Math.min(
+(mediaHawkins / 200) * 100,
+100
+)}%`,
+background:
+"linear-gradient(90deg,#22d3ee,#4ade80)"
+}}
+/>
+
+</div>
+
+<div
+style={{
+marginTop:4,
+fontSize:12
+}}
+>
+{Math.min(
+Math.round(
+(mediaHawkins / 200) * 100
+),
+100
+)}%
+</div>
+
+</div>
+
 <div style={{marginTop:6}}>
 🎯 Próximo estágio:
 <b>

@@ -1511,10 +1511,13 @@ overflow:"hidden"
 <div
 style={{
 height:"100%",
-width:`${Math.min(
-(mediaHawkins / 200) * 100,
-100
-)}%`,
+width:`${
+mediaHawkins >= 500
+? 100
+: mediaHawkins >= 200
+? (mediaHawkins / 500) * 100
+: (mediaHawkins / 200) * 100
+}%`,
 background:
 "linear-gradient(90deg,#22d3ee,#4ade80)"
 }}
@@ -1539,30 +1542,20 @@ Math.round(
 </div>
 
 <div style={{marginTop:6}}>
-🎯 Próximo estágio:
-<b>
-{
-mediaHawkins < 200
-? "Transição (200)"
-: mediaHawkins < 500
-? "Expansão (500)"
-: "Nível avançado"
-}
-</b>
-</div>
-
-<div style={{marginTop:6}}>
 📈 Faltam:
+
 <b>
+
 {
-mediaHawkins < 200
-? 200 - mediaHawkins
-: mediaHawkins < 500
-? 500 - mediaHawkins
-: 0
+mediaHawkins >= 500
+? " Meta concluída"
+: mediaHawkins >= 200
+? ` ${500 - mediaHawkins} pontos`
+: ` ${200 - mediaHawkins} pontos`
 }
+
 </b>
-{" "}pontos
+
 </div>
 
 </div>

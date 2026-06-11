@@ -1555,11 +1555,11 @@ hawkinsAtual >= 500
 <b>
 
 {
-mediaHawkins >= 500
+hawkinsAtual >= 500
 ? " Meta concluída"
-: mediaHawkins >= 200
-? ` ${500 - mediaHawkins} pontos`
-: ` ${200 - mediaHawkins} pontos`
+: hawkinsAtual >= 200
+? ` ${500 - hawkinsAtual} pontos`
+: ` ${200 - hawkinsAtual} pontos`
 }
 
 </b>

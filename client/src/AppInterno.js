@@ -1566,6 +1566,44 @@ hawkinsAtual >= 500
 
 </div>
 
+<div
+style={{
+marginTop:15,
+paddingTop:10,
+borderTop:"1px solid rgba(255,255,255,.08)"
+}}
+>
+
+<div
+style={{
+fontWeight:"bold",
+fontSize:13,
+marginBottom:8
+}}
+>
+🏅 Conquistas
+</div>
+
+<div style={{fontSize:12,lineHeight:"22px"}}>
+
+{hawkinsAtual >= 100 && "✅ Primeira Consciência"}
+
+<br/>
+
+{hawkinsAtual >= 200 && "🌱 Fase de Transição"}
+
+<br/>
+
+{hawkinsAtual >= 300 && "🚀 Expansão Emocional"}
+
+<br/>
+
+{hawkinsAtual >= 500 && "🏆 Consciência Elevada"}
+
+</div>
+
+</div>
+
 </div>
 
 </div>

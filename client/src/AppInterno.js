@@ -395,10 +395,18 @@ return "Seu histórico demonstra permanência em estados de contração emociona
 ========================== */
 
 if (
+mediaHawkins >= 600
+) {
+
+return "Seu histórico demonstra predominância de estados emocionais associados à realização, produtividade consciente e direcionamento estratégico. O sistema identifica recursos emocionais disponíveis para execução, liderança e crescimento sustentado.";
+
+}
+
+if (
 mediaHawkins >= 500
 ) {
 
-return "Seu padrão atual demonstra predominância de estados emocionais construtivos e alinhados com alta performance. Os registros indicam estabilidade emocional crescente e capacidade ampliada de ação consciente. O foco evolutivo passa a ser manutenção da expansão e realização contínua.";
+return "Seu histórico demonstra estabilidade emocional elevada e predominância de estados positivos. Os registros indicam fortalecimento consistente da consciência emocional e expansão da capacidade de bem-estar.";
 
 }
 

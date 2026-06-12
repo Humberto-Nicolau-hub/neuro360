@@ -362,52 +362,8 @@ estadoAtual.emocao
 
       function gerarDiagnosticoAdaptativo() {
 
-        console.log(
-"HISTORICO COMPLETO:",
-historicoCompleto
-);
-
-console.log(
-"TAMANHO HISTORICO:",
-historicoCompleto?.length
-);
-
-const ultimasEmocoes =
-historicoCompleto
-.slice(0,10)
-.map(item => item.emocao);
-
-const frequencia = {};
-
-ultimasEmocoes.forEach(emocao => {
-
-frequencia[emocao] =
-(frequencia[emocao] || 0) + 1;
-
-});
-
 const emocaoAtual =
-ultimasEmocoes[0];
-
-const ocorrencias =
-frequencia[
-emocaoAtual
-] || 0;
-
-console.log(
-"EMOCAO ATUAL:",
-emocaoAtual
-);
-
-console.log(
-"OCORRENCIAS:",
-ocorrencias
-);
-
-console.log(
-"MEDIA HAWKINS:",
-mediaHawkins
-);
+estadoAtual?.emocao || "Neutro";
 
 /* ==========================
    ANSIEDADE RECORRENTE
@@ -415,35 +371,46 @@ mediaHawkins
 
 if (
 emocaoAtual === "Ansioso" &&
-ocorrencias >= 4
+emocaoMaisFrequente === "Ansioso"
 ) {
 
-return "Ansiedade recorrente detectada. O sistema identifica um padrão repetitivo de antecipação mental. Priorize estabilização emocional antes de decisões importantes.";
+return "A ansiedade permanece como padrão predominante do seu histórico emocional. Os registros recentes indicam foco excessivo em antecipação mental e necessidade de segurança emocional. Neste estágio, a prioridade não é desempenho, mas estabilização interna e redução da sobrecarga emocional.";
 
 }
 
 /* ==========================
-   TRISTEZA PROLONGADA
+   TRISTEZA RECORRENTE
 ========================== */
 
 if (
 emocaoAtual === "Triste" &&
-ocorrencias >= 3
+emocaoMaisFrequente === "Triste"
 ) {
 
-return "Há sinais de contração emocional prolongada. O foco atual deve ser fortalecimento gradual de energia emocional.";
+return "Seu histórico demonstra permanência em estados de contração emocional. Os registros sugerem necessidade de fortalecimento gradual da energia emocional antes de metas mais exigentes. Pequenos avanços consistentes tendem a gerar maior recuperação emocional.";
+}
+
+/* ==========================
+   EXPANSÃO CONSOLIDADA
+========================== */
+
+if (
+mediaHawkins >= 500
+) {
+
+return "Seu padrão atual demonstra predominância de estados emocionais construtivos e alinhados com alta performance. Os registros indicam estabilidade emocional crescente e capacidade ampliada de ação consciente. O foco evolutivo passa a ser manutenção da expansão e realização contínua.";
 
 }
 
 /* ==========================
-   EXPANSÃO
+   EXPANSÃO EM DESENVOLVIMENTO
 ========================== */
 
 if (
 mediaHawkins >= 300
 ) {
- 
-  return "Seu histórico demonstra expansão emocional consistente. Continue fortalecendo hábitos positivos.";
+
+return "Seu histórico demonstra migração gradual de estados de contração para expansão emocional. Embora emoções desafiadoras ainda apareçam ocasionalmente, os registros recentes mostram fortalecimento emocional consistente. O próximo desafio evolutivo é consolidar estabilidade e evitar oscilações.";
 
 }
 
@@ -451,7 +418,19 @@ mediaHawkins >= 300
    TRANSIÇÃO
 ========================== */
 
-return "Seu histórico demonstra processo gradual de reorganização emocional.";
+if (
+mediaHawkins >= 200
+) {
+
+return "Você se encontra em uma fase de transição emocional. Os registros mostram redução gradual dos estados de contração e aumento da consciência emocional. A continuidade das práticas atuais tende a acelerar seu processo de fortalecimento.";
+
+}
+
+/* ==========================
+   REORGANIZAÇÃO
+========================== */
+
+return "Seu histórico indica um processo ativo de reorganização emocional. Neste momento, o foco principal deve ser estabilização interna, fortalecimento emocional e construção gradual de novos padrões mentais.";
 
 }
 

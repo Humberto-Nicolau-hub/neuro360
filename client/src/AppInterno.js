@@ -365,6 +365,16 @@ estadoAtual.emocao
 const emocaoAtual =
 estadoAtual?.emocao || "Neutro";
 
+console.log(
+"MEDIA HAWKINS:",
+mediaHawkins
+);
+
+console.log(
+"HAWKINS ATUAL:",
+estadoAtual?.hawkins
+);
+
 /* ==========================
    ANSIEDADE RECORRENTE
 ========================== */

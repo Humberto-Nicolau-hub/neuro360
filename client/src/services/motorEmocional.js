@@ -98,23 +98,35 @@ QUEDA RECENTE
 ========================== */
 
 if(
-diferenca <= -100
-){
-
-return "📉 Queda emocional recente";
-
-}
-
-/* ==========================
-CONTRAÇÃO
-========================== */
-
-if(
 hawkinsAtual < 200
 ){
+   return "🔄 Processo de reorganização emocional";
+}
 
-return "🔄 Processo de reorganização emocional";
+if(
+hawkinsAtual >= 200 &&
+hawkinsAtual < 300
+){
+   return "📈 Evolução emocional positiva";
+}
 
+if(
+hawkinsAtual >= 300 &&
+hawkinsAtual < 500
+){
+   return "🚀 Expansão emocional consistente";
+}
+
+if(
+hawkinsAtual >= 500
+){
+   return "⭐ Consciência emocional elevada";
+}
+
+if(
+diferenca <= -100
+){
+   return "📉 Queda emocional recente";
 }
 
 /* ==========================
@@ -175,6 +187,16 @@ export function gerarAlerta(
 historicoCompleto,
 mediaHawkins
 ){
+
+    if(mediaHawkins >= 500){
+
+return{
+tipo:"positivo",
+texto:
+"Consciência emocional elevada e estável."
+};
+
+}
 
 const ultimas =
 historicoCompleto

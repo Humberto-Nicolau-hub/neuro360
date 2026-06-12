@@ -296,8 +296,7 @@ estadoAtual
 
   const tendenciaEmocional =
 gerarTendencia(
-historicoCompleto,
-mediaHawkins
+historicoCompleto
 );
 
   const estabilidadeEmocional =

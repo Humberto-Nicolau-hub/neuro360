@@ -68,11 +68,6 @@ ultimos[ultimos.length - 1];
 const hawkinsAtual =
 estadoAtual?.score_hawkins || 0;
 
-const hawkinsInicial =
-primeiro?.score_hawkins || 0;
-
-const diferenca =
-hawkinsAtual - hawkinsInicial;
 
 /* ==========================
 OSCILAÇÃO
@@ -127,44 +122,6 @@ if(
 diferenca <= -100
 ){
    return "📉 Queda emocional recente";
-}
-
-/* ==========================
-TRANSIÇÃO
-========================== */
-
-if(
-hawkinsAtual >= 200 &&
-hawkinsAtual < 300
-){
-
-return "📈 Evolução emocional positiva";
-
-}
-
-/* ==========================
-EXPANSÃO
-========================== */
-
-if(
-hawkinsAtual >= 300 &&
-hawkinsAtual < 500
-){
-
-return "🚀 Expansão emocional consistente";
-
-}
-
-/* ==========================
-ALTA PERFORMANCE
-========================== */
-
-if(
-hawkinsAtual >= 500
-){
-
-return "⭐ Consciência emocional elevada";
-
 }
 
 return "⚖️ Estabilidade emocional";

@@ -1439,7 +1439,7 @@ estadoAtual={estadoAtual}
 <b>📈 Fase</b>
 <br/>
 {
-hawkinsAtual >= 500
+hawkinsAtual >= 300
 ? "Expansão"
 : hawkinsAtual >= 200
 ? "Transição"

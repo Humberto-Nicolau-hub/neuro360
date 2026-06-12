@@ -47,110 +47,32 @@ historicoCompleto.length
 }
 
 export function gerarTendencia(
-historicoCompleto,
-mediaHawkins
-){
-
-console.log(
-"=== GERAR TENDENCIA ==="
-);
-
-console.log(
-"HISTORICO:",
 historicoCompleto
-);
-
-console.log(
-"MEDIA HAWKINS:",
-mediaHawkins
-);
+){
 
 if(!historicoCompleto?.length){
 
-console.log(
-"RETORNO: SEM DADOS"
-);
-
 return "Aguardando dados emocionais";
+
 }
 
 const ultimos =
 historicoCompleto.slice(0,5);
 
+const estadoAtual =
+ultimos[0];
+
 const primeiro =
 ultimos[ultimos.length - 1];
 
-const ultimo =
-ultimos[0];
+const hawkinsAtual =
+estadoAtual?.score_hawkins || 0;
 
 const hawkinsInicial =
 primeiro?.score_hawkins || 0;
 
-const hawkinsFinal =
-ultimo?.score_hawkins || 0;
-
 const diferenca =
-hawkinsFinal - hawkinsInicial;
-
-console.log(
-"HAWKINS INICIAL:",
-hawkinsInicial
-);
-
-console.log(
-"HAWKINS FINAL:",
-hawkinsFinal
-);
-
-console.log(
-"DIFERENCA:",
-diferenca
-);
-
-/* ==========================
-EXPANSÃO
-========================== */
-
-if(
-mediaHawkins >= 300
-){
-
-console.log(
-"RETORNO: EXPANSAO"
-);
-
-return "🚀 Expansão emocional consistente";
-}
-
-/* ==========================
-EVOLUÇÃO
-========================== */
-
-if(
-diferenca >= 50
-){
-
-console.log(
-"RETORNO: EVOLUCAO"
-);
-
-return "📈 Evolução emocional positiva";
-}
-
-/* ==========================
-REGRESSÃO
-========================== */
-
-if(
-diferenca <= -50
-){
-
-console.log(
-"RETORNO: REGRESSAO"
-);
-
-return "📉 Queda emocional recente";
-}
+hawkinsAtual - hawkinsInicial;
 
 /* ==========================
 OSCILAÇÃO
@@ -167,37 +89,73 @@ if(
 emocoesDiferentes >= 4
 ){
 
-console.log(
-"RETORNO: OSCILACAO"
-);
-
 return "⚠️ Oscilação emocional recente";
+
 }
 
 /* ==========================
-ESTABILIDADE
+QUEDA RECENTE
 ========================== */
 
 if(
-Math.abs(diferenca) <= 20
+diferenca <= -100
 ){
 
-console.log(
-"RETORNO: ESTABILIDADE"
-);
+return "📉 Queda emocional recente";
 
-return "⚖️ Estabilidade emocional";
 }
 
 /* ==========================
-PADRÃO
+CONTRAÇÃO
 ========================== */
 
-console.log(
-"RETORNO: FORTALECIMENTO"
-);
+if(
+hawkinsAtual < 200
+){
 
-return "🔄 Processo de fortalecimento emocional";
+return "🔄 Processo de reorganização emocional";
+
+}
+
+/* ==========================
+TRANSIÇÃO
+========================== */
+
+if(
+hawkinsAtual >= 200 &&
+hawkinsAtual < 300
+){
+
+return "📈 Evolução emocional positiva";
+
+}
+
+/* ==========================
+EXPANSÃO
+========================== */
+
+if(
+hawkinsAtual >= 300 &&
+hawkinsAtual < 500
+){
+
+return "🚀 Expansão emocional consistente";
+
+}
+
+/* ==========================
+ALTA PERFORMANCE
+========================== */
+
+if(
+hawkinsAtual >= 500
+){
+
+return "⭐ Consciência emocional elevada";
+
+}
+
+return "⚖️ Estabilidade emocional";
 
 }
 

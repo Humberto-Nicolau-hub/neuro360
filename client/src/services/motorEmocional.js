@@ -62,9 +62,6 @@ historicoCompleto.slice(0,5);
 const estadoAtual =
 ultimos[0];
 
-const primeiro =
-ultimos[ultimos.length - 1];
-
 const hawkinsAtual =
 estadoAtual?.score_hawkins || 0;
 
@@ -116,17 +113,14 @@ if(
 hawkinsAtual >= 500
 ){
    return "⭐ Consciência emocional elevada";
-}
 
-if(
-diferenca <= -100
-){
-   return "📉 Queda emocional recente";
+
 }
 
 return "⚖️ Estabilidade emocional";
 
 }
+
 
 export function gerarEstabilidade(
 mediaHawkins

@@ -365,6 +365,9 @@ estadoAtual.emocao
 const emocaoAtual =
 estadoAtual?.emocao || "Neutro";
 
+const hawkinsAtual =
+estadoAtual?.hawkins || 0;
+
 console.log(
 "MEDIA HAWKINS:",
 mediaHawkins
@@ -405,16 +408,15 @@ return "Seu histórico demonstra permanência em estados de contração emociona
 ========================== */
 
 if (
-mediaHawkins >= 600
+hawkinsAtual >= 600
 ) {
 
 return "Seu histórico demonstra predominância de estados emocionais associados à realização, produtividade consciente e direcionamento estratégico. O sistema identifica recursos emocionais disponíveis para execução, liderança e crescimento sustentado.";
 
 }
 
-if (
-mediaHawkins >= 500
-) {
+if (hawkinsAtual >= 500)
+   {
 
 return "Seu histórico demonstra estabilidade emocional elevada e predominância de estados positivos. Os registros indicam fortalecimento consistente da consciência emocional e expansão da capacidade de bem-estar.";
 
@@ -424,9 +426,8 @@ return "Seu histórico demonstra estabilidade emocional elevada e predominância
    EXPANSÃO EM DESENVOLVIMENTO
 ========================== */
 
-if (
-mediaHawkins >= 300
-) {
+if (hawkinsAtual >= 300)
+   {
 
 return "Seu histórico demonstra migração gradual de estados de contração para expansão emocional. Embora emoções desafiadoras ainda apareçam ocasionalmente, os registros recentes mostram fortalecimento emocional consistente. O próximo desafio evolutivo é consolidar estabilidade e evitar oscilações.";
 
@@ -436,9 +437,8 @@ return "Seu histórico demonstra migração gradual de estados de contração pa
    TRANSIÇÃO
 ========================== */
 
-if (
-mediaHawkins >= 200
-) {
+if (hawkinsAtual >= 200)
+   {
 
 return "Você se encontra em uma fase de transição emocional. Os registros mostram redução gradual dos estados de contração e aumento da consciência emocional. A continuidade das práticas atuais tende a acelerar seu processo de fortalecimento.";
 

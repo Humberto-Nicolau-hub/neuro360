@@ -134,11 +134,35 @@ return hawkinsAtual >= 300
 }
 
 export function gerarAlerta(
-historicoCompleto,
-mediaHawkins
+historicoCompleto
 ){
 
-    if(mediaHawkins >= 500){
+if(!historicoCompleto?.length){
+
+return{
+tipo:"atencao",
+texto:"Aguardando dados emocionais."
+};
+
+}
+
+const estadoAtual =
+historicoCompleto[0];
+
+const hawkinsAtual =
+estadoAtual?.score_hawkins || 0;
+
+const ultimas =
+historicoCompleto
+.slice(0,5)
+.map(item=>item.emocao);
+
+const diferentes =
+new Set(ultimas).size;
+
+/* ALTA CONSCIÊNCIA */
+
+if(hawkinsAtual >= 500){
 
 return{
 tipo:"positivo",
@@ -148,15 +172,12 @@ texto:
 
 }
 
-const ultimas =
-historicoCompleto
-.slice(-5)
-.map(item=>item.emocao);
+/* OSCILAÇÃO */
 
-const diferentes =
-new Set(ultimas).size;
-
-if(diferentes>=4){
+if(
+diferentes >= 4 &&
+hawkinsAtual < 300
+){
 
 return{
 tipo:"alerta",
@@ -166,7 +187,9 @@ texto:
 
 }
 
-if(mediaHawkins>=300){
+/* EXPANSÃO */
+
+if(hawkinsAtual >= 300){
 
 return{
 tipo:"positivo",
@@ -175,6 +198,8 @@ texto:
 };
 
 }
+
+/* CONTRAÇÃO */
 
 return{
 tipo:"atencao",

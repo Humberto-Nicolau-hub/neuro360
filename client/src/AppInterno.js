@@ -304,10 +304,9 @@ historicoCompleto
 gerarEstabilidade(
 hawkinsAtual
 );
-      const alertaEmocional =
+      const alerta =
 gerarAlerta(
-historicoCompleto,
-mediaHawkins
+historicoCompleto
 );
 
 const mensagensMicroVitoria = {

@@ -123,10 +123,10 @@ return "⚖️ Estabilidade emocional";
 
 
 export function gerarEstabilidade(
-mediaHawkins
+hawkinsAtual
 ){
 
-return mediaHawkins>=300
+return hawkinsAtual >= 300
 
 ? "Estabilidade crescente"
 

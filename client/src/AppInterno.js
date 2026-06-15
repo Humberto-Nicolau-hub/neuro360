@@ -254,29 +254,30 @@ microacao:"Escreva algo pelo qual sente gratidão."
      INSIGHTS INTELIGENTES
   ========================================= */
 
-  const emocaoPredominante =
-    historicoCompleto.length
-      ? historicoCompleto.reduce((acc, atual) => {
+  const historicoRecente =
+historicoCompleto.slice(0,5);
 
-          acc[atual.emocao] =
-            (acc[atual.emocao] || 0) + 1;
+const emocaoPredominante =
+historicoRecente.reduce((acc, atual) => {
 
-          return acc;
+  acc[atual.emocao] =
+    (acc[atual.emocao] || 0) + 1;
 
-        }, {})
-      : {};
+  return acc;
 
-  const emocaoMaisFrequente =
-historicoCompleto.length > 0
-? Object.keys(
-emocaoPredominante
-).reduce(
+}, {});
+
+const emocaoMaisFrequente =
+Object.keys(emocaoPredominante).length
+
+? Object.keys(emocaoPredominante).reduce(
 (a,b)=>
 emocaoPredominante[a] >
 emocaoPredominante[b]
 ? a
 : b
 )
+
 : estadoAtual.emocao;
 
   const mediaHawkins =
@@ -301,7 +302,7 @@ historicoCompleto
 
   const estabilidadeEmocional =
 gerarEstabilidade(
-mediaHawkins
+hawkinsAtual
 );
       const alertaEmocional =
 gerarAlerta(

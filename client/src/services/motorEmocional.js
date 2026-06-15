@@ -65,7 +65,6 @@ ultimos[0];
 const hawkinsAtual =
 estadoAtual?.score_hawkins || 0;
 
-
 /* ==========================
 OSCILAÇÃO
 ========================== */
@@ -78,10 +77,10 @@ item => item.emocao
 ).size;
 
 if(
-emocoesDiferentes >= 4
+emocoesDiferentes >= 4 &&
+hawkinsAtual < 300
 ){
-
-return "⚠️ Oscilação emocional recente";
+   return "⚠️ Oscilação emocional recente";
 
 }
 
